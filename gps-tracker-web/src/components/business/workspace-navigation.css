@@ -1,0 +1,74 @@
+/* The workspace menu opens beside the persistent platform rail on compact screens. */
+@media screen and (max-width:1000px) {
+  .corporate-phone-menu.business-drawer-backdrop[data-member-navigation] {
+    --nav-surface:#f8f9fb;
+    --nav-ink:#737c89;
+    --nav-line:#e7eaf0;
+    --nav-accent:#3676e5;
+    --nav-selection:#edf3ff;
+    inset-inline-start:64px;
+    background:rgba(38,51,72,.2);
+    font:400 14px/1.55 var(--fleet-font);
+  }
+  [data-theme="dark"] .business-drawer-backdrop[data-member-navigation] {
+    --nav-surface:var(--surface);
+    --nav-ink:var(--text-2);
+    --nav-line:var(--border);
+    --nav-accent:var(--primary);
+    --nav-selection:var(--status-info-bg);
+  }
+  .corporate-phone-menu[data-member-navigation] .business-drawer {
+    width:195px; max-width:100%; background:var(--nav-surface); color:var(--nav-ink);
+    border-inline-end:1px solid var(--nav-line); box-shadow:none; font:inherit;
+  }
+  .corporate-phone-menu[data-member-navigation] .business-drawer:focus {outline:none}
+  .corporate-phone-menu[data-member-navigation] .business-drawer>header {
+    min-height:101px; align-items:flex-start; padding:22px 14px 6px 22px; border:0; background:transparent;
+  }
+  .corporate-phone-menu[data-member-navigation] .business-drawer>header p {
+    margin:7px 0 0 2px; font:400 11px/1.55 var(--fleet-font); color:var(--nav-ink);
+  }
+  .corporate-phone-menu .business-drawer>header button.ws-nav-brand {
+    display:inline-flex; align-items:center; gap:8px; min-height:38px; padding:0;
+    border:0; background:transparent; color:var(--text); font:400 17px/1.5 var(--fleet-font);
+    letter-spacing:-.6px; cursor:pointer;
+  }
+  .ws-nav-brand>span {
+    display:grid; place-items:center; width:29px; height:29px; border-radius:9px;
+    color:#fff; background:var(--nav-accent,var(--primary));
+  }
+  .corporate-phone-menu[data-member-navigation] .business-drawer>header .business-button {
+    width:30px; min-width:30px; min-height:30px; height:30px; padding:0; font-size:19px; color:var(--nav-ink);
+  }
+  .corporate-phone-menu[data-member-navigation] .business-drawer-body {
+    display:flex; flex-direction:column; gap:6px; padding:8px 14px max(16px,env(safe-area-inset-bottom,0px));
+    overflow:auto; overscroll-behavior:contain;
+  }
+  .corporate-phone-menu[data-member-navigation] :is(.corporate-phone-links,.rnt-nav) {
+    display:grid; gap:4px; flex:none; overflow:visible;
+  }
+  .corporate-phone-menu[data-member-navigation] :is(.corporate-phone-destination,.rnt-group,.corporate-phone-map,.ws-nav-account,.ws-nav-search) {
+    display:flex; align-items:center; gap:12px; width:100%; min-height:45px; padding:12px 15px; margin:0;
+    border:0; border-radius:10px; background:transparent; color:var(--nav-ink);
+    font:400 13px/1.55 var(--fleet-font); text-align:start; cursor:pointer;
+  }
+  .corporate-phone-menu[data-member-navigation] :is(.corporate-phone-destination,.rnt-group)[data-active=true] {
+    color:var(--nav-accent); background:var(--nav-selection); font-weight:500;
+  }
+  .corporate-phone-menu[data-member-navigation] :is(.corporate-phone-children,.rnt-subnav) {
+    display:grid; gap:2px; margin:0; padding:3px 0 5px 36px; border:0;
+  }
+  .corporate-phone-menu[data-member-navigation] :is(.corporate-phone-children,.rnt-subnav) button {
+    display:block; width:100%; min-height:32px; padding:7px 11px; border:0;
+    border-inline-start:1px solid var(--nav-line); border-radius:0; background:transparent;
+    color:var(--nav-ink); font:400 12px/1.55 var(--fleet-font); text-align:start; cursor:pointer;
+  }
+  .corporate-phone-menu[data-member-navigation] :is(.corporate-phone-children,.rnt-subnav) button[aria-current=page] {
+    border-inline-start:2px solid var(--nav-accent); color:var(--nav-accent); background:transparent; font-weight:500;
+  }
+  .corporate-phone-menu[data-member-navigation] .ws-nav-account {margin-top:auto}
+  .corporate-phone-menu[data-member-navigation] button:focus-visible {outline:2px solid var(--nav-accent);outline-offset:-2px}
+}
+@media screen and (max-width:760px) {
+  .corporate-phone-menu[data-member-navigation] .business-drawer {width:220px}
+}

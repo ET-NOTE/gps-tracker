@@ -118,7 +118,7 @@ test('corporate company controls appear once above the body and remain interacti
  assert.equal(topbar.findAllByType('select').length,1);
  assert.equal(body.findAllByType('select').length,0);
  assert.equal(r.root.findByProps({'aria-label':'지출 관리 하위 메뉴'}).type,'nav');
- assert.equal(text(classNode(r.root,'fleet-breadcrumb').children),'법인운행지출 관리지출 내역');
+ assert.equal(text(topbar.findByProps({'aria-label':'현재 위치'}).children),'법인운행지출 관리지출 내역');
  const width=topbar.findByProps({'aria-label':'화면 폭 선택'});
  await act(async()=>findButton(width,'넓게').props.onClick());
  assert.equal(classNode(r.root,'business-workspace').props['data-view-width'],'wide');

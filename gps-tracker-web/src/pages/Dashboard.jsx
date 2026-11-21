@@ -1025,8 +1025,8 @@ export default function Dashboard({ onLogout }) {
 
       <PlatformRail {...portalProps} onShowGuide={() => setShowOnboarding(true)}/>
       <div style={{display:'flex',flexDirection:'column',flex:1,minWidth:0,minHeight:0}}>
-        {coreView && <PlatformHeader {...portalProps} me={me} devices={portalDevices} meta={lastMetaRef.current} onDevice={id => {persistFilterDevice(id); setDetailId(id); setView('devices');}}/>}
-      <WorkspaceHeaderContext.Provider value={{name:me?.display_name?.trim()||me?.email,options:scopeOptions,selected:'company',onChange:value=>{
+        {coreView && <PlatformHeader {...portalProps} me={me} devices={portalDevices} meta={lastMetaRef.current} onDevice={id => {persistFilterDevice(id); setDetailId(null); setView('home');}}/>}
+      <WorkspaceHeaderContext.Provider value={{name:me?.display_name?.trim()||me?.email,openProfile:()=>setView('profile'),options:scopeOptions,selected:'company',onChange:value=>{
         changePortalScope(value);
         if(value==='personal')navigate('/devices');
       }}}>

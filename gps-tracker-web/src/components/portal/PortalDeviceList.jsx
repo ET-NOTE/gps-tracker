@@ -1,17 +1,29 @@
 import { useState } from 'react';
 import Icon from '../Icon';
-import { classifyDevice } from '../../colors';
+import { classifyDevice, isStale } from '../../colors';
 import Modal from '../ui/Modal';
 import BatteryStatus from '../BatteryStatus';
 import DeviceReadingTime from './DeviceReadingTime';
 import { deviceBattery } from '../../lib/battery';
 import { terminalName } from '../../lib/corporateOverview';
+import { validPosition } from '../../lib/businessWorkspace';
 import { useVisibleNow } from '../../hooks/useVisibleNow';
 import { SERVICES, deviceBucket, deviceMatches } from './platformModel';
 
 const FILTERS = [
-  ['all', '전체'], ['normal', '정상·절전'], ['attention', '확인 필요'], ['offline', '오프라인'], ['unknown', '수신 전'],
+  ['all', '전체 상태'], ['online', '통신 정상'], ['disconnected', '통신 끊김·대기'], ['pending', '위치 수신 대기'],
 ];
+const DETAILED_FILTERS = [['normal', '정상·절전'], ['attention', '확인 필요'], ['offline', '오프라인'], ['unknown', '수신 전']];
+
+function matchesDeviceStatus(filter, device, status) {
+  if (filter === 'all') return true;
+  if (filter === 'pending') return !validPosition(device);
+  if (filter === 'online' || filter === 'disconnected') {
+    const communicating = status.id !== 'unknown' && !isStale(device.last_seen_at);
+    return filter === 'online' ? communicating : !communicating;
+  }
+  return deviceBucket(status) === filter;
+}
 
 export default function PortalDeviceList({ devices = [], meta = {}, selectedId, detailId, onSelect, onDetail, onPair,
   renderTools, scope, scopeLabel, availableServices = [], error, loading, onRetry, children }) {
@@ -25,7 +37,7 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
   const showServices = scope === 'company' || (!scope && scopeLabel === '내 사업장');
   const selectedService = showServices && serviceOptions.some(s => s.key === service) ? service : '';
   const filtered = rows.filter(({ device, status }) =>
-    deviceMatches(device, term) && (filter === 'all' || deviceBucket(status) === filter)
+    deviceMatches(device, term) && matchesDeviceStatus(filter, device, status)
       && (!selectedService || device.portalServices?.includes(selectedService)));
   const activeDetail = detailId === undefined ? expanded : detailId;
   const detail = devices.find(device => device.id === activeDetail);
@@ -39,8 +51,11 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
     </div>
     {children}
     <div className="pt-device-filters">
-      <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => setTerm(e.target.value)}/></label>
-      <label className="pt-filter"><select aria-label="단말기 상태 필터" value={filter} onChange={e => setFilter(e.target.value)}>{FILTERS.map(([key,label]) => <option key={key} value={key}>{key === 'all' ? '전체 상태' : label}</option>)}</select></label>
+      <label className="pt-search-field"><Icon name="search" size={15}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => setTerm(e.target.value)}/></label>
+      <label className="pt-filter"><select aria-label="단말기 상태 필터" value={filter} onChange={e => setFilter(e.target.value)}>
+        {FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}
+        <optgroup label="세부 상태">{DETAILED_FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</optgroup>
+      </select></label>
       {showServices && <label className="pt-filter"><select aria-label="업무 구분" value={selectedService} onChange={e => setService(e.target.value)}>
         <option value="">전체 서비스</option>{serviceOptions.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
       </select></label>}

@@ -13,7 +13,7 @@ import BusinessMap from './BusinessMap';
 import BusinessVehicleDetail from './BusinessVehicleDetail';
 import useCorporatePhone from '../../useCorporatePhone';
 import CorporateMobileHeader from './CorporateMobileHeader';
-import {WorkspaceAvatar,WorkspaceScope} from './WorkspaceHeader';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import FleetQuickPanel from './FleetQuickPanel';
 import './business.css';
 
@@ -118,12 +118,12 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
         {onNavigate && mapNavigation && <button className="business-nav-item business-map-shortcut" type="button" title="내 계정 단말기의 전체 지도" onClick={() => onNavigate('home')}><Icon name="mapPin" size={18} /><span>실시간 지도</span></button>}
         {corporate && <div className="business-nav-tools">{action}{onNavigate && <button className="business-button" type="button" aria-expanded={accountMenu} onClick={() => setAccountMenu(true)}><Icon name="user" size={18} />계정 메뉴</button>}</div>}
       </nav>
-      {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections}
-        onTab={visit} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick}/>
+      {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections} company={company}
+        onTab={visit} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick} wide={wide} onWidth={chooseWidth}/>
       : corporate ? <header className="business-topbar ws-member-top no-print">
-        <div className="fleet-topbar-inner"><div className="fleet-breadcrumb"><span>법인운행</span><Icon name="chevron-right" size={13}/><span>{groupLabel}</span>{groupLabel!==pageLabel&&<><Icon name="chevron-right" size={13}/><strong>{pageLabel}</strong></>}</div>
+        <div className="fleet-topbar-inner"><WorkspaceBreadcrumb service="법인운행" group={groupLabel} page={pageLabel}/>
         <WorkspaceScope fallback={toolbar}/>
-        <div className="fleet-width" role="group" aria-label="화면 폭 선택"><span>화면 폭</span>{[[false,'기본'],[true,'넓게']].map(([value,label])=><button key={label} type="button" aria-pressed={wide===value} onClick={()=>chooseWidth(value)}>{label}</button>)}</div>
+        <WorkspaceWidthControl className="fleet-width" wide={wide} onChange={chooseWidth}/>
         <button className="ws-wide-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
         <button className="ws-icon" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={17}/></button>
         {onNavigate&&<WorkspaceAvatar label="회사 및 계정 메뉴" expanded={accountMenu} onClick={()=>setAccountMenu(true)}/>}</div>

@@ -12,7 +12,7 @@ export function WorkspaceScope({fallback=null,ownName}) {
     member.options.map(o=>o.value==='company'&&ownName?{...o,label:ownName}:o);
   const selected=company?.selected||member?.selected;
   if(!options.length)return null;
-  return <label className="ws-scope" title={options.find(o=>o.value===selected)?.label}><select aria-label="조회 범위" value={selected} onChange={e=>{
+  return <label className="ws-scope" title={options.find(o=>o.value===selected)?.label}><Icon name="office" size={14}/><select aria-label="조회 범위" value={selected} onChange={e=>{
     const value=e.target.value;
     if(company && value!=='personal')company.onChange(value);
     else member?.onChange(value);
@@ -22,9 +22,17 @@ export function WorkspaceScope({fallback=null,ownName}) {
 export function WorkspaceAvatar({label,onClick,expanded}) {
   const member=useContext(WorkspaceHeaderContext);
   const name=member?.name||'내정보';
-  return <button type="button" className="ws-avatar" aria-label={label} title={name} aria-haspopup="dialog" aria-expanded={expanded} onClick={onClick}>
+  const openProfile=member?.openProfile;
+  return <button type="button" className="ws-avatar" aria-label={openProfile?'내정보':label} title={name} aria-haspopup={openProfile?undefined:'dialog'} aria-expanded={openProfile?undefined:expanded} onClick={openProfile||onClick}>
     {member?.name?Array.from(name)[0]:<Icon name="user" size={14}/>}
   </button>;
+}
+
+export function WorkspaceWidthControl({wide,onChange,className}) {
+  return <div className={className} role="group" aria-label="화면 폭 선택"><span>화면 폭</span>
+    {[[false,'기본'],[true,'넓게']].map(([value,label])=>
+      <button key={label} type="button" aria-pressed={wide===value} onClick={()=>onChange(value)}>{label}</button>)}
+  </div>;
 }
 
 export function WorkspaceBreadcrumb({service,group,page}) {

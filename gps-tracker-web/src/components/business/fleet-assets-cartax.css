@@ -228,3 +228,67 @@
 .mobile-vehicle-distance{color:var(--text-3);font-size:15px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .mobile-vehicle-row>img{flex:none;width:54px;height:40px;border-radius:4px;object-fit:contain}
 .mobile-vehicle-schedule{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0 16px 12px;color:var(--text-2);font-size:15px}
+
+/* Keep the vehicle actions in view while only the status details scroll. */
+.business-drawer-backdrop .business-drawer:has(.fleet-assets-detail) {
+  --vehicle-inset:26px; width:min(470px,100%); height:100%; max-height:100%; border-radius:0;
+}
+.business-drawer:has(.fleet-assets-detail)>header {padding:22px var(--vehicle-inset);align-items:center}
+.business-drawer:has(.fleet-assets-detail)>header>div {min-width:0}
+.business-drawer:has(.fleet-assets-detail)>header h2 {font-size:17px; line-height:1.55; font-weight:500; overflow-wrap:anywhere}
+.business-drawer:has(.fleet-assets-detail)>header p {font-size:12px; line-height:1.55; color:var(--text-3); overflow-wrap:anywhere}
+.business-drawer:has(.fleet-assets-detail)>.business-drawer-body {min-height:0; padding:0 var(--vehicle-inset) 18px}
+.business-drawer:has(.fleet-assets-detail-actions)>.business-drawer-body {padding-bottom:0; overflow:hidden}
+.business-drawer .fleet-assets-detail {font-size:14px; gap:16px}
+.business-drawer .fleet-assets-detail:has(.fleet-assets-detail-actions) {min-height:0; height:100%;gap:0}
+.business-drawer .fleet-assets-detail .fleet-assets-detail-tabs {
+  margin:0; padding:0; display:flex; flex-wrap:nowrap; align-items:stretch; gap:0;
+}
+.business-drawer .fleet-assets-detail .fleet-assets-detail-tabs button {
+  flex:1 1 0; min-width:0; min-height:38px; padding:6px 3px; font-size:12px; line-height:1.4; font-weight:400;
+}
+.fleet-vehicle-status-scroll {
+  flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+  margin-inline:calc(-1 * var(--vehicle-inset)); padding:16px var(--vehicle-inset) 20px;
+  display:flex;flex-direction:column;gap:20px;
+}
+.fleet-vehicle-status-scroll>* {flex:0 0 auto}
+.business-drawer .fleet-vehicle-hero {
+  display:grid; gap:7px; padding:18px; border:0; border-radius:12px;
+  background:linear-gradient(150deg,var(--surface-2),var(--surface));
+}
+.business-drawer .fleet-vehicle-hero-image {position:relative; overflow:hidden; width:100%; height:auto; aspect-ratio:2.23; min-height:0; border-radius:8px}
+.business-drawer .fleet-vehicle-hero-image img {position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain}
+.business-drawer .fleet-vehicle-hero-image>svg {width:30%; height:auto; max-height:90px;stroke-width:1.1}
+.business-drawer .fleet-vehicle-hero dl {display:flex;justify-content:space-between;gap:12px}
+.business-drawer .fleet-vehicle-hero dl>div:last-child {text-align:right}
+.business-drawer .fleet-vehicle-hero dt,.business-drawer .fleet-vehicle-hero dd small {font-size:10px;font-weight:400;color:var(--text-3)}
+.business-drawer .fleet-vehicle-hero dd {font-size:17px;line-height:1.55;font-weight:400;font-variant-numeric:tabular-nums;margin-top:4px}
+.business-drawer .fleet-assets-detail .fleet-assets-detail-section>header {margin:0 0 12px;min-height:0}
+.business-drawer .fleet-assets-detail-section h3,.business-drawer .fleet-media-section h3 {font-size:13px; font-weight:500; line-height:1.55}
+.business-drawer .fleet-assets-detail .business-detail-facts {grid-template-columns:minmax(0,1fr);border:0;gap:0}
+.business-drawer .fleet-assets-detail .business-detail-facts>div {
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:10px 0; border:0; border-bottom:1px solid var(--border);font-size:12px;line-height:1.55;
+}
+.business-drawer .fleet-assets-detail .business-detail-facts :is(dt,dd) {display:block;padding:0;font-size:12px;font-weight:400;line-height:1.55}
+.business-drawer .fleet-assets-detail .business-detail-facts dt {flex:none;color:var(--text-3);background:transparent}
+.business-drawer .fleet-assets-detail .business-detail-facts dd {text-align:right}
+.business-drawer .fleet-assets-detail .fleet-assets-detail-actions {
+  position:static; flex:none; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px;
+  padding:12px 0 max(12px,env(safe-area-inset-bottom)); margin:0;
+}
+.business-drawer .fleet-assets-detail .business-button {
+  min-width:0; min-height:36px; padding:8px 10px; border-radius:8px; font-size:12px; font-weight:400; line-height:1.45;
+}
+@media(max-width:760px) {
+  .business-drawer-backdrop .business-drawer:has(.fleet-assets-detail) {--vehicle-inset:20px}
+  .business-drawer:has(.fleet-assets-detail)>header {padding-block:16px}
+  .business-drawer .fleet-assets-detail .fleet-assets-detail-tabs button {min-height:40px}
+  .business-drawer .fleet-assets-detail .fleet-assets-detail-actions {gap:6px; padding-top:8px}
+  .business-drawer .fleet-assets-detail-actions .business-button {padding-inline:9px}
+}
+@media(max-height:500px) {
+  .business-drawer:has(.fleet-assets-detail)>header {padding-block:6px}
+  .business-drawer .fleet-assets-detail .fleet-assets-detail-actions {padding-block:4px}
+}

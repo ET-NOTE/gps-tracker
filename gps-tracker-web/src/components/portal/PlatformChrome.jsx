@@ -4,13 +4,12 @@ import Icon from '../Icon';
 import Modal from '../ui/Modal';
 import { useAccountType } from '../../state';
 import { clearTokens } from '../../api';
-import { ageString, classifyDevice } from '../../colors';
 import { terminalName } from '../../lib/corporateOverview';
 import { corporateTabs } from '../../lib/corporateNavigation';
 import { freightMenu } from '../../lib/freightMenu';
 import { rentalMenu } from '../../lib/rentalMenu';
-import { useVisibleNow } from '../../hooks/useVisibleNow';
-import { CORE_LINKS, SERVICES, deviceBucket, deviceMatches, ownerServices } from './platformModel';
+import TerminalAlerts from './TerminalAlerts';
+import { CORE_LINKS, SERVICES, deviceMatches, ownerServices } from './platformModel';
 
 const SETTINGS_PATH = '/profile?tab=services';
 const ADMIN = { view: 'admin', path: '/admin', label: '관리자', icon: 'settings' };
@@ -81,9 +80,10 @@ function GlobalSearch({ services, owned, devices, isAdmin, onDevice, onClose }) 
     }
   }
   const links = shortcuts.filter(s => !query || [s.label, s.context].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
-  const matches = devices.filter(device => deviceMatches(device, text));
-  return <Modal open title="통합 검색" onClose={onClose} size="lg">
-    <label className="pt-search-field"><Icon name="search"/><input type="search" value={text} onChange={e => setText(e.target.value)} placeholder="단말기 이름, 등록 번호 또는 메뉴 검색" aria-label="단말기와 메뉴 검색"/></label>
+  const matches = query ? devices.filter(device => deviceMatches(device, text)) : [];
+  return <Modal open title="통합 검색" onClose={onClose} size="lg"
+    footer={<div className="pt-dialog-actions"><button className="pt-button" type="button" aria-label="통합 검색 닫기" onClick={onClose}>닫기</button></div>}>
+    <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" value={text} onChange={e => setText(e.target.value)} autoComplete="off" placeholder="메뉴, 단말기 이름 또는 차량번호" aria-label="단말기와 메뉴 검색"/></label>
     <div className="pt-search-results">
       {links.length > 0 && <h3>메뉴</h3>}
       {links.map(item => <Link key={item.path} to={item.path} onClick={onClose}><Icon name={item.icon}/><span>{item.label}</span>{item.context && <small>{item.context}</small>}</Link>)}
@@ -101,9 +101,6 @@ export function PlatformHeader({ view, availableServices = [], servicePaths = {}
   const [panel, setPanel] = useState('');
   const { data: account } = useAccountType();
   const navigate = useNavigate();
-  const now = useVisibleNow(true, 60000);
-  const alerts = devices.map(device => ({ device, state: classifyDevice(device, meta[device.id], now) }))
-    .filter(({ state }) => ['offline', 'attention'].includes(deviceBucket(state)));
   const links = enabledLinks(availableServices, servicePaths);
   const current = [...CORE_LINKS, ...links, ADMIN].find(item => item.view === view);
   const name = me?.display_name?.trim() || me?.email || '내정보';
@@ -122,19 +119,10 @@ export function PlatformHeader({ view, availableServices = [], servicePaths = {}
     <div className="pt-crumb"><span>위치관리</span><Icon name="chevron-right" size={13}/><strong>{current?.label || '홈'}</strong></div>
     <div className="pt-header-actions">
       <ScopeSelect {...{scope, scopeOptions, onScopeChange}}/>
-      <button type="button" className="pt-search-trigger" onClick={() => setPanel('search')} aria-label="통합 검색"><Icon name="search" size={17}/><span>단말기·메뉴 검색</span><kbd>Ctrl K</kbd></button>
-      <button type="button" className="pt-icon-button pt-alert-trigger" aria-label={'단말기 상태 알림 ' + alerts.length + '건'} onClick={() => setPanel('alerts')}>
-        <Icon name="bell" size={19}/>{alerts.length > 0 && <i/>}
-      </button>
+      <button type="button" className="pt-search-trigger" onClick={() => setPanel('search')} aria-label="통합 검색" aria-haspopup="dialog" aria-keyshortcuts="Control+k Meta+k"><Icon name="search" size={17}/><span>메뉴·단말기 검색</span><kbd>Ctrl K</kbd></button>
+      <TerminalAlerts devices={devices} meta={meta} onDevice={openDevice}/>
       <Link className="pt-avatar" aria-label="내 계정" title={name} to="/profile?tab=account">{Array.from(name)[0]}</Link>
     </div>
     {panel === 'search' && <GlobalSearch services={links} owned={ownerServices(account)} {...{devices,isAdmin}} onDevice={openDevice} onClose={() => setPanel('')}/>}
-    <Modal open={panel === 'alerts'} title="단말기 상태 알림" onClose={() => setPanel('')}>
-      {alerts.length ? <div className="pt-search-results">{alerts.map(({ device, state }) => <button type="button" key={device.id}
-        onClick={() => { setPanel(''); openDevice(device.id); }}><Icon name="antenna"/>
-        <span>{terminalName(device)}<small>{state.label} · {ageString(device.last_seen_at)}</small></span><Icon name="chevron-right" size={15}/>
-      </button>)}</div> : <p className="pt-empty">현재 조회 범위에서 확인할 단말기 알림이 없습니다.</p>}
-      <Link to="/profile?tab=notif" className="pt-button" onClick={() => setPanel('')}>알림 설정</Link>
-    </Modal>
   </header>;
 }

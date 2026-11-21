@@ -21,8 +21,8 @@ export function FreightForm({title,subtitle,onClose,onSubmit,submitLabel='저장
     catch(e){setError(e.message || '저장하지 못했습니다.');}
     finally{lock.current=false;setBusy(false);}
   }
-  return <Modal open mobileForm title={title} subtitle={subtitle} size={size} onClose={busy?undefined:onClose} footer={<div className="fr-actions fr-form-footer">
-    <FreightButton disabled={busy} onClick={onClose}>닫기</FreightButton><button className="fr-btn is-primary" type="submit" form={id} disabled={busy}>{busy?'저장 중…':submitLabel}</button>
+  return <Modal open mobileForm title={title} subtitle={subtitle} size={size} onClose={busy?undefined:onClose} footer={<div className="service-form-actions">
+    <FreightButton disabled={busy} onClick={onClose}>취소</FreightButton><button className="fr-btn is-primary" type="submit" form={id} disabled={busy}>{busy?'저장 중…':submitLabel}</button>
   </div>}>
     {error&&<p role="alert" className="fr-error">{error}</p>}
     <form id={id} onSubmit={submit} className="fr-form">{children}</form>

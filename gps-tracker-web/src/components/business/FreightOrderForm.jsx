@@ -53,28 +53,30 @@ export default function FreightOrderForm({data,row,recurring=false,onClose,commi
       }
     });
   }
-  return <FreightForm title={(recurring?'정기 주문':'운송 주문')+(row?' 수정':' 등록')} size={720}
+  return <FreightForm title={(recurring?'정기 주문':'운송 주문')+(row?' 수정':' 등록')} size={720} submitLabel={row?'변경 저장':recurring?'등록':'주문 접수'}
     subtitle="상하차 일정, 화물 조건과 합의 운임을 입력합니다." onClose={onClose} onSubmit={submit}>
     {!!prerequisites.length&&<div className="fr-note">주문에 필요한 항목을 먼저 등록해 주세요. <div className="fr-actions">{prerequisites.map(([,label,page])=><FreightButton key={page} onClick={()=>onPage(page)}>{label} 관리</FreightButton>)}</div></div>}
-    {recurring?<FreightField label="정기 주문명" wide><input required maxLength={100} {...bind('name')}/></FreightField>:<FreightField label="화주 주문번호" wide><input maxLength={80} placeholder="선택 입력" {...bind('externalRef')}/></FreightField>}
-    <FreightField label="화주"><select required {...bind('shipperId')}><FreightOptions rows={data.shippers.filter(s=>s.active!==false)} blank="화주 선택"/></select></FreightField>
-    <FreightField label="담당 지점"><select required value={values.branchId} onChange={e=>setValues(v=>({...v,branchId:e.target.value,userId:''}))}><FreightOptions rows={data.branches} blank="지점 선택"/></select></FreightField>
-    {!recurring&&<FreightField label="배차 담당자" wide><select {...bind('userId')}><option value="">운영 관리자</option>
+    {recurring?<FreightField label="정기 주문명" wide><input required maxLength={100} {...bind('name')}/></FreightField>:<FreightField label="화주 주문번호"><input maxLength={80} placeholder="선택 입력" {...bind('externalRef')}/></FreightField>}
+    {!recurring&&<FreightField label="배차 담당자"><select {...bind('userId')}><option value="">운영 관리자</option>
       {values.userId&&!choices.some(p=>String(p.id)===String(values.userId))&&<option value={values.userId}>{staff.rows.find(p=>String(p.id)===String(values.userId))?.name||'기존 담당자'}</option>}
       {choices.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>{staff.error&&<small role="status">{staff.error}</small>}</FreightField>}
+    <FreightField label="화주"><select required {...bind('shipperId')}><FreightOptions rows={data.shippers.filter(s=>s.active!==false)} blank="화주 선택"/></select></FreightField>
+    <FreightField label="담당 지점"><select required value={values.branchId} onChange={e=>setValues(v=>({...v,branchId:e.target.value,userId:''}))}><FreightOptions rows={data.branches} blank="지점 선택"/></select></FreightField>
     <FreightField label="상차지"><select required {...bind('pickupLocationId')}><FreightOptions rows={sites} blank="상차지 선택"/></select></FreightField>
     <FreightField label="하차지"><select required {...bind('dropoffLocationId')}><FreightOptions rows={sites} blank="하차지 선택"/></select></FreightField>
     <FreightField label="상차 예정"><input type={recurring?'time':'datetime-local'} required {...bind(recurring?'startTime':'start')}/></FreightField>
     <FreightField label="하차 예정"><input type={recurring?'time':'datetime-local'} required {...bind(recurring?'endTime':'end')}/></FreightField>
     {recurring&&<fieldset className="fr-checks"><legend>반복 요일</legend>{weekdays.map((day,i)=><label key={day}><input type="checkbox" checked={values.weekdays.includes(i)} onChange={e=>set('weekdays',e.target.checked?[...values.weekdays,i]:values.weekdays.filter(x=>x!==i))}/>{day}</label>)}</fieldset>}
-    <FreightField label="화물명" wide><input required maxLength={100} {...bind('cargoName')}/></FreightField>
-    <FreightField label="수량"><input required type="number" min=".01" max="1000000" step=".01" {...bind('quantity')}/></FreightField>
-    {simpleOptions('unit','수량 단위',data.codes.units)}
+    <FreightField label="화물명"><input required maxLength={100} {...bind('cargoName')}/></FreightField>
+    <fieldset className="fr-order-quantity"><legend>수량 / 단위</legend>
+      <input required type="number" aria-label="수량" min=".01" max="1000000" step=".01" {...bind('quantity')}/>
+      <select required aria-label="수량 단위" {...bind('unit')}>{data.codes.units.map(unit=><option key={unit}>{unit}</option>)}</select>
+    </fieldset>
     <FreightField label="화물 중량 (kg)"><input required type="number" min="1" max="100000" {...bind('weightKg')}/></FreightField>
     <FreightField label="필요 적재능력 (kg)"><input required type="number" min="1" max="100000" {...bind('capacityKg')}/></FreightField>
     {simpleOptions('vehicleType','필요 차량',data.codes.vehicleTypes)}{simpleOptions('temperature','온도 조건',['상온','냉장','냉동'])}
     {simpleOptions('tripType','운송 형태',['편도','왕복'])}
-    <fieldset className="fr-checks"><label><input type="checkbox" checked={values.mixedAllowed} onChange={e=>set('mixedAllowed',e.target.checked)}/>혼적 허용</label>
+    <fieldset className="fr-checks fr-order-mix"><legend>혼적 허용</legend><label><input type="checkbox" checked={values.mixedAllowed} onChange={e=>set('mixedAllowed',e.target.checked)}/>혼적 허용 조건으로 접수</label>
       {recurring&&<label><input type="checkbox" checked={values.active} onChange={e=>set('active',e.target.checked)}/>정기 주문 사용</label>}</fieldset>
     <FreightField label="화주 합의 운임 (원)"><input type="number" min="0" max="1000000000" placeholder="미정" {...bind('sellAmount')}/></FreightField>
     <FreightField label="운송 합의 원가 (원)"><input type="number" min="0" max="1000000000" placeholder="미정" {...bind('buyAmount')}/></FreightField>

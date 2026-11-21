@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
 import RentalWorkspace, { rentalPages } from './business/RentalWorkspace';
+import TerminalAlerts from './portal/TerminalAlerts';
 import RentalPolicy from './business/RentalPolicy';
 import RentalFleet from './business/RentalFleet';
 import RentalOffice from './business/RentalOffice';
@@ -53,7 +54,8 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   useEffect(()=>{if(request && request.stage!==tab)setRequest(null);},[tab,request]);
   const activeRequest = request?.stage === tab ? request : null;
   return <RentalVehicleScope devices={devices} meta={meta} onMap={onMap} onManageVehicle={onManageVehicle} onVehicleAction={d=>openContracts({deviceId:d.id})}>
-    <RentalWorkspace page={tab} onTab={visit} devices={vehicles} onSearchDevice={v=>{setRequest({stage:'vehicles',vehicleId:v.id,searchKey:crypto.randomUUID()});setTab('vehicles');}}
+    <RentalWorkspace page={tab} onTab={visit} devices={vehicles} headerAction={onMap && onNavigate && <TerminalAlerts devices={devices} meta={meta} onDevice={onMap} className="ws-icon pt-alert-trigger"/>}
+      onSearchDevice={v=>{setRequest({stage:'vehicles',vehicleId:v.id,searchKey:crypto.randomUUID()});setTab('vehicles');}}
       onNavigate={onNavigate} destinations={destinations}>
       {assets.error && <BusinessError onRetry={assets.refetch}>렌트 차량 목록을 불러오지 못했습니다.</BusinessError>}
       {['fleet','vehicles','service','incidents','devices','live'].includes(tab)&&<RentalFleet key={activeRequest?.searchKey ?? tab} view={tab} devices={devices} vehicles={vehicles} onMap={onMap} onContracts={openContracts} onTab={visit} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} initialWorkId={activeRequest?.workId} initialVehicleId={activeRequest?.vehicleId}/>}

@@ -275,41 +275,43 @@ export function FleetAssetDetail({asset,devices,onClose,onChanged,onMap,meta,onR
     <div className="fleet-assets-detail">
     <div className="business-switch fleet-assets-detail-tabs" role="group" aria-label="차량 상세 메뉴">{[['status','상태·위치'],['connections','단말기 연결'],['files','사진·서류'],['history','연결 이력']].filter(([key])=>canOpen(key)).map(([key,label])=><button type="button" key={key} className="business-switch-item" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>
     {tab==='status'&&<>
-      <div className="fleet-vehicle-hero">
-        <div className="fleet-vehicle-hero-image"><CarImage vehicleId={asset.id} version={asset.profile?.car_image_url} alt={asset.car_model||'등록 차량'} fallback={<Icon name="car" size={48}/>}/></div>
-        <dl><div><dt>이번 달 운행거리</dt><dd>{Number.isFinite(monthDistance)?(monthDistance/1000).toLocaleString('ko-KR',{maximumFractionDigits:1}):'—'}{Number.isFinite(monthDistance)&&<small> km</small>}</dd></div>
-        <div><dt>계기판 누적거리</dt><dd>{assetOdometer(asset)?.toLocaleString()??'미등록'}{assetOdometer(asset)!=null&&<small> km</small>}</dd></div></dl>
+      <div className="fleet-vehicle-status-scroll">
+        <div className="fleet-vehicle-hero">
+          <div className="fleet-vehicle-hero-image"><CarImage vehicleId={asset.id} version={asset.profile?.car_image_url} alt={asset.car_model||'등록 차량'} fallback={<Icon name="car" size={48}/>}/></div>
+          <dl><div><dt>이번 달 운행거리</dt><dd>{Number.isFinite(monthDistance)?(monthDistance/1000).toLocaleString('ko-KR',{maximumFractionDigits:1}):'—'}{Number.isFinite(monthDistance)&&<small> km</small>}</dd></div>
+          <div><dt>계기판 누적거리</dt><dd>{assetOdometer(asset)?.toLocaleString()??'미등록'}{assetOdometer(asset)!=null&&<small> km</small>}</dd></div></dl>
+        </div>
+        <section className="fleet-assets-detail-section" aria-label="차량 기본 정보">
+        <header><h3>차량 정보</h3><div className="fleet-assets-detail-heading-actions">
+          <span className={`business-badge ${asset.enabled?'good':''}`}>{asset.enabled?'사용 가능':'사용 정지'}</span>
+          {mobile&&access.manage_vehicles&&<button type="button" className="business-button" aria-label="차량·점검 정보 수정" onClick={openEditor}>수정</button>}
+        </div></header>
+        <dl className="business-detail-facts">
+          <div><dt>차종</dt><dd>{asset.car_model||'미등록'}</dd></div>
+          <div><dt>부서</dt><dd>{asset.department||'미지정'}</dd></div>
+          <div><dt>담당자</dt><dd>{staff.find(s=>s.id===asset.manager_staff_id)?.name||'미지정'}</dd></div>
+          <div><dt>등록일</dt><dd>{assetRegistrationDay(asset.created_at)||'미등록'}</dd></div>
+          {asset.profile?.fuel_type&&<div><dt>유종</dt><dd>{{gasoline:'휘발유',diesel:'경유',lpg:'LPG',ev:'전기'}[asset.profile.fuel_type]||asset.profile.fuel_type}</dd></div>}
+          {asset.profile?.fuel_efficiency_kmpl!=null&&<div><dt>등록 연비</dt><dd>{asset.profile.fuel_efficiency_kmpl} km/L</dd></div>}
+        </dl>
+        </section>
+        <details className="fleet-assets-detail-section fleet-vehicle-collapse" aria-label="차량 점검 일정">
+        <summary><Icon name="wrench" size={16}/>정비·보험 일정{missingSchedules>0&&<span className="fleet-assets-detail-meta">일정 미등록 {missingSchedules}건</span>}</summary>
+        <dl className="business-detail-facts">{maintenanceScheduleFields.map(([key,label])=><div key={key}><dt>{label}</dt><dd className={!asset.profile?.[key]?'is-missing':undefined}>{asset.profile?.[key]||'일정 미등록'}</dd></div>)}<div><dt>다음 정비 주행거리</dt><dd>{Number.isFinite(asset.profile?.next_service_km)&&asset.profile.next_service_km>=0?`${asset.profile.next_service_km.toLocaleString()} km`:'미등록'}</dd></div></dl>
+        </details>
+        <section className="fleet-assets-detail-section" aria-label="단말기 통신과 위치">
+        <header><h3>단말기·위치</h3></header>
+        <dl className="business-detail-facts">
+          <div><dt>대표 단말기</dt><dd>{device.display_name}</dd></div>
+          <div><dt>단말기 통신 상태</dt><dd>{communication}</dd></div>
+          <div><dt>최근 통신</dt><dd>{device.last_seen_at?ageString(device.last_seen_at):missingReading}</dd></div>
+          <div><dt>마지막 위치 수신</dt><dd>{device.last_fix_at?kstDateTime(device.last_fix_at):missingReading}</dd></div>
+        </dl>
+        {device.source_device_id&&<BatteryStatus reading={deviceBattery(device,meta)}/>}
+        {device.source_device_id&&<BusinessMap devices={[device]}/>}
+        </section>
+        {asset.profile?.note&&<section className="fleet-assets-detail-section"><header><h3>메모</h3></header><p className="fleet-vehicle-note">{asset.profile.note}</p></section>}
       </div>
-      <section className="fleet-assets-detail-section" aria-label="차량 기본 정보">
-      <header><h3>차량 정보</h3><div className="fleet-assets-detail-heading-actions">
-        <span className={`business-badge ${asset.enabled?'good':''}`}>{asset.enabled?'사용 가능':'사용 정지'}</span>
-        {mobile&&access.manage_vehicles&&<button type="button" className="business-button" aria-label="차량·점검 정보 수정" onClick={openEditor}>수정</button>}
-      </div></header>
-      <dl className="business-detail-facts">
-        <div><dt>차종</dt><dd>{asset.car_model||'미등록'}</dd></div>
-        <div><dt>부서</dt><dd>{asset.department||'미지정'}</dd></div>
-        <div><dt>담당자</dt><dd>{staff.find(s=>s.id===asset.manager_staff_id)?.name||'미지정'}</dd></div>
-        <div><dt>등록일</dt><dd>{assetRegistrationDay(asset.created_at)||'미등록'}</dd></div>
-        {asset.profile?.fuel_type&&<div><dt>유종</dt><dd>{{gasoline:'휘발유',diesel:'경유',lpg:'LPG',ev:'전기'}[asset.profile.fuel_type]||asset.profile.fuel_type}</dd></div>}
-        {asset.profile?.fuel_efficiency_kmpl!=null&&<div><dt>등록 연비</dt><dd>{asset.profile.fuel_efficiency_kmpl} km/L</dd></div>}
-      </dl>
-      </section>
-      <details className="fleet-assets-detail-section fleet-vehicle-collapse" aria-label="차량 점검 일정">
-      <summary><Icon name="wrench" size={16}/>정비·보험 일정{missingSchedules>0&&<span className="fleet-assets-detail-meta">일정 미등록 {missingSchedules}건</span>}</summary>
-      <dl className="business-detail-facts">{maintenanceScheduleFields.map(([key,label])=><div key={key}><dt>{label}</dt><dd className={!asset.profile?.[key]?'is-missing':undefined}>{asset.profile?.[key]||'일정 미등록'}</dd></div>)}<div><dt>다음 정비 주행거리</dt><dd>{Number.isFinite(asset.profile?.next_service_km)&&asset.profile.next_service_km>=0?`${asset.profile.next_service_km.toLocaleString()} km`:'미등록'}</dd></div></dl>
-      </details>
-      <section className="fleet-assets-detail-section" aria-label="단말기 통신과 위치">
-      <header><h3>단말기·위치</h3></header>
-      <dl className="business-detail-facts">
-        <div><dt>대표 단말기</dt><dd>{device.display_name}</dd></div>
-        <div><dt>단말기 통신 상태</dt><dd>{communication}</dd></div>
-        <div><dt>최근 통신</dt><dd>{device.last_seen_at?ageString(device.last_seen_at):missingReading}</dd></div>
-        <div><dt>마지막 위치 수신</dt><dd>{device.last_fix_at?kstDateTime(device.last_fix_at):missingReading}</dd></div>
-      </dl>
-      {device.source_device_id&&<BatteryStatus reading={deviceBattery(device,meta)}/>}
-      {device.source_device_id&&<BusinessMap devices={[device]}/>}
-      </section>
-      {asset.profile?.note&&<section className="fleet-assets-detail-section"><header><h3>메모</h3></header><p className="fleet-vehicle-note">{asset.profile.note}</p></section>}
       <div className="fleet-assets-detail-actions">
       <button type="button" className="business-button" onClick={onClose}>닫기</button>
       {asset.enabled&&access.write_reservations!==false&&onReserve&&<button type="button" className="business-button" onClick={()=>{onClose();onReserve(asset.id);}}><Icon name="clock" size={15}/>차량 예약</button>}

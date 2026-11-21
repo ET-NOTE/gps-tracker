@@ -6,6 +6,7 @@ import { notificationTopics } from '../../lib/fleetNotifications';
 import Icon from '../Icon';
 import { BusinessError, BusinessSection } from './BusinessWorkspace';
 import { useFleetAccess } from './FleetAccess';
+import './fleet-settings-controls.css';
 import './fleet-notifications.css';
 
 export const notificationPolicyKey = ['fleet-notification-policy'];
@@ -18,7 +19,7 @@ function Switch({label,hint,icon,checked,onChange,disabled}) {
   return <label className="fleet-notification-row">
     {icon && <span aria-hidden="true" className="fleet-notification-symbol"><Icon name={icon} size={19}/></span>}
     <span className="fleet-notification-label"><strong>{label}</strong><small>{hint}</small></span>
-    <input role="switch" aria-label={label} type="checkbox" checked={checked} disabled={disabled} onChange={e=>onChange(e.target.checked)} />
+    <input className="fleet-setting-switch" role="switch" aria-label={label} type="checkbox" checked={checked} disabled={disabled} onChange={e=>onChange(e.target.checked)} />
   </label>;
 }
 
@@ -51,14 +52,15 @@ export default function FleetNotificationSettings() {
   const selected=notificationTopics.filter(t=>p[t.key]).length;
   return <div className="fleet-notification-settings">
     <div className="fleet-notification-grid">
-      <BusinessSection title="업무 알림" description={canEdit?'변경 즉시 회사 전체에 적용됩니다.':'회사 소유자가 수신 항목을 설정합니다.'}>
-        {notificationTopics.map(({key,...topic})=><Switch key={key} {...topic} {...configure(key)}/>)}
+      <BusinessSection title="업무 알림" action={<small>{canEdit?'변경 즉시 회사 전체에 적용':'회사 소유자가 수신 항목을 설정합니다.'}</small>}>
+        <div className="fleet-notification-rows">
+        {notificationTopics.map(({key,...topic})=><Switch key={key} {...topic} {...configure(key)}/>)}</div>
       </BusinessSection>
       <div className="fleet-notification-side">
-        <BusinessSection title="수신 방법">
+        <BusinessSection title="수신 방법"><div className="fleet-notification-rows">
           <Switch label="앱 알림" hint="상단의 운영 알림에서 확인합니다." {...configure('in_app')}/>
           <Switch label="이메일" hint={p.email_mode==='preview'?'개발 메일함에서 확인합니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':p.email_available?'등록 이메일로 보냅니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':'메일 발송 서버 연결이 필요합니다.'}
-            {...configure('email')} disabled={!canEdit||save.isPending||(!p.email_available&&!p.email)}/>
+            {...configure('email')} disabled={!canEdit||save.isPending||(!p.email_available&&!p.email)}/></div>
         </BusinessSection>
         <BusinessSection title="현재 설정">
           <dl className="fleet-notification-summary"><div><dt>선택한 업무 알림</dt><dd>{selected}개</dd></div>

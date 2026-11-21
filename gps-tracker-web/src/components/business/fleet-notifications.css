@@ -1,23 +1,38 @@
-.fleet-notification-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
-.fleet-notification-settings .business-section{margin:0}
-.fleet-notification-side{display:grid;gap:18px;min-width:0}
-.fleet-notification-settings .fleet-notification-row{display:flex;align-items:center;gap:12px;margin:0;padding:16px 20px;border-top:1px solid var(--line,#e2e7ed);min-height:62px;box-sizing:border-box}
-.fleet-notification-symbol{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:#edf3fb;color:#356ca8}
-.fleet-notification-label{display:grid;gap:3px;min-width:0;flex:1;overflow-wrap:anywhere;line-height:1.5}
-.fleet-notification-label strong{font-size:16px;color:#273449}
-.fleet-notification-label small,.fleet-notification-summary dt,.fleet-mail-preview time{color:#56677d;font-size:14px}
-.fleet-notification-row input[role="switch"]{appearance:none;position:relative;flex:0 0 44px;width:44px;height:26px;min-height:0;padding:0;margin:0;border-radius:99px;border:1px solid #8797aa;background:#a6b2c1;cursor:pointer}
-.fleet-notification-row input[role="switch"]::after{content:"";position:absolute;width:18px;height:18px;top:3px;left:3px;background:#fff;border-radius:50%;box-shadow:0 1px 2px #334a6633}
-.fleet-notification-row input[role="switch"]:checked{background:#296bdb;border-color:#296bdb}
-.fleet-notification-row input[role="switch"]:checked::after{left:21px}
-.fleet-notification-row input[role="switch"]:focus-visible{outline:3px solid #184fb7;outline-offset:3px}
-.fleet-notification-row input[role="switch"]:disabled{cursor:default;opacity:.72}
-.fleet-notification-summary,.fleet-mail-preview{margin:0;padding:0 20px 12px}
-.fleet-notification-summary div,.fleet-mail-preview li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;line-height:1.5;padding:10px 0;border-top:1px solid var(--line,#e2e7ed)}
-.fleet-notification-summary dd{margin:0;font-weight:650}
-.fleet-notification-feedback,.fleet-notification-empty{margin:0;padding:14px 20px;font-size:14px}
-.fleet-notification-list .fleet-notification-link{margin-top:12px}
-.fleet-recorded-notices{padding:8px 0;border-bottom:1px solid var(--line,#e2e7ed)}
-.fleet-recorded-notices summary{padding:9px 0;cursor:pointer;font-size:15px;font-weight:650}
-@media(max-width:850px){.fleet-notification-grid{grid-template-columns:minmax(0,1fr);gap:12px}.fleet-notification-side{gap:12px}.fleet-notification-settings .fleet-notification-row{padding:14px 16px}.fleet-notification-label strong{font-size:15px}}
-@media(forced-colors:active){.fleet-notification-row input[role="switch"]{appearance:auto}}
+.fleet-notification-grid {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:start}
+.fleet-notification-side {display:grid; gap:20px; min-width:0}
+.business-workspace--corporate .business-content .fleet-notification-settings .business-section {
+  margin:0; padding:22px; border:1px solid var(--border); border-radius:15px;
+}
+.business-workspace--corporate .business-content .fleet-notification-settings .business-section-title {
+  display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:4px 10px; padding:0; margin:0 0 20px; border:0;
+}
+.business-workspace--corporate .business-content .fleet-notification-settings .business-section-title h3 {
+  font-size:15px; font-weight:500; line-height:1.55;
+}
+.fleet-notification-settings .business-section-title small {color:var(--text-3);font-size:11px}
+.fleet-notification-rows {border:1px solid var(--border); border-radius:12px; overflow:hidden}
+.fleet-notification-settings .fleet-notification-row {
+  display:flex; align-items:center; gap:10px; margin:0; padding:19px 21px; line-height:1.55; cursor:pointer;
+}
+.fleet-notification-row+.fleet-notification-row {border-top:1px solid var(--border)}
+.fleet-notification-symbol {display:inline-flex; align-items:flex-start; flex:none; align-self:flex-start; padding-top:2px; color:#8390a2}
+.fleet-notification-label {display:grid; gap:5px; min-width:0; flex:1; overflow-wrap:anywhere}
+.fleet-notification-label strong {font-size:14px; font-weight:400; color:var(--text)}
+.fleet-notification-label small {font-size:10px; font-weight:400; color:#929aa7}
+.fleet-notification-summary,.fleet-mail-preview {margin:0; padding:0}
+.fleet-notification-summary div,.fleet-mail-preview li {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;line-height:1.55;padding:12px 0;border-bottom:1px solid var(--border)}
+.fleet-notification-summary dt,.fleet-mail-preview time {color:var(--text-3);font-size:12px}
+.fleet-notification-summary dd {margin:0;font-size:12px;font-weight:400}
+.fleet-notification-feedback,.fleet-notification-empty {margin:0;padding:14px 0;font-size:13px}
+.fleet-notification-list .fleet-notification-link {margin-top:12px}
+.fleet-recorded-notices {padding:8px 0;border-bottom:1px solid var(--border)}
+.fleet-recorded-notices summary {padding:9px 0;cursor:pointer;font-size:15px;font-weight:650}
+@media(max-width:900px) {
+  .fleet-notification-grid {grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:760px) {
+  .business-workspace--corporate .business-content .fleet-notification-settings .business-section {padding:17px}
+  .fleet-notification-settings .fleet-notification-row {padding:16px; align-items:flex-start}
+}
+.business-workspace--corporate .business-content .fleet-notification-settings .business-section-title h3 {margin:0}

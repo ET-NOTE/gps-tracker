@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import Icon from '../Icon';
 import BusinessDrawer from './BusinessDrawer';
-import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope} from './WorkspaceHeader';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import './corporate-mobile-shell.css';
 
-export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onTab, toolbar, destinations, onNavigate, onQuick }) {
+export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onTab, toolbar, destinations, onNavigate, onQuick, company, wide, onWidth }) {
   const [panel, setPanel] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const groupId = active.group || active.id;
@@ -32,11 +32,13 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
       <button type="button" className="ws-icon ws-menu" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'navigation'} onClick={openMenu}><Icon name="menu" size={17}/></button>
       <WorkspaceBreadcrumb service="법인운행" group={group.label} page={crumb}/>
       <WorkspaceScope/>
+      {onWidth && <WorkspaceWidthControl className="fleet-width" wide={wide} onChange={onWidth}/>}
       <button type="button" className="ws-wide-search" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={16}/></button>
       {onNavigate && map && <button type="button" className="ws-icon ws-secondary" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={16}/></button>}
+      <button type="button" className="ws-icon" aria-label="운영 알림" onClick={()=>onQuick('alerts')}><Icon name="bell" size={17}/></button>
       <WorkspaceAvatar label="회사 및 계정 메뉴" expanded={panel==='account'} onClick={()=>setPanel('account')}/>
     </header>
-    {panel === 'navigation' && <BusinessDrawer title="전체 메뉴" navigation onClose={close}>
+    {panel === 'navigation' && <BusinessDrawer title="법인운행" subtitle={company && company+' · 업무 공간'} navigation onHome={()=>visit(tabs[0].id)} onClose={close}>
       <nav className="corporate-phone-links" aria-label="법인차 화면 이동">
         {groupsToShow.map(item => {
           const pages = tabs.filter(t => (t.group || t.id) === item.id);
@@ -47,7 +49,7 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
           const open = expanded === item.id;
           return <div key={item.id}>
             <button type="button" className="corporate-phone-destination"
-              aria-current={!nested && groupId === item.id ? 'page' : undefined}
+              data-active={groupId === item.id} aria-current={!nested && groupId === item.id ? 'page' : undefined}
               aria-expanded={nested ? open : undefined}
               onClick={() => nested ? setExpanded(open ? null : item.id) : visit(links[0].pageId, links[0].sectionId)}>
               <Icon name={item.id === 'vehicles' ? 'car' : item.icon} size={20}/><span>{item.label}</span>
@@ -62,6 +64,8 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
         })}
       </nav>
       {onNavigate && map && <button type="button" className="corporate-phone-map" onClick={() => leave(map.id)}><Icon name="mapPin" size={20}/>{map.label}</button>}
+      <button type="button" className="ws-nav-search" onClick={()=>{close();onQuick('search');}}><Icon name="search" size={17}/>차량·메뉴 검색</button>
+      {onNavigate && <button type="button" className="ws-nav-account" onClick={()=>setPanel('account')}><Icon name="user" size={16}/>회사 및 계정 메뉴</button>}
     </BusinessDrawer>}
     {panel === 'account' && <BusinessDrawer title="회사 및 계정" onClose={close}>
       <div className="corporate-phone-account">{toolbar}
