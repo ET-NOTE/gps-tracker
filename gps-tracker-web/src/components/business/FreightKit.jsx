@@ -61,8 +61,8 @@ export function FreightOptions({rows,blank,label='name'}){
 export function FreightStageChart({ships}) {
   const counts = Object.entries(shipStates).filter(([status])=>status!=='cancelled').map(([status,label])=>({status,label,count:ships.filter(s=>s.status===status).length}));
   const max = Math.max(1,...counts.map(item=>item.count));
-  return <div className="fr-stage-chart" aria-label="운송 단계별 건수">
-    {counts.map(({status,label,count})=><div key={status}><span>{count}건</span>
-      <div className="fr-stage-track" aria-hidden="true"><i style={{height: (100*count/max)+'%'}}/></div><small>{label}</small></div>)}
-  </div>;
+  return <ul className="fr-stage-chart" aria-label="운송 단계별 건수">
+    {counts.map(({status,label,count})=><li key={status}><span>{label}</span><span>{count}건</span>
+      <div className="fr-stage-track" aria-hidden="true"><i style={{width: (100*count/max)+'%'}}/></div></li>)}
+  </ul>;
 }

@@ -18,8 +18,13 @@ export function recordLimit(c, kind) {
   if (!c) return 0;
   if (kind === 'refund') return c.paid_krw;
   if (kind === 'deposit_out') return c.held_krw;
-  if (c.status === 'cancelled') return 0;
+  if (c.status === 'cancelled') return kind==='payment' ? Math.max(0,(c.cancellation_fee_krw ?? 0)-c.paid_krw) : 0;
   return Math.max(0, kind === 'payment' ? c.billed_krw-c.paid_krw : c.deposit_krw-c.held_krw);
+}
+export function suggestedRecordAmount(c,kind) {
+  const limit = recordLimit(c,kind);
+  if (kind==='refund' && c && c.paid_krw>c.billed_krw) return Math.min(limit,c.paid_krw-c.billed_krw);
+  return limit;
 }
 const normalizedPhone = phone => (phone || '').replace(/\D/g,'');
 export function matchOfficeCustomer(c, catalog) {

@@ -42,7 +42,65 @@ pub(super) fn router() -> Router<AppState> {
         .route("/rentcar/operating-policy", get(get_policy).put(save_policy))
         .route("/rentcar/contracts/:id/review", post(review))
         .route("/rentcar/contracts/:id/checkout", post(checkout))
+        .route("/rentcar/contracts/:id/cancel", post(cancel))
         .route("/rentcar/contracts/:id/balance", get(balance))
+        .route("/rentcar/contracts/:id/history", get(history))
+}
+
+async fn history(
+    State(s): State<AppState>, user: AuthUser, Path(id): Path<i64>,
+    scope: Option<axum::Extension<crate::auth::fleet::FleetScope>>,
+) -> AppResult<Json<Value>> {
+    if scope.is_some() { return Err(AppError::Forbidden); }
+    let entries = sqlx::query_scalar(include_str!("contract_history.sql"))
+        .bind(user.user_id).bind(id).fetch_optional(&s.db).await?.ok_or(AppError::NotFound)?;
+    Ok(Json(entries))
+}
+
+#[derive(Deserialize)]
+struct Cancellation {
+    outcome: String,
+    reason: String,
+    fee_krw: i64,
+    request_key: uuid::Uuid,
+}
+
+async fn cancel(
+    State(s): State<AppState>, u: RentalOwner, Path(id): Path<i64>, Json(input): Json<Cancellation>,
+) -> AppResult<Json<Contract>> {
+    let reason = input.reason.trim();
+    if !matches!(input.outcome.as_str(),"cancelled"|"no_show") || !(1..=500).contains(&reason.chars().count())
+        || !(0..=1_000_000_000).contains(&input.fee_krw) {
+        return Err(AppError::BadRequest("처리 구분, 사유(1~500자)와 취소 수수료를 확인해 주세요.".into()));
+    }
+    let mut tx = s.db.begin().await?;
+    owner_lock(&mut tx,u.user_id).await?;
+    let row = lock_contract(&mut tx,u.user_id,id).await?;
+    let request_key = input.request_key.to_string();
+    let previous: Option<i64> = sqlx::query_scalar(
+        "SELECT id FROM rental_contracts WHERE user_id=$1 AND cancellation_request_key=$2::text::uuid")
+        .bind(u.user_id).bind(&request_key).fetch_optional(&mut *tx).await?;
+    if let Some(previous) = previous {
+        let terms = row.rental_terms.as_ref();
+        if previous==id && row.status=="cancelled" &&
+            terms.is_some_and(|t|t["cancel_outcome"]==input.outcome && t["cancel_reason"]==reason &&
+                t["cancellation_fee_krw"]==input.fee_krw) {
+            tx.commit().await?;
+            return Ok(Json(row));
+        }
+        return Err(AppError::Conflict("이미 처리에 사용된 요청 키입니다.".into()));
+    }
+    if row.status!="draft" {
+        return Err(AppError::Conflict("인도 전 예약만 취소 또는 미방문 처리할 수 있습니다.".into()));
+    }
+    let decision = json!({"cancel_outcome":input.outcome,"cancel_reason":reason,
+        "cancellation_fee_krw":input.fee_krw,"cancelled_at":Utc::now()});
+    sqlx::query("UPDATE rental_contracts SET status='cancelled', cancellation_request_key=$3::text::uuid,
+        rental_terms=COALESCE(rental_terms,'{}'::jsonb) || $4,updated_at=now() WHERE id=$1 AND user_id=$2")
+        .bind(id).bind(u.user_id).bind(request_key).bind(decision).execute(&mut *tx).await?;
+    let saved = lock_contract(&mut tx,u.user_id,id).await?;
+    tx.commit().await?;
+    Ok(Json(saved))
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -130,14 +188,11 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
                         let valid:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM rental_office_catalog WHERE id=$1 AND user_id=$2 AND kind='customers' AND active)")
                             .bind(v).bind(owner).fetch_one(&mut **tx).await?;
                         if !valid {return Err(AppError::BadRequest("선택한 고객을 확인해 주세요.".into()));}
-                        terms["confirmed_at"]=Value::Null;
-                        if key=="driver_id" {terms["license_checked"]=json!(false);}
                     }
                 }
                 terms[key]=json!(selected);
             }
             let driver = fields.driver_name.trim();
-            if terms["driver_name"].as_str() != Some(driver) { terms["license_checked"] = json!(false); }
             terms["driver_name"] = json!(driver);
             terms["requested_model"] = json!(fields.requested_model.trim());
             terms["channel"] = json!(fields.channel.trim());
@@ -159,12 +214,16 @@ pub(super) async fn prepare_booking(tx: &mut Transaction<'_, Postgres>, owner: i
         }
         check_capacity(tx,owner,id,terms["requested_model"].as_str().unwrap_or(""),req.starts_at,req.ends_at,p.buffer_minutes,req.pickup_location.as_deref()).await?;
         if let Some(c)=&current {
-            if c.renter_phone!=req.renter_phone || c.starts_at!=req.starts_at || c.ends_at!=req.ends_at || c.device_id!=req.device_id ||
-                c.renter_name!=req.renter_name.trim() || c.rate_type!=req.rate_type.as_deref().unwrap_or("daily") ||
+            let identity_changed = c.renter_name != req.renter_name.trim() || c.renter_phone != req.renter_phone ||
+                c.renter_id_last4 != req.renter_id_last4 || ["customer_id","driver_id","driver_name"].iter().any(|key|
+                    old_terms.and_then(|t|t.get(*key)).unwrap_or(&Value::Null) != &terms[*key]);
+            if identity_changed { terms["license_checked"] = json!(false); }
+            if identity_changed || c.starts_at!=req.starts_at || c.ends_at!=req.ends_at || c.device_id!=req.device_id ||
+                c.rate_type!=req.rate_type.as_deref().unwrap_or("daily") ||
                 c.rate_amount_krw!=req.rate_amount_krw.unwrap_or(0) || c.deposit_krw!=req.deposit_krw.unwrap_or(0)
                 || c.pickup_location!=req.pickup_location || c.return_location!=req.return_location ||
                 c.included_km_per_day!=req.included_km_per_day || c.over_km_price_krw!=req.over_km_price_krw ||
-                old_terms.map(|v| &v["driver_name"])!=Some(&terms["driver_name"]) {
+                old_terms.and_then(|v| v["requested_model"].as_str())!=terms["requested_model"].as_str() {
                 terms["confirmed_at"]=Value::Null;
             }
         }
@@ -196,12 +255,17 @@ async fn review(State(s): State<AppState>, u: RentalOwner, Path(id): Path<i64>, 
     if c.status!="draft" { return Err(AppError::Conflict("출고 전 예약만 확인할 수 있습니다.".into())); }
     if input.template_body.as_ref().is_some_and(|v|v.chars().count()>20000) { return Err(AppError::BadRequest("계약 내용이 너무 깁니다.".into())); }
     terms["license_checked"]=json!(input.license_checked);
-    terms["confirmed_at"]=json!(input.contract_confirmed.then(Utc::now));
     // Keep the contact in its existing retention-managed field. Saved template text uses a reference.
     let snapshot=input.template_body.map(|body|match c.renter_phone.as_deref().filter(|s|!s.is_empty()) {
         Some(phone)=>body.replace(phone,"{{고객연락처}}"),None=>body
     });
-    terms["template_body"]=json!(snapshot);
+    let snapshot = json!(snapshot);
+    if !input.contract_confirmed {
+        terms["confirmed_at"] = Value::Null;
+    } else if terms["confirmed_at"].is_null() || terms["template_body"] != snapshot {
+        terms["confirmed_at"] = json!(Utc::now());
+    }
+    terms["template_body"]=snapshot;
     sqlx::query("UPDATE rental_contracts SET rental_terms=$1,updated_at=now() WHERE id=$2 AND user_id=$3")
         .bind(&terms).bind(id).bind(u.user_id).execute(&mut *tx).await?;
     tx.commit().await?;

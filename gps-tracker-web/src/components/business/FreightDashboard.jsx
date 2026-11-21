@@ -59,7 +59,12 @@ function DashboardView({data,devices,onPage,actions}) {
     ['devices','단말 수신 확인',delayed,'cargo-devices','antenna'],
   ];
   const count=tasks.reduce((sum,[,,items])=>sum+items.length,0);
-  const metrics=[['today','오늘 주문',todayOrders.length],['unassigned','미배차',unassigned.length],['moving','상차·운송 중',moving.length],['attention','확인할 업무',count]];
+  const metrics=[
+    ['today','오늘 주문',todayOrders.length,'오늘 상차 예정'],
+    ['unassigned','미배차',unassigned.length,'차량·기사 배정 필요'],
+    ['moving','상차·운송 중',moving.length,'현재 진행 중인 운송'],
+    ['attention','확인할 업무',count,'수락·증빙·지연·수신'],
+  ];
   const taskButtons=<div className="fr-dashboard-tasks">{tasks.map(([id,label,items,,icon])=><button type="button" className="fr-task" key={id} onClick={()=>setView(id)}>
     <i><Icon name={icon} size={16}/></i><span>{label}</span><FreightBadge tone={items.length?'amber':'neutral'}>{items.length}건</FreightBadge>
   </button>)}</div>;
@@ -68,8 +73,9 @@ function DashboardView({data,devices,onPage,actions}) {
   const rows=selectedTask?.[2]||({today:todayOrders,unassigned,moving,schedule}[view]);
   const open=(kind,id)=>{setView('');actions.open(kind,id);};
   return <div className="fr-page fr-dashboard">
-    <div className="fr-stats fr-summary" aria-label="화물배차 요약">{metrics.map(([key,label,value])=><button type="button" className="fr-metric" key={key} aria-label={label+' '+value+'건 더보기'} onClick={()=>setView(key)}>
+    <div className="fr-stats fr-summary" aria-label="화물배차 요약">{metrics.map(([key,label,value,note])=><button type="button" className="fr-metric" key={key} aria-label={label+' '+value+'건 더보기'} onClick={()=>setView(key)}>
       <span>{label}<small>더보기 ›</small></span><strong>{value}<em>건</em></strong>
+      <span className="fr-metric-note">{note}</span>
     </button>)}</div>
     <div className="fr-toolbar fr-dashboard-tools"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
       <div className="fr-actions"><FreightButton onClick={()=>onPage('cargo-live')} icon="map">실시간 관제</FreightButton><FreightButton primary icon="plus" onClick={()=>actions.form('new','orders')}>주문 등록</FreightButton></div>

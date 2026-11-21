@@ -12,6 +12,7 @@ export const fleetWorkKey = () => [authScope(), 'rental-fleet-work'];
 
 function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) {
   const start = Date.now();
+  const [requestKey] = useState(() => incident && !initial ? crypto.randomUUID() : undefined);
   const [form, setForm] = useState(() => ({
     device: String(initial?.device_id || devices[0]?.id || ''), contract: String(initial?.contract_id || ''),
     kind: initial?.kind || (incident ? 'accident' : 'cleaning'), note: initial?.note || '',
@@ -28,6 +29,7 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
     setBusy(true); setError('');
     try {
       const result = await api.saveRentalFleetWork(initial?.id, {
+        request_key: requestKey,
         device_id: Number(form.device), contract_id: form.contract ? Number(form.contract) : null,
         kind: form.kind, starts_at: new Date(form.from + ':00+09:00').toISOString(),
         ends_at: incident ? null : new Date(form.to + ':00+09:00').toISOString(), note: form.note.trim(),

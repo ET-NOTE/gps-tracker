@@ -61,6 +61,7 @@ Object.assign(api, {
   getRentcarSubscription: read({active:true,price_krw:30000,expires_at:new Date(now+86400000*20).toISOString()}),
   fleetTripStats: read({per_device: devices.map(d => ({device_id:d.id,total_distance_m:123000,today_distance_m:32000,today_fix_count:30,today_last_fix_at:new Date(now).toISOString()}))}),
   listTrips: read(empty ? [] : [{ started_at: at('09'), ended_at: at('10'), duration_min:60, distance_m:12000, annotation:{purpose:'business',driver_staff_id:1,driver_name:'미리보기 운전자',fuel_cost:50000} }, {started_at:at('11'),ended_at:at('12'),duration_min:60,distance_m:6000,annotation:null}]),
+  rentalHistory: read([]),
   listRentalPhotos: async id => { if (window.__photoListError) throw Error('사진 목록 조회 오류'); return [...(photos.get(Number(id)) || [])]; },
   uploadRentalPhoto: async (id, body) => { window.__photoCalls.push({ action:'upload', id, body }); if (!params.has('photo-write') || window.__photoFailure) throw Error('미리보기 사진 저장 실패'); await new Promise(resolve=>setTimeout(resolve,100)); const photo={id:nextPhotoId++,contract_id:id,kind:body.kind,uploaded_at:new Date().toISOString()}; photos.set(Number(id),[...(photos.get(Number(id))||[]),photo]); photoBytes.set(photo.id,body.data_url); return photo; },
   deleteRentalPhoto: async id => { window.__photoCalls.push({ action:'delete', id }); if (!params.has('photo-write') || window.__photoFailure) throw Error('미리보기 사진 삭제 실패'); for(const [key,list] of photos)photos.set(key,list.filter(p=>p.id!==id)); photoBytes.delete(id); },
@@ -112,6 +113,14 @@ if ((params.get('kind') || 'rental') === 'rental' && !params.has('account')) {
     listRentals:async()=>{if(failed)throw Error('미리보기 조회 실패');return rentals.map(c=>({...c}));},
     createRental:async body=>{const next=writeRental({id:Math.max(0,...rentals.map(c=>c.id))+1},body);rentals.push(next);return next;},
     updateRental:async (id,body)=>writeRental(findRental(id),body),
+    cancelRental:async (id,body)=>{
+      const contract=findRental(id);
+      if(contract.status!=='draft')throw Error('출고 전 예약만 취소할 수 있습니다.');
+      contract.status='cancelled';
+      contract.rental_terms={...contract.rental_terms,cancel_outcome:body.outcome,cancel_reason:body.reason,
+        cancellation_fee_krw:body.fee_krw,cancelled_at:new Date().toISOString()};
+      return {...contract};
+    },
     reviewRental:async (id,input)=>{const c=findRental(id);Object.assign(c.rental_terms,{license_checked:input.license_checked,confirmed_at:input.contract_confirmed?new Date().toISOString():null,template_body:input.template_body});return c.rental_terms;},
     checkoutRental:async (id,input)=>{const c=findRental(id);if (!c.device_id || c.status!=='draft')throw Error('출고 대기 차량을 배정해 주세요.');c.status='active';c.pickup_odometer_km=input.odometer_km;c.rental_terms.pickup_fuel=input.fuel_percent;return {ok:true};},
     rentalBalance:read({paid_krw:0,held_krw:0}),checkBlacklist:read({blacklisted:false,visits:0}),

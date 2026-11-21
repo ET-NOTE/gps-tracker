@@ -528,6 +528,8 @@ async fn update_contract(
     // [뿌리 A] device 락 하에 겹침 검사(자기 자신 제외) + UPDATE 원자화
     let mut tx = state.db.begin().await?;
     let terms = workflow::prepare_booking(&mut tx, user.user_id, &req, Some(id), &status).await?;
+    // Distinguish human edits from automatic expiry and privacy retention updates.
+    sqlx::query("SET LOCAL seriallink.rental_contract_edit = 'on'").execute(&mut *tx).await?;
     let row: Option<Contract> = sqlx::query_as(SQL_UPDATE)
         .bind(id)
         .bind(user.user_id)
@@ -1474,15 +1476,12 @@ async fn issue_handoff_token(
         .expires_hours
         .unwrap_or(HANDOFF_DEFAULT_TTL_HOURS)
         .clamp(1, 720);
-    // 소유권 확인
-    let owner_check: Option<i64> =
-        sqlx::query_scalar("SELECT user_id FROM rental_contracts WHERE id = $1")
-            .bind(contract_id)
-            .fetch_optional(&state.db)
-            .await?;
-    match owner_check {
-        Some(uid) if uid == user.user_id => {}
-        _ => return Err(AppError::NotFound),
+    let mut tx = state.db.begin().await?;
+    let status: String = sqlx::query_scalar(
+        "SELECT status FROM rental_contracts WHERE id=$1 AND user_id=$2 FOR UPDATE")
+        .bind(contract_id).bind(user.user_id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
+    if status=="cancelled" {
+        return Err(AppError::Conflict("취소 또는 미방문 처리한 예약에는 인수·반납 링크를 발급할 수 없습니다.".into()));
     }
     let token = generate_handoff_token();
     let expires_at = Utc::now() + chrono::Duration::hours(hours);
@@ -1492,7 +1491,8 @@ async fn issue_handoff_token(
            RETURNING id, contract_id, user_id, purpose, token, created_at, expires_at, used_at, revoked_at"#,
     )
     .bind(contract_id).bind(user.user_id).bind(&req.purpose).bind(&token).bind(expires_at)
-    .fetch_one(&state.db).await?;
+    .fetch_one(&mut *tx).await?;
+    tx.commit().await?;
     Ok(Json(row))
 }
 
@@ -1573,7 +1573,8 @@ async fn load_handoff_by_token(pool: &sqlx::PgPool, token: &str) -> AppResult<Ha
         pickup_odometer_km: Option<i32>,
     }
     let r: Option<Row> = sqlx::query_as(
-        r#"SELECT t.contract_id, t.user_id, t.purpose, t.expires_at, t.used_at, t.revoked_at,
+        r#"SELECT t.contract_id, t.user_id, t.purpose, t.expires_at, t.used_at,
+                  COALESCE(t.revoked_at,CASE WHEN c.status='cancelled' THEN c.updated_at END) AS revoked_at,
                   d.display_name AS device_name, d.license_plate,
                   c.renter_name, c.starts_at, c.ends_at, c.rate_type, c.rate_amount_krw,
                   c.deposit_krw, c.pickup_odometer_km

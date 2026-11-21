@@ -12,7 +12,9 @@ WITH period AS (
            c.pickup_location,c.return_location,c.deposit_krw,c.rental_terms->>'requested_model' AS requested_model,
            c.rental_terms->'customer_id' AS customer_id,
            coalesce(nullif(d.license_plate,''),nullif(d.display_name,'')) AS vehicle_name,
-           rental_office_fee(c.status,c.settled_amount_krw,c.starts_at,c.ends_at,c.rate_type,c.rate_amount_krw) AS billed_krw,
+           CASE WHEN c.cancellation_request_key IS NOT NULL THEN c.rental_terms->>'cancel_outcome' END AS cancel_outcome,
+           CASE WHEN c.cancellation_request_key IS NOT NULL THEN (c.rental_terms->>'cancellation_fee_krw')::bigint END AS cancellation_fee_krw,
+           rental_office_contract_fee(c) AS billed_krw,
            balances.paid_krw,balances.held_krw
     FROM rental_contracts c CROSS JOIN period p
     LEFT JOIN gps_read_devices d ON d.id=c.device_id AND d.owner_id=c.user_id
@@ -23,7 +25,8 @@ WITH period AS (
     ) balances
     WHERE c.user_id=$1 AND ((c.starts_at<p.hi AND greatest(c.ends_at,coalesce(c.returned_at,c.ends_at),
         CASE WHEN c.status IN ('active','overdue') THEN current_timestamp ELSE c.ends_at END)>p.lo)
-        OR c.id IN (SELECT contract_id FROM entries))
+        OR c.id IN (SELECT contract_id FROM entries)
+        OR (c.cancellation_request_key IS NOT NULL AND c.updated_at>=p.lo AND c.updated_at<p.hi))
 ), costs AS (
     SELECT id,device_id,vehicle_name,occurred_on,category,amount_krw,vendor,memo,revision
     FROM rental_office_costs WHERE user_id=$1 AND occurred_on BETWEEN $2 AND $3

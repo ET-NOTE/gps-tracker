@@ -40,7 +40,7 @@ export function PlatformRail({ view, availableServices = [], servicePaths = {}, 
     </nav>
     <div className="pt-rail-foot">
       <button type="button" className="pt-rail-link" onClick={() => setHelp(true)}><Icon name="info"/><span>도움말</span></button>
-      {onLogout && <button type="button" className="pt-rail-link" onClick={() => { clearTokens(); onLogout(); }}><Icon name="power"/><span>로그아웃</span></button>}
+      {onLogout && <button type="button" className="pt-rail-link" onClick={() => { clearTokens(); onLogout(); }}><Icon name="logout"/><span>로그아웃</span></button>}
     </div>
     <Modal open={help} onClose={() => setHelp(false)} title="이용 도움말">
       <dl className="pt-help"><dt>지도 홈</dt><dd>단말기를 선택해 마지막 위치와 이동 기록을 확인하세요.</dd><dt>단말기</dt><dd>단말기를 등록하고 통신 상태와 배터리를 확인하세요.</dd><dt>이용 서비스</dt><dd>내정보에서 업무 서비스와 로그인 후 시작 화면을 설정하세요.</dd></dl>

@@ -35,7 +35,7 @@ export default function RentalStageTable({stage, rows, now, balances, devices, c
       <>{c.renter_name}<small>{c.rental_terms?.driver_name && c.rental_terms.driver_name!==c.renter_name ? '운전자 '+c.rental_terms.driver_name : c.renter_phone}</small></>, vehicleCell];
     const period=<>{kstDateTime(c.starts_at)}<small>~ {kstDateTime(c.ends_at)}</small></>;
     const badge=<StageBadge contract={c} now={now}/>, payment=<PaymentBadge balance={balance}/>;
-    const bill=balance ? won(balance.billed_krw) : won(agreementTotal(c));
+    const bill=won(balance?.billed_krw ?? (c.status==='cancelled' ? c.rental_terms?.cancellation_fee_krw ?? 0 : agreementTotal(c)));
     const button=(label,kind)=><BusinessButton onClick={()=>kind?onAction(kind,c):onDetail(c)}>{label}</BusinessButton>;
     if (stage==='contracts') return [...head,period,c.rental_terms?.confirmed_at?'확인 완료':'확인 전',<>{bill}<small>{balance ? '미수 '+won(Math.max(0,balance.billed_krw-balance.paid_krw)) : '미수금 확인 전'}</small></>,badge];
     if (stage==='dispatch') return [...head,period,c.pickup_location || '—',badge,button(c.status==='draft'?'차량 배정':'상세',c.status==='draft'?'edit':null)];

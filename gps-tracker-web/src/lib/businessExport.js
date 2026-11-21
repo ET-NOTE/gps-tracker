@@ -62,7 +62,8 @@ export function rentalReport(contracts, { settlement = false, filterText = '', n
   const selected = settlement ? contracts.filter(c => c.status === 'returned') : contracts;
   const rows = selected.map(c => ({
     id: c.id, vehicle: c.license_plate || c.device_name || (c.device_id == null ? `미배정 · ${c.rental_terms?.requested_model || "차종 미지정"}` : `차량 ${c.device_id}`), renter: c.renter_name,
-    start: kstDateTime(c.starts_at), end: kstDateTime(c.ends_at), status: statusLabel[rentalStatus(c, now)] || c.status,
+    start: kstDateTime(c.starts_at), end: kstDateTime(c.ends_at), status: c.status==='cancelled' && c.rental_terms?.cancel_outcome==='no_show' ? '미방문' : statusLabel[rentalStatus(c, now)] || c.status,
+    cancellation: money(c.rental_terms?.cancellation_fee_krw),
     deposit: money(c.deposit_krw), amount: money(c.settled_amount_krw), settled: kstDateTime(c.settled_at),
     base: money(c.base_fee_krw), late: money(c.late_fee_krw), excess: money(c.over_km_fee_krw), extra: money(c.extra_fee_krw),
     refund: money(c.refund_krw ?? (c.settled_amount_krw == null ? null : num(c.deposit_krw) - num(c.settled_amount_krw))), note: c.note || '',
@@ -71,7 +72,7 @@ export function rentalReport(contracts, { settlement = false, filterText = '', n
   const common = [column('id','계약 번호'),column('vehicle','차량'),column('renter','임차인')];
   const columns = settlement
     ? [...common,column('settled','정산 일시'),column('base','기본료(원)',true),column('late','지연료(원)',true),column('excess','초과 거리(원)',true),column('extra','기타(원)',true),column('deposit','보증금(원)',true),column('amount','정산액(원)',true),column('refund','환급/추가 청구(원)',true),column('note','메모')]
-    : [...common,column('start','대여 시작'),column('end','반납 예정'),column('status','상태'),column('deposit','보증금(원)',true),column('amount','정산액(원)',true),column('note','메모')];
+    : [...common,column('start','대여 시작'),column('end','반납 예정'),column('status','상태'),column('deposit','보증금(원)',true),column('amount','정산액(원)',true),column('cancellation','취소 수수료(원)',true),column('note','메모')];
   return { title, filename: `${title.replaceAll(' ','_')}_${businessDate(now)}`, meta: [filterText, '일시: 한국 시간(KST)', ...(settlement ? ['환급은 양수, 추가 청구는 음수입니다.'] : [])].filter(Boolean),
     summary: `${rows.length}건 · ${settlement ? '정산 합계' : '반납 완료 계약 정산 합계'} ${selected.filter(c=>c.status==='returned').reduce((s,c)=>s+num(c.settled_amount_krw),0).toLocaleString('ko-KR')}원`, columns, rows };
 }

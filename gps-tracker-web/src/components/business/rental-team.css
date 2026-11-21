@@ -5,6 +5,8 @@
 .rnt-team article>div {min-width:0}.rnt-team article small {display:block;font-size:13px;color:var(--text-2);margin-top:5px}
 .rnt-team article strong,.rnt-team article small {overflow-wrap:anywhere}
 .rnt-team article .business-button+.business-button {margin-left:6px}
+.rnt-staff-actions {display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rnt-team .rnt-staff-actions .business-button+.business-button {margin-left:0}
 .rnt-team-form {display:grid;gap:14px;color:var(--text)}
 .rnt-team-form label,.rnt-company-choice {display:grid;gap:5px;font-size:14px}
 .rnt-team-form input:not([type=checkbox]),.rnt-team-form select,.rnt-team-form textarea,.rnt-company-choice select {width:100%;box-sizing:border-box;min-height:42px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:inherit;color:var(--text);background:var(--surface)}

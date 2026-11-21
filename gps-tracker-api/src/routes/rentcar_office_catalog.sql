@@ -9,7 +9,7 @@ WITH masters AS (
 ), contracts AS (
     SELECT c.id, coalesce((c.rental_terms->>'customer_id')::bigint,matched.id) AS customer_id,
            (c.rental_terms->>'driver_id')::bigint AS driver_id,
-           greatest(0,rental_office_fee(c.status,c.settled_amount_krw,c.starts_at,c.ends_at,c.rate_type,c.rate_amount_krw)
+           greatest(0,rental_office_contract_fee(c)
              -coalesce(p.paid,0)) AS outstanding
     FROM rental_contracts c LEFT JOIN payments p ON p.contract_id=c.id
     LEFT JOIN customers matched ON c.rental_terms->>'customer_id' IS NULL

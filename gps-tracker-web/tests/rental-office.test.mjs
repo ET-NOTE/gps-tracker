@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {dailyFigures,fillTemplate,initialPeriod,kstDay,matchOfficeCustomer,periodOk,recordLimit,vehicleUsage} from '../src/lib/rentalOffice.js';
+import {dailyFigures,fillTemplate,initialPeriod,kstDay,matchOfficeCustomer,periodOk,recordLimit,suggestedRecordAmount,vehicleUsage} from '../src/lib/rentalOffice.js';
 
 test('Korean ledger dates separate rent fees, refunds and deposits',()=>{
   const book={entries:[
@@ -17,6 +17,9 @@ test('contract payment and deposit ceilings remain independent including cancell
   const c={status:'active',billed_krw:50000,paid_krw:12000,deposit_krw:20000,held_krw:8000};
   assert.deepEqual(['payment','refund','deposit_in','deposit_out'].map(k=>recordLimit(c,k)),[38000,12000,12000,8000]);
   assert.deepEqual(['payment','refund','deposit_in','deposit_out'].map(k=>recordLimit({...c,status:'cancelled'},k)),[0,12000,0,8000]);
+  const noShow={...c,status:'cancelled',cancel_outcome:'no_show',cancellation_fee_krw:15000,billed_krw:15000};
+  assert.deepEqual(['payment','refund','deposit_in','deposit_out'].map(k=>recordLimit(noShow,k)),[3000,12000,0,8000]);
+  assert.equal(suggestedRecordAmount({...noShow,paid_krw:20000},'refund'),5000);
 });
 test('actual overlapping rental hours are counted only once, clipped to KST window and today',()=>{
   const book={entries:[],costs:[],contracts:[

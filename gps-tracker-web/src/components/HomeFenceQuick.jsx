@@ -318,7 +318,7 @@ function FenceList({ fences, devices, mapRef, onChange, bottomLift, side = 'left
     : { left: dateBoxPresent ? 116 : 8, bottom: `calc(${bottomLift}px + 8px)`,
         maxHeight: dateBoxPresent ? 'calc(100% - 300px)' : 'calc(100% - 220px)' };
   return (
-    <div className="pt-fence-list" style={{ ...ls.wrap, ...positionStyle }}>
+    <div className="pt-fence-list" style={{ ...ls.wrap, ...positionStyle, width: open ? 230 : 'max-content' }}>
       <button className="pt-fence-heading" type="button" aria-expanded={open} onClick={() => setOpen(value => !value)}>
         <Icon name="fence" size={11} style={{ color: 'var(--text-3)' }} />
         <span>펜스 목록 ({fences.length})</span><Icon name={open ? 'chevron-up' : 'chevron-down'} size={13}/>
@@ -461,8 +461,7 @@ const cs = {  // creator
 const ls = {  // list — left/right/bottom/maxHeight 은 side 별로 inline 으로 주입.
   wrap: {
     position: 'absolute',
-    width: 230, maxWidth: 'calc(100% - 100px)',
-    minHeight: 60,
+    maxWidth: 'calc(100% - 100px)',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 8,

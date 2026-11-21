@@ -3,7 +3,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {Button,Modal} from '../ui';
 import {api} from '../../api';
 import {Field,FormModal,Metrics,Options,Search,Table,Toolbar} from './RentalOfficeKit';
-import {costKinds,dailyFigures,entryKinds,kstDay,kstInput,matchOfficeCustomer,methods,readTime,recordLimit,vehicleUsage,won} from '../../lib/rentalOffice';
+import {costKinds,dailyFigures,entryKinds,kstDay,kstInput,matchOfficeCustomer,methods,readTime,recordLimit,suggestedRecordAmount,vehicleUsage,won} from '../../lib/rentalOffice';
 import ExportButtons from './ExportButtons';
 import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
 import RentalOfficeCharts from './RentalOfficeCharts';
@@ -16,7 +16,7 @@ export function LedgerEditor({book,initial,close}) {
   const qc=useQueryClient(),kind0=initial.kind||'payment';
   const c0=initial.contract||book.contracts.find(c=>recordLimit(c,kind0)>0)||book.contracts[0];
   const [id,setId]=useState(c0?.id),[kind,setKind]=useState(kind0),[method,setMethod]=useState('card');
-  const [amount,setAmount]=useState(recordLimit(c0,kind0)),[at,setAt]=useState(()=>kstInput()),[memo,setMemo]=useState('');
+  const [amount,setAmount]=useState(suggestedRecordAmount(c0,kind0)),[at,setAt]=useState(()=>kstInput()),[memo,setMemo]=useState('');
   const [key]=useState(()=>crypto.randomUUID());
   const c=book.contracts.find(c=>c.id===Number(id)),max=recordLimit(c,kind);
   async function save(){
@@ -24,9 +24,9 @@ export function LedgerEditor({book,initial,close}) {
     await Promise.all([qc.invalidateQueries({queryKey:officeBookKey()}),qc.invalidateQueries({queryKey:officeCatalogKey(true)})]);
   }
   return <FormModal title="결제 기록" onClose={close} save={save} canSave={!!c&&max>0&&Number(amount)>0&&Number(amount)<=max}>
-    <Field label="예약·계약" wide><select value={id??''} required onChange={e=>{const next=book.contracts.find(r=>r.id===Number(e.target.value));setId(next?.id);setAmount(recordLimit(next,kind));}}>
+    <Field label="예약·계약" wide><select value={id??''} required onChange={e=>{const next=book.contracts.find(r=>r.id===Number(e.target.value));setId(next?.id);setAmount(suggestedRecordAmount(next,kind));}}>
       {!c0&&<option value="">선택 가능한 계약 없음</option>}{book.contracts.map(r=><option key={r.id} value={r.id}>{label(r)}</option>)}</select></Field>
-    <Field label="기록 구분"><select value={kind} onChange={e=>{setKind(e.target.value);setAmount(recordLimit(c,e.target.value));}}><Options items={entryKinds}/></select></Field>
+    <Field label="기록 구분"><select value={kind} onChange={e=>{setKind(e.target.value);setAmount(suggestedRecordAmount(c,e.target.value));}}><Options items={entryKinds}/></select></Field>
     <Field label="거래 수단"><select value={method} onChange={e=>setMethod(e.target.value)}><Options items={methods}/></select></Field>
     <Field label="금액 (원)"><input type="number" required min="1" max={Math.min(max,1000000000)} step="1" value={amount} onChange={e=>setAmount(e.target.value)}/><small>기록 가능 금액 {won(max)}</small></Field>
     <Field label="거래 일시 (한국시간)"><input type="datetime-local" required value={at} onChange={e=>setAt(e.target.value)}/></Field>

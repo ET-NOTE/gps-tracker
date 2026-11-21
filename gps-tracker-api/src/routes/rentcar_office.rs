@@ -282,7 +282,7 @@ fn validate_key(key: &str) -> AppResult<()> {
 }
 fn limit(kind: &str, billed: i64, deposit: i64, paid: i64, held: i64, cancelled: bool) -> i64 {
     match kind {
-        "payment" if !cancelled => billed.saturating_sub(paid),
+        "payment" => billed.saturating_sub(paid),
         "refund" => paid,
         "deposit_in" if !cancelled => deposit.saturating_sub(held),
         "deposit_out" => held,
@@ -309,8 +309,8 @@ async fn record(
     let mut tx = s.db.begin().await?;
     // Every record for a contract checks the committed balance after taking the same lock.
     let (billed,deposit,status): (i64,i64,String) = sqlx::query_as(
-        "SELECT rental_office_fee(status,settled_amount_krw,starts_at,ends_at,rate_type,rate_amount_krw)::bigint,
-            deposit_krw,status FROM rental_contracts WHERE user_id=$1 AND id=$2 FOR UPDATE")
+        "SELECT rental_office_contract_fee(c)::bigint,deposit_krw,status FROM rental_contracts c
+            WHERE user_id=$1 AND id=$2 FOR UPDATE")
         .bind(u.user_id).bind(e.contract_id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
     let old: Option<(i64, bool)> = sqlx::query_as(
         "SELECT id, (contract_id,kind,method,amount_krw,recorded_at,memo)
@@ -453,7 +453,8 @@ mod tests {
         assert_eq!(limit("deposit_in", 900, 100, 600, 80, false), 20);
         assert_eq!(limit("deposit_out", 900, 100, 600, 80, true), 80);
         assert_eq!(limit("refund", 900, 100, 600, 80, true), 600);
-        assert_eq!(limit("payment", 900, 100, 600, 80, true), 0);
+        assert_eq!(limit("payment", 0, 100, 600, 80, true), 0);
+        assert_eq!(limit("payment", 900, 100, 600, 80, true), 300);
     }
     #[test]
     fn customer_license_and_rate_validation() {

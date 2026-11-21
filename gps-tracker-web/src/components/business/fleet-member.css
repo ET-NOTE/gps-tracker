@@ -15,6 +15,12 @@
 .business-workspace--corporate .fleet-dashboard .business-task {border-color:var(--border); padding-block:12px}
 .business-workspace--corporate .fleet-dashboard .business-task-copy strong { font-size:14px; font-weight:500; }
 .business-workspace--corporate .fleet-dashboard .business-task .business-button { font-size:12px; font-weight:500; }
+.pt-member-shell .business-workspace--corporate .fleet-dashboard .business-section-title h3 {font-size:15px;line-height:1.55;}
+@media(min-width:900px) {
+  .pt-member-shell .business-workspace--corporate .fleet-dashboard-toolbar .business-button {min-height:36px;padding:6px 12px;font-size:12px;font-weight:400;}
+  .pt-member-shell .business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles .fleet-dashboard-row-head {min-height:36px;padding-block:7px;font-size:11px;font-weight:400;}
+  :root:not([data-theme="dark"]) .fleet-dashboard .fleet-dashboard-row-head {background:#f8f9fc;color:#748091;}
+}
 .business-workspace--corporate :is(.fleet-record-metrics,.expense-controls,.expense-ledger,.corporate-reservation-tools,.corporate-reservation-ledger,.fleet-assets-ledger,.business-directory-groups) { border-radius:14px; }
 .business-workspace--corporate :is(.fleet-asset-table,.corporate-reservation-table,.business-ledger-table) th { font-weight:500; color:var(--text-2); background:var(--surface-2); }
 .business-workspace--corporate :is(.fleet-assets-table-heading h2,.fleet-live-panel-head h2) { font-size:15px; font-weight:500; }

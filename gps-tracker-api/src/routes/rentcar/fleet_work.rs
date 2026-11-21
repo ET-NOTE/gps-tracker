@@ -31,6 +31,7 @@ struct Work {
 
 #[derive(Deserialize)]
 struct Details {
+    request_key: Option<uuid::Uuid>,
     device_id: i64,
     contract_id: Option<i64>,
     kind: String,
@@ -159,6 +160,22 @@ async fn save(state: &AppState, owner: i64, id: Option<i64>, d: Details) -> AppR
     verify_device_owner(state, owner, d.device_id).await?;
     let mut tx = state.db.begin().await?;
     super::workflow::owner_lock(&mut tx, owner).await?;
+    let request_key = d.request_key.map(|v|v.to_string());
+    if let Some(key) = &request_key {
+        if id.is_some() || !incident(&d.kind) {
+            return Err(AppError::BadRequest("사고·고장 접수 요청 키를 확인해 주세요.".into()));
+        }
+        if let Some(saved) = sqlx::query_as::<_, Work>(
+            "SELECT * FROM rental_fleet_work WHERE owner_id=$1 AND request_key=$2::text::uuid")
+            .bind(owner).bind(key).fetch_optional(&mut *tx).await? {
+            if saved.device_id!=d.device_id || saved.contract_id!=d.contract_id || saved.kind!=d.kind ||
+                saved.starts_at.timestamp_micros()!=d.starts_at.timestamp_micros() || saved.note!=d.note.trim() {
+                return Err(AppError::Conflict("다른 사고 접수에 사용된 요청 키입니다.".into()));
+            }
+            tx.commit().await?;
+            return Ok(Json(saved));
+        }
+    }
     if let Some(id) = id {
         let previous = sqlx::query_as::<_, Work>("SELECT * FROM rental_fleet_work WHERE owner_id=$1 AND id=$2 FOR UPDATE")
             .bind(owner).bind(id).fetch_optional(&mut *tx).await?.ok_or(AppError::NotFound)?;
@@ -187,9 +204,10 @@ async fn save(state: &AppState, owner: i64, id: Option<i64>, d: Details) -> AppR
         sqlx::query_as::<_, Work>("UPDATE rental_fleet_work SET kind=$3,starts_at=$4,ends_at=$5,note=$6 WHERE owner_id=$1 AND id=$2 RETURNING *")
             .bind(owner).bind(id).bind(d.kind).bind(d.starts_at).bind(d.ends_at).bind(d.note.trim()).fetch_one(&mut *tx).await?
     } else {
-        sqlx::query_as::<_, Work>("INSERT INTO rental_fleet_work (owner_id,device_id,contract_id,kind,starts_at,ends_at,note)
-            VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *")
-            .bind(owner).bind(d.device_id).bind(d.contract_id).bind(d.kind).bind(d.starts_at).bind(d.ends_at).bind(d.note.trim()).fetch_one(&mut *tx).await?
+        sqlx::query_as::<_, Work>("INSERT INTO rental_fleet_work (owner_id,device_id,contract_id,kind,starts_at,ends_at,note,request_key)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8::text::uuid) RETURNING *")
+            .bind(owner).bind(d.device_id).bind(d.contract_id).bind(d.kind).bind(d.starts_at).bind(d.ends_at)
+            .bind(d.note.trim()).bind(request_key).fetch_one(&mut *tx).await?
     };
     tx.commit().await?;
     Ok(Json(row))

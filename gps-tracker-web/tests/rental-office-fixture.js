@@ -35,7 +35,8 @@ export function installRentalOfficeFixture(api, { rentals, devices, empty, faile
       const p=new URLSearchParams(route.split('?')[1]);
       const inRange=value=>value>=p.get('from')&&value<=p.get('to');
       const contracts=rentals.map(c=>({...c,vehicle_name:c.license_plate||c.device_name,
-        billed_krw:c.settled_amount_krw??c.rate_amount_krw,...totals(c.id)}));
+        cancel_outcome:c.rental_terms?.cancel_outcome,cancellation_fee_krw:c.rental_terms?.cancellation_fee_krw,
+        billed_krw:c.status==='cancelled' ? c.rental_terms?.cancellation_fee_krw??0 : c.settled_amount_krw??c.rate_amount_krw,...totals(c.id)}));
       return structuredClone({company_name:'시리얼링크',contracts,entries:entries.filter(e=>inRange(e.day)),costs:costs.filter(c=>inRange(c.occurred_on))});
     }
     if(route==='/ledger'){

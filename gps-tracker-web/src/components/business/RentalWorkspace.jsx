@@ -11,7 +11,7 @@ import { freightPageHeadings } from '../../lib/freightMenu';
 export { rentalMenu, rentalPages } from '../../lib/rentalMenu';
 
 function WorkspaceNav({page, group, onTab, menu, label}) {
-  const [expanded, setExpanded] = useState(() => new Set([...menu.filter(g => g.pages.length > 1).slice(0,3).map(g => g.id), group.id]));
+  const [expanded, setExpanded] = useState(() => new Set([group.id]));
   useEffect(() => setExpanded(previous => new Set([...previous, group.id])), [group.id]);
   function toggle(id) {
     setExpanded(previous => {
@@ -53,7 +53,9 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
   const group = menu.find(g => g.pages.some(([id])=>id===page)) || menu[0];
   const pageLabel = group.pages.find(([id]) => id === page)?.[1];
   const title = (menu === rentalMenu ? rentalPageHeadings[page] : freightPageHeadings[page]?.title) || pageLabel;
-  const description = menu !== rentalMenu && freightPageHeadings[page]?.description;
+  const description = menu === rentalMenu
+    ? (page === landing ? '오늘 인도·반납과 준비할 업무를 확인하세요.' : '')
+    : freightPageHeadings[page]?.description;
   const today = new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'});
   const [dialog,setDialog] = useState(null);
   const [wide,setWide] = useState(()=>{try{return localStorage.getItem(widthKey)==='wide';}catch{return false;}});
@@ -70,14 +72,15 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
   const accountLinks = (destinations || [{id:'home',label:'전체 지도',icon:'map'},{id:'devices',label:'내 단말기',icon:'antenna'},{id:'profile',label:'내 정보',icon:'user'}]).map(item=>
     <button className="rnt-group" key={item.id} onClick={()=>{setDialog(null);onNavigate?.(item.id);}}><Icon name={item.icon}/>{item.id==='home'?'전체 지도':item.label}</button>);
   return <section className="gps-user-panel gps-business-panel rnt-shell" data-workspace={widthKey} data-wide={wide}>
-    <aside className="rnt-sidebar no-print"><button className="rnt-brand" onClick={()=>choose(landing)}><i><Icon name={menu === rentalMenu ? 'car' : 'route'}/></i><span>{heading}<small>시리얼링크 · 업무 공간</small></span></button>
+    <aside className="rnt-sidebar no-print"><button className="rnt-brand" onClick={()=>choose(landing)}><i><Icon name="car"/></i><span>{heading}</span></button>
+      <small className="rnt-service-name">시리얼링크 · 업무 공간</small>
       {nav}
       {onNavigate&&<button className="rnt-account" onClick={()=>setDialog('account')}><Icon name="user"/>계정 메뉴<Icon name="chevron-right" size={15}/></button>}
     </aside>
     <div className="rnt-main"><header className="rnt-top no-print">
       <button className="rnt-menu-trigger rnt-icon" aria-label="전체 메뉴" onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
       <div className="rnt-breadcrumb"><span>{heading}</span><Icon name="chevron-right" size={13}/><strong>{group.label}</strong>{group.pages.length>1&&<span className="rnt-leaf"><Icon name="chevron-right" size={13}/>{group.pages.find(([id])=>id===page)?.[1]}</span>}</div>
-      <div className="rnt-width" role="group" aria-label="화면 폭">{[[false,'기본'],[true,'넓게']].map(([v,s])=><button className="rnt-width-option" key={s} aria-pressed={v===wide} onClick={()=>{setWide(v);try{localStorage.setItem(widthKey,v?'wide':'normal');}catch{/* private browser */}}}>{s}</button>)}</div>
+      <div className="rnt-width" role="group" aria-label="화면 폭"><span>화면 폭</span>{[[false,'기본'],[true,'넓게']].map(([v,s])=><button className="rnt-width-option" key={s} aria-pressed={v===wide} onClick={()=>{setWide(v);try{localStorage.setItem(widthKey,v?'wide':'normal');}catch{/* private browser */}}}>{s}</button>)}</div>
       <button className="rnt-search" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
       {headerAction}<button className="rnt-icon" aria-label="계정 메뉴 열기" onClick={()=>setDialog('account')}><Icon name="user"/></button>
     </header><div className="rnt-scroller" ref={content}><div className="rnt-content">

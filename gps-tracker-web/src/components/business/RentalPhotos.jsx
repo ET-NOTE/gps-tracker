@@ -64,7 +64,7 @@ function PhotoUpload({ contractId, defaultPhase, disabled, onBusyChange, onDraft
     <input aria-label="사진 파일 선택" ref={file} type="file" accept="image/jpeg,image/png,image/webp" onChange={choose} hidden />
     <input aria-label="사진 촬영 파일" ref={camera} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={choose} hidden />
     <div className="business-photo-upload-actions"><Button variant="ghost" disabled={busy || disabled} onClick={() => file.current?.click()}>사진 선택</Button><Button variant="ghost" disabled={busy || disabled} onClick={() => camera.current?.click()}>촬영하기</Button></div>
-    <p className="business-note">JPG · PNG · WebP, 한 장당 10MB 이하. 사진 저장은 반납 완료와 별도로 적용됩니다.</p>
+    <p className="business-note">JPG · PNG · WebP, 한 장당 10MB 이하. 사진 저장을 누르면 계약에 첨부됩니다.</p>
     {preparing && <p role="status">사진을 준비하는 중…</p>}
     {error && <p className="business-error" role="alert">{error}</p>}{message && <p className="business-photo-saved" role="status">{message}</p>}
     {prepared && <div className="business-photo-draft"><img src={prepared.dataUrl} alt="저장 전 사진 미리보기" /><p>{prepared.name}</p><p className="business-note">종류와 사진을 확인해 저장하거나, 선택을 취소해 주세요.</p>
