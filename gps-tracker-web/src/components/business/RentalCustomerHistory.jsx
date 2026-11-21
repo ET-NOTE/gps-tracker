@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api } from '../../api';
 import { authScope } from '../../authSession';
 import { kstDateTime } from '../../lib/businessExport';
-import { rentalStatus } from '../../lib/business';
+import { StageBadge } from './RentalStageTable';
 import { Modal } from '../ui';
 import { BusinessButton, BusinessError } from './BusinessWorkspace';
 import RentalRecordDrawer from './RentalRecordDrawer';
@@ -12,7 +12,6 @@ import { ContractPhotos } from './RentalPhotos';
 import { useBusinessClock } from './useBusinessData';
 
 const roles = {customer:'계약 고객', driver:'실운전자', both:'계약 고객 · 실운전자'};
-const statuses = {draft:'예약',active:'대여 중',overdue:'반납 지연',returned:'반납 완료',cancelled:'취소'};
 
 function HistoryContract({id,onClose}) {
   const now=useBusinessClock();
@@ -58,7 +57,7 @@ export default function RentalCustomerHistory({customerId}) {
           <span><strong>R-{row.id} · {row.license_plate||row.vehicle_name||row.requested_model||'차량 미배정'}</strong>
             <small>{kstDateTime(row.starts_at)} ~ {kstDateTime(row.ends_at)}</small>
             <small>{roles[row.role]}{row.role==='driver'&&row.renter_name?' · 계약 고객 '+row.renter_name:''}{row.role==='customer'&&row.driver_name?' · 실운전자 '+row.driver_name:''}</small></span>
-          <span className="ro-status">{statuses[rentalStatus(row)]||row.status}</span>
+          <StageBadge contract={row} summary/>
         </button>
       </li>)}</ul>:<p>등록된 대여 이력이 없습니다.</p>}
     {!failed&&query.isFetchNextPageError&&<p role="alert">다음 이력을 불러오지 못했습니다.</p>}

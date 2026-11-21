@@ -8,7 +8,6 @@ import * as query from '@tanstack/react-query';
 import {act,create} from 'react-test-renderer';
 import {transform} from 'esbuild';
 import {kstDateTime} from '../src/lib/businessExport.js';
-import {rentalStatus} from '../src/lib/business.js';
 
 const source=await readFile(new URL('../src/components/business/RentalCustomerHistory.jsx',import.meta.url),'utf8');
 const {code}=await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'});
@@ -23,7 +22,7 @@ async function mount(api) {
   const tag=type=>({children,...props})=>React.createElement(type,props,children);
   const deps={
     react:React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../api':{api},'../../authSession':{authScope:()=> 'owner'},
-    '../../lib/businessExport':{kstDateTime},'../../lib/business':{rentalStatus},'../ui':{Modal:tag('aside')},
+    '../../lib/businessExport':{kstDateTime},'./RentalStageTable':{StageBadge:({contract})=>contract.status},'../ui':{Modal:tag('aside')},
     './BusinessWorkspace':{BusinessButton:tag('button'),BusinessError:({children,onRetry})=>React.createElement('p',{role:'alert'},children,React.createElement('button',{onClick:onRetry},'다시 시도'))},
     './RentalRecordDrawer':{default:({children,footer})=>React.createElement('aside',{role:'dialog'},children,footer)},
     './RentalContractDetails':{default:({contract})=>React.createElement('output',{},contract.note),ContractTerms:tag('section')},

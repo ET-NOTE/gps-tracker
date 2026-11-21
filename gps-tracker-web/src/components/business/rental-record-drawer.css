@@ -74,6 +74,6 @@
 .rental-customer-history .rental-record-related>span:first-child {min-width:0;display:grid;gap:3px;overflow-wrap:anywhere}
 .rental-customer-history .rental-record-related strong {font:500 13px/1.55 var(--fleet-font)}
 .rental-customer-history .rental-record-related small {font:400 12px/1.55 var(--fleet-font)}
-.rental-customer-history .rental-record-related .ro-status {flex-shrink:0;font-size:11px}
+.rental-customer-history .rental-record-related .rental-status {flex-shrink:0;font-weight:400;font-size:11px}
 .rental-customer-history>p {font:400 13px/1.55 var(--fleet-font);color:var(--text-2)}
 .rental-customer-history>button {margin-top:10px}

@@ -6,9 +6,9 @@ import { agreedPrice, isAssigned } from '../../lib/rentalInventory';
 import { won } from '../../lib/rentalOffice';
 import { BusinessButton } from './BusinessWorkspace';
 
-const statusTone = {'배차 대기':'amber','예약 접수':'blue','출고 준비':'green','대여 중':'blue','반납 지연':'red','반납 완료':'green'};
-export function StageBadge({contract, now}) {
-  const state = workflowStatus(contract, now);
+const statusTone = {'예약':'blue','배차 대기':'amber','예약 접수':'blue','출고 준비':'blue','대여 중':'green','반납 지연':'red','반납 완료':'amber','미방문':'amber'};
+export function StageBadge({contract, now, summary=false}) {
+  const state = summary&&contract.status==='draft'?'예약':workflowStatus(contract,now);
   return <span className={'rental-status '+(statusTone[state] || '')}>{state}</span>;
 }
 

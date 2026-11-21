@@ -14,8 +14,13 @@
 .rental-workflow th{font-size:13px;background:var(--surface-2,#f4f6f8);color:var(--text-2,#566171)}
 .rental-workflow td small{display:block;line-height:1.45;margin-top:4px;font-size:12px}
 .rental-workflow td:first-child button{border:0;background:none;font:inherit;font-weight:650;color:var(--primary,#286dad);padding:4px 0;cursor:pointer}
-.rental-status{display:inline-block;line-height:1.4;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:600;color:#48566a;background:#edf0f4;white-space:nowrap}
-.rental-status.amber{color:#845b10;background:#fcf3dc}.rental-status.blue{color:#2364a0;background:#eaf3ff}.rental-status.green{color:#187347;background:#e7f7ed}.rental-status.red{color:#a23b38;background:#fceeee}
+.rental-status{display:inline-block;line-height:1.4;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:600;color:#7b8593;background:#f0f2f6;white-space:nowrap}
+.rental-status.amber{color:#b77923;background:#fff5e5}.rental-status.blue{color:#3676e5;background:#edf3ff}.rental-status.green{color:#26856b;background:#eaf6f0}.rental-status.red{color:#b94e59;background:#fff0f1}
+[data-theme=dark] .rental-status{color:var(--text-2);background:var(--surface-2)}
+[data-theme=dark] .rental-status.amber{color:var(--status-warning-text);background:var(--status-warning-bg)}
+[data-theme=dark] .rental-status.blue{color:var(--status-info-text);background:var(--status-info-bg)}
+[data-theme=dark] .rental-status.green{color:var(--status-success-text);background:var(--status-success-bg)}
+[data-theme=dark] .rental-status.red{color:var(--status-danger-text);background:var(--status-danger-bg)}
 .rental-workflow-mobile{display:none}.rental-detail dl{margin:0;display:grid}.rental-detail dl>div{display:grid;grid-template-columns:minmax(100px,34%) minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid var(--border,#edf0f3)}
 .rental-detail dd{margin:0;overflow-wrap:anywhere}.rental-detail-actions{position:sticky;bottom:0;background:var(--surface,#fff);padding-block:10px}
 .rental-form-sections section{display:grid;gap:12px}.rental-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
