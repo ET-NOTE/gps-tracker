@@ -88,7 +88,7 @@ const s = {
     position: 'absolute', top: '100%', left: 0,
     pointerEvents: 'auto',
     marginTop: 6,
-    width: 280, maxWidth: 'calc(100vw - 80px)',
+    width: 'var(--map-device-options-width, 280px)', maxWidth: 'calc(100vw - 80px)',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 10, overflow: 'hidden',

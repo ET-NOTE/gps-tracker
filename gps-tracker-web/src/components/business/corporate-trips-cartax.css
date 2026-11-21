@@ -172,12 +172,23 @@
 @media(max-width:480px){.corporate-editor-odometer{padding:16px}}
 .corporate-editor-footer{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0;width:100%;padding-top:18px;border-top:1px solid var(--border)}
 .corporate-editor-footer button{min-width:96px;max-width:100%;min-height:48px!important;padding:10px 18px!important;border-radius:4px!important;font-size:18px!important;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
-.corporate-reservation-calendar{min-width:0;overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px}
+.corporate-reservation-calendar{container:booking-month / inline-size;min-width:0;overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:clamp(5px,1vw,12px)}
 .corporate-calendar-weekdays,.corporate-calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;min-width:910px}
 .corporate-calendar-weekdays{margin-bottom:4px}.corporate-calendar-weekdays>div{padding:10px 6px;text-align:center;font-size:16px;font-weight:600;line-height:1.5}
 .corporate-calendar-day{display:flex;flex-direction:column;gap:7px;padding:10px;min-width:0;overflow:hidden;border-radius:4px}
-.corporate-calendar-day{position:relative}
-.corporate-calendar-date{align-self:start;min-width:0;padding:0;border:0;background:transparent;font:inherit;font-size:18px;font-weight:600;line-height:1.5;cursor:inherit}
+.corporate-calendar-day{position:relative;min-height:clamp(128px,12vw,160px)}
+.corporate-calendar-date{align-self:start;min-width:0;padding:0;border:0;background:transparent;color:var(--day-color);font:inherit;font-size:18px;font-weight:600;line-height:1.5;cursor:inherit}
+.corporate-calendar-compact{display:none}
+@container booking-month (max-width:909px) {
+  .corporate-calendar-weekdays,.corporate-calendar-days{min-width:0;gap:2px}
+  .corporate-calendar-weekdays>div{padding:6px 0;font-size:12px}
+  .corporate-calendar-day{min-height:0;padding:0}
+  .corporate-calendar-day>:is(.corporate-calendar-date,.corporate-calendar-event,.corporate-calendar-more){display:none}
+  .corporate-calendar-compact{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;min-width:0;width:100%;min-height:54px;padding:5px 1px;border:0;background:transparent;color:var(--day-color);font:500 13px/1.45 var(--fleet-font);cursor:pointer}
+  .corporate-calendar-compact:disabled{cursor:default}
+  .corporate-calendar-compact small{max-width:100%;border-radius:4px;background:var(--surface-2);color:var(--primary);font:500 11px/1.45 var(--fleet-font);overflow-wrap:anywhere}
+  .corporate-calendar-compact:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+}
 .corporate-calendar-date:not(:disabled)::after{content:'';position:absolute;inset:0;border-radius:4px}
 .corporate-calendar-date:focus-visible::after{outline:2px solid var(--primary);outline-offset:-2px}
 .corporate-calendar-event,.corporate-calendar-more{position:relative;z-index:1;min-width:0;border:0;font:inherit;cursor:pointer}

@@ -93,8 +93,8 @@ export default function FreightWorkflow({page,...props}) {
   const key=page.replace(/^cargo-/, '');
   return <FreightRecordActions key={key} {...props}>{actions=><WorkflowPage {...props} page={key} {...actions}/>}</FreightRecordActions>;
 }
-function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatchOrderId,setDispatchOrderId}) {
-  const [filters,setFilters]=useState(allFilters);
+function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatchOrderId,setDispatchOrderId,requestedBranch,openRequested}) {
+  const [filters,setFilters]=useState(()=>page==='shipments'&&requestedBranch!=null?{...allFilters,status:'requested',branch:requestedBranch}:allFilters);
   const isOrder=page==='orders'||page==='dispatch',recurring=page==='recurring',isShipment=!recurring&&!isOrder,proofs=page==='proofs',schedule=page==='schedule';
   const stateLabels=proofs?proofStates:recurring?{active:'사용 중',inactive:'사용 중지'}:isOrder?orderStates:shipStates;
   const shipList=page==='shipments';
@@ -157,7 +157,7 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatc
     </div>}
     {!schedule&&filterBar}
     {feedback&&<p role="status" className="fr-note">{feedback}</p>}
-    {page==='dispatch'?<DispatchView data={data} orders={rows} requests={requests} form={form} open={open} orderId={dispatchOrderId} setOrderId={setDispatchOrderId}/>:schedule?<ScheduleView filters={filterBar} data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
+    {page==='dispatch'?<DispatchView data={data} orders={rows} requests={requests} form={form} open={open} orderId={dispatchOrderId} setOrderId={setDispatchOrderId} onAllRequests={()=>openRequested(f.branch)}/>:schedule?<ScheduleView filters={filterBar} data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
       try{await downloadCsv('배차일정_'+week,[['구분','운송번호 / 작업','구간 / 차량','시작','종료'],...entries.map(e=>[e.kind==='services'?'정비·보험':'운송',e.title,e.info,timeLabel(e.row.start),timeLabel(e.row.end)])]);}catch(e){setFeedback(e.message);}
     }}/>:<WorkflowTable page={page} data={data} rows={rows} open={open} form={form}/>}
   </div>;

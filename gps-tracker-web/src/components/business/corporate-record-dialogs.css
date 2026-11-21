@@ -95,6 +95,18 @@
 .fleet-person-account-actions {display:flex;justify-content:flex-end;margin-top:10px}
 .fleet-person-account-actions .business-button {min-height:32px;padding:5px 10px;font:400 12px/1.5 var(--fleet-font);border-radius:8px}
 
+.gps-member-modal :is(.fleet-person-form-section h3,.fleet-assets-editor fieldset>legend) {
+  font:500 15px/1.5 var(--fleet-font); padding-bottom:8px; margin:0 0 4px
+}
+.gps-member-modal .fleet-person-form :is(p,small){font:400 12px/1.55 var(--fleet-font);color:var(--text-2);overflow-wrap:anywhere}
+.gps-member-modal :is(.fleet-person-form,.fleet-assets-editor) .fleet-asset-fields label[for]{display:block;font-size:12px!important}
+.gps-member-modal .fleet-person-form fieldset {min-width:0; padding:14px; font:500 13px/1.55 var(--fleet-font)}
+.gps-member-modal .fleet-person-form :is(.fleet-asset-toggle,.fleet-connection-list label){font:400 13px/1.55 var(--fleet-font)!important;min-height:38px}
+.gps-member-modal .fleet-assets-editor .fleet-asset-fields :is(input,select){border-radius:8px}
+
+@media(pointer:coarse){
+  .gps-member-modal .gps-modal:has(:is(.fleet-person-form,.fleet-assets-editor,.corporate-calendar-bookings)) :is(.service-form-actions>button,div:first-child>button[aria-label="닫기"]){min-height:44px!important;min-width:44px!important}
+}
 @media(max-width:440px){
   .corporate-detail-actions.fleet-person-detail-actions {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px}
   .gps-member-modal .fleet-person-detail-actions .business-button {width:100%;min-width:0;min-height:36px;font:400 12px/1.45 var(--fleet-font);padding:6px 4px;white-space:normal}

@@ -68,8 +68,9 @@ for (const [file,name] of [['RentcarPanel','RentalCalendar'],['CorporatePanel','
     let r;
     await act(async()=>{r=create(React.createElement(Calendar,props));});
     const corporate = name === 'ReservationCalendar';
-    const days=()=>r.root.findAll(n=>n.type==='div' && n.props.style?.minHeight);
-    const dayButton=cell=>cell.find(n=>n.type==='button' && n.props.className===(corporate?'corporate-calendar-date':'rnt-cal-day'));
+    const isDayButton=n=>n.type==='button' && n.props.className===(corporate?'corporate-calendar-date':'rnt-cal-day');
+    const days=()=>r.root.findAll(isDayButton).map(button=>button.parent);
+    const dayButton=cell=>cell.find(isDayButton);
     const activate=target=>!target.props.disabled && target.props.onClick({currentTarget:{focus(){}},stopPropagation(){}});
     assert.equal(days().length,42);
     // October 1 is Thursday; index 12 is October 9, irrespective of host TZ.

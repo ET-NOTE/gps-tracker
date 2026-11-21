@@ -188,6 +188,25 @@ test('calendar overflow lists every matching booking across KST month boundaries
  assert.equal(calls.update.length,0);
 });
 
+test('compact month opens the occupied day before editing or adding and keeps that day when cancelled',async t=>{
+ const record={...reservations[0],starts_at:'2026-11-28T10:00:00+09:00',ends_at:'2026-11-28T10:30:00+09:00'};
+ const {r,calls}=await mount(t,{data:[record]});
+ const press=async node=>act(()=>node.props.onClick({currentTarget:{focus(){}}}));
+ await press(button(r,'캘린더'));
+ await press(r.root.findByProps({'aria-label':'2026-11-28 예약 1건'}));
+ const day=r.root.findByProps({'aria-label':'2026-11-28 예약'});
+ assert.equal(day.findAllByProps({className:'corporate-calendar-booking'}).length,1);
+ await press(button(r,'이 날짜에 예약'));
+ const editor=r.root.findByProps({'aria-label':'새 예약'});
+ assert.equal(editor.findAll(n=>n.type==='input'&&n.props.type==='datetime-local')[0].props.value,'2026-11-28T09:00');
+ await act(()=>editor.props.onClose());
+ assert.equal(r.root.findAllByProps({role:'dialog'}).length,1);
+ await act(()=>day.props.onClose());
+ await press(r.root.findByProps({'aria-label':'2026-11-29 예약 등록'}));
+ assert.ok(r.root.findByProps({'aria-label':'새 예약'}));
+ assert.equal(calls.create.length,0);
+});
+
 test('reservation row details save the selected booking and cancellation remains confirmed',async t=>{
  const {r,state,calls}=await mount(t);
  await act(async()=>r.root.findByProps({'aria-label':'예약 1 상세·수정'}).props.onClick());

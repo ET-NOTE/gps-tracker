@@ -1138,7 +1138,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
 
   return (
     <>
-    <div className="corporate-reservation-calendar" role="region" aria-label="월간 차량 예약 · 좌우 스크롤" tabIndex={0}>
+    <div className="corporate-reservation-calendar" role="region" aria-label="월간 차량 예약">
       {/* DoW header */}
       <div className="corporate-calendar-weekdays">
         {DOW.map((d, i) => (
@@ -1153,10 +1153,10 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
           const dayResv = bookingsOn(list,dStr);
           const isToday = dStr === todayStr;
           const dow = c.date.getDay();
-          const MAX_BADGES = 2;   // 모바일 대응: 셀 폭 좁을 때 3개는 넘침
+          const MAX_BADGES = 2;
           return (
             <div className="corporate-calendar-day" key={dStr} style={{
-              minHeight: 'clamp(128px, 12vw, 160px)',
+              '--day-color': !c.currentMonth ? 'var(--text-3)' : isToday || dow === 6 ? 'var(--primary)' : dow === 0 ? 'var(--danger)' : 'var(--text)',
               background: isToday
                 ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
                 : c.currentMonth ? 'var(--surface)' : 'var(--surface-2)',
@@ -1164,17 +1164,22 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
               opacity: c.currentMonth ? 1 : 0.4,
               cursor: c.currentMonth ? 'pointer' : 'default',
             }}>
+              <button type="button" className="corporate-calendar-compact" aria-current={isToday?'date':undefined} aria-haspopup="dialog"
+                disabled={!dayResv.length && (!c.currentMonth || !onDayClick)}
+                aria-label={dayResv.length ? `${dStr} 예약 ${dayResv.length}건` : `${dStr} ${c.currentMonth && onDayClick ? '예약 등록' : '예약 없음'}`}
+                onClick={event => {
+                  event.currentTarget.focus({preventScroll:true});
+                  if (dayResv.length) setOpenDay(dStr);
+                  else onDayClick?.(dStr);
+                }}>
+                <span>{c.date.getDate()}</span>
+                {dayResv.length > 0 && <small>{dayResv.length}건</small>}
+              </button>
               <button type="button" className="corporate-calendar-date" disabled={!c.currentMonth||!onDayClick}
                 aria-label={c.currentMonth ? `${dStr} 새 예약` : dStr} onClick={event => {
                   event.currentTarget.focus({ preventScroll: true });
                   onDayClick?.(dStr);
-                }} style={{
-                color: !c.currentMonth ? 'var(--text-3)'
-                     : isToday ? 'var(--primary)'
-                     : dow === 0 ? 'var(--danger)'
-                     : dow === 6 ? 'var(--primary)'
-                     : 'var(--text)',
-              }}>
+                }}>
                 {c.date.getDate()}
               </button>
               {dayResv.slice(0, MAX_BADGES).map(r => {
@@ -1203,7 +1208,10 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
         })}
       </div>
     </div>
-    {openDay && <Modal open title={`${openDay} 예약`} subtitle={`총 ${openBookings.length}건`} size="lg" onClose={() => setOpenDay(null)}>
+    {openDay && <Modal open title={`${openDay} 예약`} subtitle={`총 ${openBookings.length}건`} size="lg" onClose={() => setOpenDay(null)}
+      footer={<div className="service-form-actions"><BusinessButton onClick={() => setOpenDay(null)}>닫기</BusinessButton>
+        {onDayClick && openDay.startsWith(ym+'-') && <BusinessButton primary onClick={() => onDayClick(openDay)}>이 날짜에 예약</BusinessButton>}
+      </div>}>
       {openBookings.length ? <ul className="corporate-calendar-bookings">{openBookings.map(r => {
         const state = RESV_STATUS[r.status] || RESV_STATUS.planned;
         const plate = r.license_plate?.trim();

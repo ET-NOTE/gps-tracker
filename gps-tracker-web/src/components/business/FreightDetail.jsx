@@ -114,6 +114,7 @@ export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage,
       billing={related.billing} view={related} setView={setRelatedView}
       r={financeRow(data,r,related.billing,finance)}
       onSideChange={billing=>setRelated({...related,billing})}/>
-    :<FreightCatalogDialogs kind={related.kind} data={data} save={save} view={related} setView={setRelatedView}/>)}
+    :<FreightCatalogDialogs kind={related.kind} data={data} save={save} view={related} setView={setRelatedView}
+      onOpenShipment={id=>{setRelated(null);open('shipments',id);}}/>)}
   </>;
 }

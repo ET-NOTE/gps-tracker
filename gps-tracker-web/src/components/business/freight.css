@@ -124,6 +124,13 @@
 .fr-record-history {list-style:none;padding:0;margin:0}
 .fr-record-link,.fr-record-history>li {width:100%;font:400 12px/1.55 var(--fleet-font);color:var(--fr-drawer-value);padding:10px 0;border:0;border-bottom:1px solid var(--fr-drawer-line)}
 .fr-record-link {text-align:start;background:transparent;cursor:pointer}
+.fr-driver-detail .fr-record-block:first-child {margin-top:0}
+.fr-driver-detail .fr-record-link {min-height:44px}
+.fr-driver-detail .fr-record-link>span:first-child {min-width:0;overflow-wrap:anywhere}
+.fr-driver-detail .fr-record-link .fr-badge {flex:none}
+.fr-dispatch-requests>header>div {display:flex;align-items:baseline;gap:7px}
+.fr-dispatch-requests>header small {font-size:11px;color:var(--fleet-caption)}
+.fr-dispatch-requests>header .fr-link {min-height:36px;padding-inline:8px}
 .fr-record-link small,.fr-record-history small {display:block;color:var(--fr-drawer-muted);font-size:11px;margin-top:4px}
 @media(max-width:560px) {
   .fr-record-route {font-size:13px}

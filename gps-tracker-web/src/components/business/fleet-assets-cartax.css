@@ -88,7 +88,7 @@
 .fleet-assets-detail .fleet-connection-list label{padding:10px 12px;border:0;border-bottom:1px solid var(--border);border-radius:0;font-size:16px}
 .fleet-assets-detail .fleet-connection-list small{font-size:14px;color:var(--text-2)}
 .fleet-assets-detail .fleet-connection-list input{accent-color:var(--primary)}
-.gps-business-modal:has(.fleet-assets-editor){--modal-title-size:21px;--modal-subtitle-size:15px;--modal-padding:20px;--modal-gap:14px;--field-label-size:14px;--field-gap:5px;--font-body:16px;--control-font-size:16px;--touch-target:42px}
+.gps-business-modal:not(.gps-member-modal):has(.fleet-assets-editor){--modal-title-size:21px;--modal-subtitle-size:15px;--modal-padding:20px;--modal-gap:14px;--field-label-size:14px;--field-gap:5px;--font-body:16px;--control-font-size:16px;--touch-target:42px}
 .fleet-asset-form.fleet-assets-editor{min-width:0;gap:16px}
 .fleet-assets-editor .fleet-asset-fields{gap:10px 16px}
 .fleet-asset-form.fleet-assets-editor fieldset{padding:0;min-width:0;border:0;border-radius:0}
@@ -97,8 +97,6 @@
 .fleet-assets-editor details{min-width:0;padding:10px 12px;background:var(--surface-2);border-radius:6px}
 .fleet-asset-form.fleet-assets-editor summary{padding:0;font-size:15px}
 .fleet-assets-editor details[open]>.fleet-asset-fields{margin-top:10px}
-.fleet-editor-footer{display:flex;width:100%;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
-.fleet-editor-footer>button{min-width:76px}
 .fleet-assets-detail .fleet-asset-media{display:grid;gap:22px;min-width:0;margin:0;padding:0;border:0}
 .fleet-media-section{min-width:0}
 .fleet-media-hint{margin:6px 0 0;color:var(--text-2);font-size:14px;line-height:1.45}
@@ -183,8 +181,7 @@
  .fleet-media-document-info{flex-basis:100%}
  .fleet-media-document-actions{margin-inline-start:auto}
  .gps-modal .fleet-assets-editor .fleet-asset-fields :is(input,select){min-height:44px}
- .gps-business-modal:has(.fleet-assets-editor){--modal-padding:16px;--modal-gap:10px;--touch-target:44px}
- .fleet-editor-footer{padding-bottom:env(safe-area-inset-bottom,0px)}
+ .gps-business-modal:not(.gps-member-modal):has(.fleet-assets-editor){--modal-padding:16px;--modal-gap:10px;--touch-target:44px}
  .fleet-assets-detail-actions{
   position:static;
   display:grid;

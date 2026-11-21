@@ -4,16 +4,25 @@ import { api } from '../../api';
 import { businessDate, vehicleName } from '../../lib/business';
 import { addBusinessDays, boardDays, rentalOnDay } from '../../lib/businessWorkspace';
 import { kstDateTime, rentalReport } from '../../lib/businessExport';
-import { contractStage, fleetWorkOnDay, isIncident, repairNames, workStageName } from '../../lib/rentalFleet';
+import { fleetWorkOnDay, isIncident, repairNames, workStageName, workState } from '../../lib/rentalFleet';
 import { isAssigned, matchesVehicle } from '../../lib/rentalInventory';
 import { useRentalOperations } from './useBusinessData';
 import { fleetWorkKey } from './RentalFleetWork';
 import { policyKey } from './RentalPolicy';
 import { BusinessButton, BusinessError } from './BusinessWorkspace';
 import ExportButtons from './ExportButtons';
+import { StageBadge } from './RentalStageTable';
 
 const weekdays = ['월','화','수','목','금','토','일'];
 const mondayOf = date => addBusinessDays(date,-((new Date(date+'T12:00:00Z').getUTCDay()+6)%7));
+
+function workTimeRange(work) {
+  const start = kstDateTime(work.starts_at);
+  const finish = kstDateTime(isIncident(work.kind) ? work.inspection_released_at : work.closed_at || work.ends_at);
+  if (!finish) return start.slice(-5);
+  if (finish.slice(0, 10) === start.slice(0, 10)) return start.slice(-5) + '–' + finish.slice(-5);
+  return start.slice(5) + ' – ' + finish.slice(5);
+}
 
 export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryError,branches,now,tabs,onNew,onContract,onWork}) {
   const today=businessDate(now);
@@ -63,7 +72,7 @@ export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryErr
     {service.isError&&<BusinessError onRetry={service.refetch}>차량 준비 일정을 불러오지 못했습니다.</BusinessError>}
     {policy.isError&&<BusinessError onRetry={policy.refetch}>준비 시간을 불러오지 못했습니다.</BusinessError>}
     <section className="rental-week-panel" aria-label="주간 배차 일정"><header><div>
-      <BusinessButton onClick={()=>setWeek(addBusinessDays(week,-7))}>이전 주</BusinessButton><span>{week.replaceAll('-','.')} – {days[6].replaceAll('-','.')}</span>
+      <BusinessButton onClick={()=>setWeek(addBusinessDays(week,-7))}>이전 주</BusinessButton><span aria-live="polite" aria-atomic="true">{week.replaceAll('-','.')} – {days[6].replaceAll('-','.')}</span>
       <BusinessButton onClick={()=>setWeek(addBusinessDays(week,7))}>다음 주</BusinessButton></div>
       <BusinessButton onClick={()=>setWeek(mondayOf(today))}>이번 주</BusinessButton></header>
       <div className="rental-week-grid" tabIndex={0} role="region" aria-label="월요일부터 일요일까지 배차 일정">
@@ -75,9 +84,10 @@ export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryErr
             <small>{daysLoaded?(dayRows.length+dayWork.length)+'건':'—'}</small></header>
             {dayRows.map(({c,v})=><button type="button" key={c.id} className="rental-week-event" onClick={()=>onContract(c)}>
               <strong>{v?vehicleName(v):isAssigned(c)?(c.license_plate||'배정 차량'):(c.rental_terms?.requested_model||'차종 미지정')+' · 미배정'}</strong>
-              <small>{c.renter_name} · {kstDateTime(c.starts_at).slice(-5)} 인수</small><span>{contractStage(c,now)}</span></button>)}
+              <small>{c.renter_name} · {kstDateTime(c.starts_at).slice(-5)} 인수</small><StageBadge contract={c} now={now}/></button>)}
             {dayWork.map(({w,v})=><button type="button" key={w.id} className="rental-week-event is-work" onClick={()=>onWork(isIncident(w.kind)?'incidents':'service',w.id)}>
-              <strong>{vehicleName(v)}</strong><small>{repairNames[w.kind]||'차량 준비'} · {kstDateTime(w.starts_at).slice(-5)}</small><span>{workStageName(w)}</span></button>)}
+              <strong>{vehicleName(v)}</strong><small>{repairNames[w.kind]||'차량 준비'} · {workTimeRange(w)}</small>
+              <span className={'rental-status'+(workState(w)==='done'?'':' amber')}>{workStageName(w)}</span></button>)}
             {!dayRows.length&&!dayWork.length&&<p>{daysLoaded?'일정 없음':error?'조회 미완료':'조회 중…'}</p>}
           </section>;
         })}

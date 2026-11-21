@@ -25,7 +25,7 @@ export function WorkflowTable({page,data,rows,open,form}){
   })}/>;
 }
 
-export function DispatchView({data,orders:shown,requests,form,open,orderId,setOrderId}){
+export function DispatchView({data,orders:shown,requests,form,open,orderId,setOrderId,onAllRequests}){
   const [owner,setOwner]=useState(''),[possible,setPossible]=useState(false);
   const order=shown.find(o=>o.id===orderId)||shown[0];
   const candidates=order?data.vehicles.map(v=>candidate(data,order,v)).filter(c=>(!owner||(owner==='own')===!c.vehicle.carrierId)&&(!possible||!c.reason)).sort((a,b)=>Number(!!a.reason)-Number(!!b.reason)):[];
@@ -33,11 +33,11 @@ export function DispatchView({data,orders:shown,requests,form,open,orderId,setOr
     <div className="fr-split fr-dispatch">
       <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>미배차 주문</h3><p>주문을 선택하면 차량 후보를 확인할 수 있습니다.</p></div><FreightBadge>{shown.length}건</FreightBadge></header>
         <div className="fr-order-picks">{shown.map(o=><button type="button" className="fr-pick" key={o.id} aria-pressed={order?.id===o.id} onClick={()=>setOrderId(o.id)}>
-          <span>{nameOf(data,'shippers',o.shipperId)}<small>{timeLabel(o.start)}</small></span><strong>{routeName(data,o)}</strong>
+          <span>{nameOf(data,'shippers',o.shipperId)}<small title={timeLabel(o.start)}>{timeLabel(o.start).replace(/^\d{4}-(\d{2})-/, '$1.')}</small></span><strong>{routeName(data,o)}</strong>
           <span>{o.vehicleType} · {num(o.weightKg)} kg<small>{costLabel(o.sellAmount)}</small></span>
         </button>)}{!shown.length&&<p className="fr-empty">미배차 주문이 없습니다.</p>}</div>
       </section>
-      <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>차량·기사 후보</h3><p>차량 조건과 기존 일정을 함께 확인합니다.</p></div>{order&&<FreightButton onClick={()=>open('orders',order.id)}>선택 주문 상세</FreightButton>}</header>
+      <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>차량·기사 후보</h3><p>차량 조건과 기존 일정을 함께 확인합니다.</p></div>{order&&<FreightButton icon="file" aria-label="선택 주문 상세" onClick={()=>open('orders',order.id)}>주문 정보</FreightButton>}</header>
         {order&&<><div className="fr-selected-order"><strong>{routeName(data,order)}</strong>
           <small>{timeLabel(order.start)} ~ {timeLabel(order.end)} · {order.vehicleType} · {num(Math.max(order.weightKg||0,order.capacityKg||0))} kg 이상</small></div>
           <div className="fr-candidate-filters"><FreightField label="차량 소속"><select value={owner} onChange={e=>setOwner(e.target.value)}><option value="">전체 소속</option><option value="own">자사 차량</option><option value="partner">협력 차량</option></select></FreightField>
@@ -51,8 +51,8 @@ export function DispatchView({data,orders:shown,requests,form,open,orderId,setOr
         {!order&&<p className="fr-empty">주문을 선택하면 후보 차량을 확인할 수 있습니다.</p>}
       </section>
     </div>
-    <section className="fr-dashboard-card"><header><h2>배차 수락 대기</h2><span>{requests.length}건</span></header>
-      <FreightTable columns={['운송 / 화주','경로','차량 / 기사','상차 예정','업무 처리']} empty="수락 대기 중인 배차가 없습니다." rows={requests.map(s=>{
+    <section className="fr-dashboard-card fr-dispatch-requests"><header><div><h2>배차 수락 대기</h2><small>{requests.length}건</small></div><button type="button" className="fr-link" aria-label="배차 수락 대기 더보기" onClick={onAllRequests}>더보기</button></header>
+      <FreightTable columns={['운송 / 화주','경로','차량 / 기사','상차 예정','업무 처리']} empty="수락 대기 중인 배차가 없습니다." rows={requests.slice(0,4).map(s=>{
         const o=firstOrder(data,s);
         return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[mainCell(detailLink(s.number,()=>open('shipments',s.id)),nameOf(data,'shippers',o?.shipperId)),routeName(data,o),
           mainCell(vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId)),timeLabel(s.start),
