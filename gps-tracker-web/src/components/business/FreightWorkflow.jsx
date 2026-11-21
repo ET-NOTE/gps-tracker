@@ -54,23 +54,32 @@ function OrderActionForm({action,row,commit,onClose}){
   </FreightForm>;
 }
 
-export function FreightRecordActions({data,save,onPage,children}) {
-  const [detail,setDetail]=useState(null),[dialog,setDialog]=useState(null),[feedback,setFeedback]=useState('');
+export function FreightRecordActions({data,save,onPage,startDispatch,children}) {
+  const [details,setDetails]=useState([]),[dialog,setDialog]=useState(null),[feedback,setFeedback]=useState('');
   const currentData=useRef(data);currentData.current=data;
-  const open=(kind,id)=>setDetail({kind,id});
+  const open=(kind,id)=>setDetails([{kind,id}]);
+  const related=(kind,id)=>setDetails(previous=>{
+    const index=previous.findIndex(item=>item.kind===kind&&item.id===id);
+    return index<0?[...previous,{kind,id}]:previous.slice(0,index+1);
+  });
   const form=(action,kind,id,vehicle)=>{setFeedback('');setDialog({action,kind,id,vehicle,base:data});};
   const close=()=>setDialog(null);
-  const navigate=p=>{close();setDetail(null);onPage(p);};
+  const navigate=p=>{close();setDetails([]);onPage(p);};
   async function commit(recipe){
     if(!dialog||dialog.base!==currentData.current)throw Error('다른 변경 사항이 반영됐습니다. 양식을 다시 열어 주세요.');
     const next=structuredClone(dialog.base);recipe(next);
     await save(next);
-    if(dialog.action==='deleteTemplate')setDetail(null);
+    if(dialog.action==='deleteTemplate')setDetails([]);
     close();setFeedback('저장했습니다.');
   }
-  const chosen=detail&&getRow(data,detail.kind,detail.id),d=dialog,r=d&&getRow(data,d.kind,d.id);
+  const d=dialog,r=d&&getRow(data,d.kind,d.id);
   return <>{children({open,form,navigate,feedback,setFeedback})}
-    {chosen&&!d&&<FreightDetail kind={detail.kind} row={chosen} data={data} form={form} open={open} onClose={()=>setDetail(null)} onPage={navigate}/>}
+    {details.map(({kind,id},index)=>{
+      const row=getRow(data,kind,id);
+      return row&&<FreightDetail key={kind+':'+id} {...{kind,row,data,form,save}} open={related}
+        onDispatch={orderId=>{close();setDetails([]);startDispatch(orderId);}}
+        onClose={()=>setDetails(previous=>previous.slice(0,index))} onPage={navigate}/>;
+    })}
     {d&&(['new','edit'].includes(d.action)?<FreightOrderForm data={data} row={r} recurring={d.kind==='recurring'} onClose={close} commit={commit} onPage={navigate}/>:
       d.action==='assign'?<FreightAssignForm data={data} order={d.kind==='orders'?r:firstOrder(data,r)} shipment={d.kind==='shipments'?r:null} initialVehicle={d.vehicle} onClose={close} commit={commit}/>:
       d.action==='proof'?<FreightProofForm shipment={r} onClose={close} commit={commit}/>:
@@ -82,9 +91,9 @@ export function FreightRecordActions({data,save,onPage,children}) {
 
 export default function FreightWorkflow({page,...props}) {
   const key=page.replace(/^cargo-/, '');
-  return <FreightRecordActions key={key} {...props}>{actions=><WorkflowPage page={key} data={props.data} {...actions}/>}</FreightRecordActions>;
+  return <FreightRecordActions key={key} {...props}>{actions=><WorkflowPage {...props} page={key} {...actions}/>}</FreightRecordActions>;
 }
-function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback}) {
+function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatchOrderId,setDispatchOrderId}) {
   const [filters,setFilters]=useState(allFilters);
   const isOrder=page==='orders'||page==='dispatch',recurring=page==='recurring',isShipment=!recurring&&!isOrder,proofs=page==='proofs',schedule=page==='schedule';
   const stateLabels=proofs?proofStates:recurring?{active:'사용 중',inactive:'사용 중지'}:isOrder?orderStates:shipStates;
@@ -148,7 +157,7 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback}) {
     </div>}
     {!schedule&&filterBar}
     {feedback&&<p role="status" className="fr-note">{feedback}</p>}
-    {page==='dispatch'?<DispatchView data={data} orders={rows} requests={requests} form={form} open={open}/>:schedule?<ScheduleView filters={filterBar} data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
+    {page==='dispatch'?<DispatchView data={data} orders={rows} requests={requests} form={form} open={open} orderId={dispatchOrderId} setOrderId={setDispatchOrderId}/>:schedule?<ScheduleView filters={filterBar} data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
       try{await downloadCsv('배차일정_'+week,[['구분','운송번호 / 작업','구간 / 차량','시작','종료'],...entries.map(e=>[e.kind==='services'?'정비·보험':'운송',e.title,e.info,timeLabel(e.row.start),timeLabel(e.row.end)])]);}catch(e){setFeedback(e.message);}
     }}/>:<WorkflowTable page={page} data={data} rows={rows} open={open} form={form}/>}
   </div>;

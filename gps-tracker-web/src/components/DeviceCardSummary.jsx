@@ -20,7 +20,6 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
   }, [open]);
   function run(action) { setOpen(false); trigger.current?.focus(); action?.(); }
   const battery = deviceBattery(device, meta);
-  const cbc = device.last_cbc_mv;
   return <div ref={root} className="device-summary">
     <div className="device-summary-heading">
       <div className="device-summary-identity">
@@ -53,7 +52,13 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
       <button onClick={onView}><Icon name="mapPin" size={17} />지도 보기</button>
       <button className="device-detail-toggle" aria-expanded={detailOpen} onClick={onDetail}><Icon name="bar" size={17} />{detailOpen ? '상세 닫기' : '상세·통계'}</button>
     </div>
-    <details className="device-technical">
+    <DeviceTechnicalInfo device={device} meta={meta} battery={battery}/>
+  </div>;
+}
+
+export function DeviceTechnicalInfo({device,meta,battery=deviceBattery(device,meta)}) {
+  const cbc=device.last_cbc_mv;
+  return <details className="device-technical">
       <summary>단말기 식별 정보</summary>
       <dl>
         <div><dt>식별번호</dt><dd>{device.device_uid || '—'}</dd></div>
@@ -62,6 +67,5 @@ export default function DeviceCardSummary({ device, meta, status, color, pinned,
         {cbc != null && <div><dt>모듈 전압</dt><dd>{(cbc / 1000).toFixed(2)} V</dd></div>}
         {meta?.sat != null && <div><dt>위성</dt><dd>{meta.sat}개</dd></div>}
       </dl>
-    </details>
-  </div>;
+    </details>;
 }

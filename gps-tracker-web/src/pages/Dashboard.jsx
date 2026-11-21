@@ -21,7 +21,8 @@ import DeviceServiceSettings from '../components/portal/DeviceServiceSettings';
 import { rememberFleetOwner } from '../lib/fleetSession';
 import { ownerServices, businessServices, rememberView, classifyOwnedDevices } from '../lib/platformNavigation';
 import DeviceDetail from '../components/DeviceDetail';
-import DeviceCardSummary from '../components/DeviceCardSummary';
+import {DeviceTechnicalInfo} from '../components/DeviceCardSummary';
+import PortalTerminalDetails from '../components/portal/PortalTerminalDetails';
 import { sideRailItems } from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
 import MapControls from '../components/MapControls';
@@ -162,11 +163,6 @@ export default function Dashboard({ onLogout }) {
       setPairTutorialOpen(true);
     }
   }, [pairDeepLinkPending, devicesLoaded, devices]);
-  const [editId, setEditId]           = useState(null);
-  const [editLabel, setEditLabel]     = useState('');
-  const [editNote, setEditNote] = useState('');
-  const [editError, setEditError] = useState('');
-  const [editSaving, setEditSaving] = useState(false);
   const [pairService, setPairService] = useState('');
   const [colorPickerId, setColorPickerId] = useState(null);
   const [detailId, setDetailId]       = useState(null);
@@ -790,16 +786,9 @@ export default function Dashboard({ onLogout }) {
     finally { setPairLoading(false); }
   }
 
-  async function handleRename(id) {
-    if (editSaving || !editLabel.trim()) return;
-    setEditSaving(true);
-    setEditError('');
-    try {
-      const updated = await api.updateDevice(id, { display_name:editLabel.trim(), note:editNote.trim() });
-      setDevices(ds => ds.map(d => d.id === id ? {...d,...updated} : d));
-      setEditId(null);
-    } catch (e) { setEditError(e.message); }
-    finally { setEditSaving(false); }
+  async function handleRename(id, changes) {
+    const updated = await api.updateDevice(id, changes);
+    setDevices(ds => ds.map(d => d.id === id ? {...d,...updated} : d));
   }
 
   // 연결 해제 모달 — 단일 모달에서 보관/삭제/취소 명시 선택
@@ -910,33 +899,15 @@ export default function Dashboard({ onLogout }) {
   const renderDeviceTools = d => {
     const color = getDeviceColor(d);
     const meta  = lastMetaRef.current[d.id];
-    const status = classifyDevice(d, meta);
-
     return (
-      <>
-          {editId === d.id ? (
-            <form className="pt-pair-form" onSubmit={e=>{e.preventDefault();handleRename(d.id);}}>
-              <label>단말기 이름<input required maxLength={32} value={editLabel} onChange={e=>setEditLabel(e.target.value)} autoFocus /></label>
-              <label>메모<textarea rows={3} maxLength={500} value={editNote} onChange={e=>setEditNote(e.target.value)} /></label>
-              {editError && <p role="alert">{editError}</p>}
-              <div className="pt-card-actions"><button className="pt-button pt-primary" disabled={editSaving || !editLabel.trim()}>저장</button>
-              <button className="pt-button" type="button" disabled={editSaving} onClick={()=>setEditId(null)}>취소</button></div>
-            </form>
-          ) : (
-          <>
-            <DeviceCardSummary embedded device={d} meta={meta} status={status} color={color}
-              pinned={pinnedId === d.id} detailOpen={detailId === d.id}
-              onView={() => { setDetailId(null); if (!isDesktop) setView('home'); persistFilterDevice(d.id); }}
-              onDetail={() => setDetailId(detailId === d.id ? null : d.id)}
-              onPin={() => togglePin(d.id)}
-              onReceive={() => window.open('/diagnostic/device?uid=' + encodeURIComponent(d.device_uid), '_blank')}
-              onColor={() => setColorPickerId(colorPickerId === d.id ? null : d.id)}
-              onRename={() => { setEditId(d.id); setEditLabel(d.display_name || ''); setEditNote(d.note || ''); setEditError(''); }}
-              onUnpair={() => handleUnpair(d.id)} />
-            {d.note && <p className="pt-device-note">{d.note}</p>}
-            {enabledServices.length > 0 && <DeviceServiceSettings device={d} services={enabledServices} onChanged={record => setDevices(ds => ds.map(item => item.id === d.id ? {...item,account_type_override:record.override_type} : item))}/>}
-
-
+      <div className="pt-device-tools">
+            <div className="pt-terminal-actions">
+              <button type="button" className="pt-button" onClick={()=>togglePin(d.id)}>{pinnedId===d.id?'홈 고정 해제':'홈에 고정'}</button>
+              <button type="button" className="pt-button" onClick={()=>window.open('/diagnostic/device?uid='+encodeURIComponent(d.device_uid),'_blank','noopener')}>수신 로그</button>
+              <button type="button" className="pt-button" aria-expanded={colorPickerId===d.id} onClick={()=>setColorPickerId(colorPickerId===d.id?null:d.id)}>색상 변경</button>
+              <button type="button" className="pt-button" onClick={()=>handleUnpair(d.id)}>연결 해제</button>
+            </div>
+            <DeviceTechnicalInfo device={d} meta={meta}/>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
               {[['next_service_date','정비'],['insurance_expiry','보험'],['inspection_expiry','검사']].map(([key,label]) => {
                 if (!d[key]) return null;
@@ -965,33 +936,37 @@ export default function Dashboard({ onLogout }) {
                 await reloadDevicesAfterMutation();
               }} />
             )}
-          </>
-        )}
-      </>
+      </div>
     );
   };
+  const detailDevice = mapVisible && portalDevices.find(device=>device.id===detailId);
+  function closeTerminal() {setDetailId(null);setColorPickerId(null);}
   const panel = (
     <>
       {view === 'devices' && <PortalDeviceList {...portalProps} devices={portalDevices} availableServices={enabledServices} scopeLabel={scopeOptions.find(option => option.value === portalScope)?.label}
         meta={lastMetaRef.current} selectedId={filterDeviceId} detailId={detailId} loading={deviceQuery.isPending || loadingScopeDevices} error={deviceQuery.isError} onRetry={deviceQuery.refetch}
         onSelect={id => { persistFilterDevice(id); if (!isDesktop) mapAreaRef.current?.scrollIntoView({block:'start'}); }}
-        onDetail={id => setDetailId(detailId === id ? null : id)} renderTools={renderDeviceTools}
+        onDetail={setDetailId}
         onPair={() => {setDetailId(null); setPairOpen(true); setPairError('');}}>
-        {pairOpen && <Modal open mobileForm title="단말기 등록" onClose={() => setPairOpen(false)}>
-          <form className="pt-pair-form" onSubmit={async event => {event.preventDefault(); if (!pairLoading && await handlePair()) setPairOpen(false);}}>
+        {pairOpen && <Modal open mobileForm size={530} className="pt-standard-dialog" title="단말기 등록" subtitle={companyMap?'회사 단말기에 추가합니다.':'내 단말기에 추가합니다.'}
+          onClose={pairLoading ? undefined : () => setPairOpen(false)}
+          footer={<div className="pt-dialog-actions">
+            <button type="button" className="pt-button" disabled={pairLoading} onClick={() => setPairOpen(false)}>취소</button>
+            <button type="submit" form="portal-pair-terminal" disabled={pairLoading} className="pt-button pt-primary">{pairLoading?'연결 중…':'등록'}</button>
+          </div>}>
+          <form id="portal-pair-terminal" className="pt-terminal-fields" onSubmit={async event => {event.preventDefault(); if (!pairLoading && await handlePair()) setPairOpen(false);}}>
                 {companyMap && <label>업무 구분<select value={enabledServices.includes(pairService) ? pairService : enabledServices[0]} onChange={e=>setPairService(e.target.value)}>
                   {enabledServices.map(key=><option key={key} value={key}>{{corporate_fleet:'법인운행',rentcar:'렌트카 운영',delivery:'화물배차'}[key]}</option>)}
                 </select></label>}
-                <SimRegistrationHelp inputId="pair-sim-number" />
+                <label>단말기 이름
+                  <input placeholder="예: 1호차" value={pairLabel} maxLength={32} required
+                    onChange={e=>setPairLabel(e.target.value)} />
+                </label>
+                <div className="pt-terminal-sim-field"><SimRegistrationHelp inputId="pair-sim-number" />
                 <input id="pair-sim-number" inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20}
                   placeholder="SIM 끝 8자리 (1NCE 화면 기준)" value={pairSim}
-                  onChange={e => setPairSim(e.target.value)} style={{...s.input, marginBottom: 12}} />
-                <label style={{fontSize:13}}>단말기 이름
-                  <input placeholder="예: 1호차" value={pairLabel} maxLength={32} required
-                    onChange={e=>setPairLabel(e.target.value)} style={{...s.input,marginTop:6}} />
-                </label>
-                {pairError && <div role="alert" style={{color:'var(--danger)',fontSize:12,marginTop:4}}>{pairError}</div>}
-                <div className="pt-pair-actions"><button type="button" className="pt-button" onClick={() => setPairOpen(false)}>취소</button><button type="submit" disabled={pairLoading} className="pt-button pt-primary">{pairLoading?'연결 중…':'내 계정에 연결'}</button></div>
+                  onChange={e => setPairSim(e.target.value)} /></div>
+                {pairError && <div role="alert">{pairError}</div>}
           </form></Modal>}
       </PortalDeviceList>}
       {view === 'profile' && <PortalAccount {...portalProps}/>}
@@ -1202,7 +1177,7 @@ export default function Dashboard({ onLogout }) {
             {showRoutePlanner && view === 'home' && <RoutePlannerSheet mapRef={mapRef} onClose={() => closeTool()} />}
             {mapVisible && !showMiniSeeker && !fullToolOpen && !pointInfo && <div className="pt-map-card-stack">
               <MapDeviceCard vehicles={portalDevices} device={selectedPortalDevice} meta={lastMetaRef.current[filterDeviceId]}
-                onDetail={id => {setDetailId(id); setView('devices');}} onList={() => setView('devices')}/>
+                onDetail={setDetailId} onList={() => setView('devices')}/>
             {view === 'home' && <PinnedDeviceWidget embedded
               device={portalDevices.find(d => d.id === pinnedId)} deviceColor={getDeviceColor(devices.find(d => d.id === pinnedId) || {})}
               deviceMeta={lastMetaRef.current[pinnedId]} deviceStatus={devices.find(d => d.id === pinnedId) ? classifyDevice(devices.find(d => d.id === pinnedId), lastMetaRef.current[pinnedId]) : null}
@@ -1274,7 +1249,14 @@ export default function Dashboard({ onLogout }) {
             </div>
           )}
         </div>
-      </main></WorkspaceHeaderContext.Provider>
+      </main>
+      {detailDevice && !pairOpen && <PortalTerminalDetails key={detailDevice.id} device={detailDevice} meta={lastMetaRef.current[detailDevice.id]}
+        scopeLabel={scopeOptions.find(option=>option.value===portalScope)?.label || '내 단말기'}
+        onClose={closeTerminal} onSave={handleRename} renderAdvanced={renderDeviceTools}
+        onMap={id=>{closeTerminal();persistFilterDevice(id);if(view!=='home')setView('home');}}
+        connection={enabledServices.length>0 && <DeviceServiceSettings device={detailDevice} services={enabledServices} onNavigate={closeTerminal}
+          onChanged={record=>setDevices(ds=>ds.map(item=>item.id===detailDevice.id?{...item,account_type_override:record.override_type}:item))}/>}/>}
+      </WorkspaceHeaderContext.Provider>
 
       </div>
 
@@ -1329,7 +1311,7 @@ export default function Dashboard({ onLogout }) {
             // pair modal 은 이미 열려있음 (deep link 처리에서 setPairOpen(true))
             // ICCID 입력 필드로 포커스 보내기
             setTimeout(() => {
-              const el = document.querySelector('input[placeholder*="ICCID"]');
+              const el = document.getElementById('pair-sim-number');
               if (el) el.focus();
             }, 50);
           }}

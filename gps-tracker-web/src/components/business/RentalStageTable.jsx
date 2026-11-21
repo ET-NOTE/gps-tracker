@@ -53,7 +53,11 @@ export default function RentalStageTable({stage, rows, now, balances, devices, c
   }
   return <div className="rental-stage-table" role="region" aria-label={columns[stage][0]+'별 목록'} tabIndex={0}>
     <table><thead><tr>{columns[stage].map(label=><th scope="col" key={label}>{label}</th>)}</tr></thead>
-      <tbody>{rows.length ? rows.map(c=><tr key={c.id} onClick={event=>{if (!event.target.closest('button,a')) onDetail(c);}}>{cells(c).map((value,index)=><td key={index}>{value}</td>)}</tr>) :
+      <tbody>{rows.length ? rows.map(c=><tr key={c.id} onClick={event=>{
+        if (event.target.closest('button,a')) return;
+        event.currentTarget.querySelector('.rental-record-link')?.focus({preventScroll:true});
+        onDetail(c);
+      }}>{cells(c).map((value,index)=><td key={index}>{value}</td>)}</tr>) :
         <tr><td className="rental-list-empty" colSpan={columns[stage].length}>조건에 맞는 대여 내역이 없습니다.</td></tr>}</tbody>
     </table>
   </div>;

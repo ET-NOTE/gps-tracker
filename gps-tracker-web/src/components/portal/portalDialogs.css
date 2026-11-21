@@ -1,0 +1,68 @@
+.gps-modal-backdrop.pt-standard-dialog {
+  --modal-padding:0; --modal-gap:0; --modal-title-size:18px; --modal-title-weight:500; --modal-subtitle-size:12px;
+  --pt-dialog-border:var(--border); --pt-dialog-muted:var(--text-2); --pt-dialog-soft:var(--surface-2);
+  padding:25px !important; background:rgba(35,45,61,.24) !important; backdrop-filter:blur(3px);
+  font:400 14px/1.55 var(--fleet-font);
+}
+:root:not([data-theme="dark"]) .pt-standard-dialog {
+  --text:#353b45;--text-2:#778394;--surface:#fff;--pt-dialog-border:#e7eaf0;--pt-dialog-muted:#76849a;
+  --pt-dialog-soft:#fbfcfe;--border:#e2e6ed;--primary:#3676e5;--primary-fg:#fff;
+}
+.pt-standard-dialog .gps-modal {overflow:hidden;font:inherit;border:0;border-radius:17px!important}
+.pt-standard-dialog .gps-modal>div:first-child {
+  align-items:flex-start!important;padding:23px 26px 19px;border-bottom:1px solid var(--pt-dialog-border);line-height:1.55;
+}
+.pt-standard-dialog .gps-modal>div:first-child>button {
+  min-width:32px!important;min-height:32px!important;width:32px;height:32px;color:var(--pt-dialog-muted)!important;
+}
+.pt-standard-dialog .gps-modal>.gps-modal-body {padding:24px 26px;gap:0!important;overscroll-behavior:contain}
+.pt-standard-dialog .gps-modal>.gps-modal-body+div {margin:0!important;padding:17px 26px;border-top:1px solid var(--pt-dialog-border);background:var(--pt-dialog-soft)}
+.pt-standard-dialog .pt-button {display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:8px 13px;font:400 12px/18px var(--fleet-font);border-radius:8px}
+:root:not([data-theme="dark"]) .pt-standard-dialog .pt-button:not(.pt-primary) {color:#5b6574}
+.gps-modal-backdrop.pt-terminal-drawer {padding:0!important;backdrop-filter:none;--modal-title-size:17px;--modal-subtitle-size:11px}
+.gps-modal-backdrop.pt-terminal-drawer[data-placement=end] .gps-modal {--modal-padding:0;--modal-title-size:17px;border-radius:0!important;width:min(470px,100%)}
+.pt-terminal-drawer .gps-modal>div:first-child {padding:22px 26px 18px}
+.pt-terminal-overview {min-width:0;color:var(--text);font:400 14px/1.55 var(--fleet-font)}
+.pt-terminal-overview>section {margin-top:18px}
+.pt-terminal-overview>section>h3 {margin:0 0 12px;font:500 13px/1.55 var(--fleet-font);color:var(--pt-dialog-muted)}
+.pt-terminal-overview>section>dl {margin:0}
+.pt-terminal-overview>section>dl>div {display:flex;justify-content:space-between;gap:18px;padding:10px 0;border-bottom:1px solid var(--pt-dialog-border);font-size:12px}
+.pt-terminal-overview>section>dl>div:last-child {border:0}
+.pt-terminal-overview>section dt {flex:none;color:var(--pt-dialog-muted)}
+.pt-terminal-overview>section dd {margin:0;min-width:0;text-align:end;color:var(--text);overflow-wrap:anywhere}
+.pt-terminal-states {display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}
+.pt-terminal-states .pt-state {margin:0;font:400 10px/1.5 var(--fleet-font);padding:4px 7px;border-radius:5px}
+.pt-terminal-states .pt-state:first-child::before {content:"";width:4px;height:4px;margin-right:5px;border-radius:50%;background:currentColor}
+.pt-terminal-states [data-position] {color:var(--pt-dialog-muted);background:var(--pt-dialog-soft)}
+.pt-terminal-states [data-position=true] {color:var(--primary);background:var(--status-info-bg)}
+.pt-terminal-overview>.battery-status {padding:12px;border:1px solid var(--pt-dialog-border);border-radius:8px}
+.pt-terminal-settings,.pt-terminal-actions {display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.pt-terminal-note {margin:14px 0 0;padding:12px;background:var(--pt-dialog-soft);border-radius:8px;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.pt-terminal-more {margin-top:20px;border-top:1px solid var(--pt-dialog-border)}
+.pt-terminal-more>summary {padding:12px 0;color:var(--pt-dialog-muted);font-size:12px;cursor:pointer}
+.pt-terminal-more .pt-device-tools {min-width:0}
+.pt-terminal-fields {display:grid;gap:17px}
+.pt-terminal-fields label,.pt-terminal-sim-field {display:grid;gap:7px;color:var(--pt-dialog-muted);font-size:12px}
+.pt-terminal-fields :is(input,textarea,select) {box-sizing:border-box;min-height:40px;width:100%;min-width:0;border:1px solid var(--pt-dialog-border);border-radius:8px;background:var(--surface);color:var(--text);padding:9px 11px;font:400 13px/1.5 var(--fleet-font)}
+.pt-terminal-fields textarea {resize:vertical}
+.pt-terminal-fields [role=alert] {color:var(--danger);font-size:12px}
+.pt-standard-dialog .pt-search-field {flex:none;height:37px;min-height:37px;padding:0 10px;border:1px solid var(--pt-dialog-border);border-radius:8px}
+.pt-standard-dialog .pt-search-field:focus-within {border-color:var(--primary);outline:1px solid var(--primary)}
+.pt-standard-dialog .pt-search-field input[type=search] {min-width:0;min-height:0;box-shadow:none;border:0;outline:none;padding:0;background:transparent;font:400 13px/1.55 var(--fleet-font)}
+.pt-standard-dialog .pt-search-results {display:grid;gap:5px;margin-top:16px;max-height:420px;overflow:auto}
+.pt-standard-dialog .pt-search-results :is(a,button) {min-height:44px;padding:12px;font:400 13px/1.55 var(--fleet-font)}
+.pt-standard-dialog .pt-search-results small {font-size:11px;font-weight:400;color:var(--pt-dialog-muted)}
+.pt-standard-dialog .pt-alert-summary {padding:10px 13px;background:var(--pt-dialog-soft);border:1px solid var(--pt-dialog-border);border-radius:8px;font-size:12px}
+.pt-standard-dialog .pt-status-list {gap:9px}
+.pt-standard-dialog .pt-status-list button {border:1px solid var(--pt-dialog-border);border-radius:9px}
+.pt-standard-dialog .pt-status-list .pt-state {flex:none;margin-inline-start:auto;font-size:10px}
+.pt-standard-dialog .pt-status-settings {align-self:flex-start;margin-top:12px}
+@media(max-width:760px) {
+  .gps-modal-backdrop.pt-standard-dialog {padding:12px!important}
+  .pt-standard-dialog .gps-modal>div:first-child,.pt-standard-dialog .gps-modal>.gps-modal-body {padding:19px}
+  .pt-standard-dialog .gps-modal>.gps-modal-body+div {padding:14px 19px}
+  .gps-modal-backdrop.pt-terminal-drawer {padding:0!important}
+  .pt-terminal-drawer .gps-modal {max-width:100%!important}
+  .pt-terminal-drawer .gps-modal>div:first-child,.pt-terminal-drawer .gps-modal>.gps-modal-body {padding:20px}
+  .pt-terminal-drawer .gps-modal>.gps-modal-body+div {padding:15px 20px}
+}

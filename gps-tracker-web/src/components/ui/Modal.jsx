@@ -34,6 +34,7 @@ export default function Modal({
   closeOnEsc = true,
   mobileForm = false,
   placement = 'center',
+  className = '',
   footer,
   children,
   bodyStyle,
@@ -77,7 +78,7 @@ export default function Modal({
   return <><span ref={anchor} hidden />{createPortal(
     <div
       ref={backdrop}
-      className="gps-modal-backdrop"
+      className={'gps-modal-backdrop ' + className}
       data-placement={placement}
       onClick={closeOnBackdrop ? onClose : undefined}
       style={{

@@ -1,0 +1,68 @@
+.business-drawer-backdrop:has(.rental-record-drawer) {
+  background:rgba(38,51,72,.22);
+}
+.business-drawer-backdrop .business-drawer:has(.rental-record-drawer) {
+  --record-inset:26px;
+  width:min(470px,100%); height:100%; max-height:100%; padding:0; border-radius:0;
+  font:400 14px/1.55 var(--fleet-font); color:var(--text); background:var(--surface);
+}
+:root:not([data-theme="dark"]) .business-drawer:has(.rental-record-drawer) {
+  --text:#353b45; --text-2:#657388; --text-3:#788394; --border:#e7eaf0;
+  --primary:#3676e5; --surface:#fff; --surface-2:#fcfdff;
+}
+.business-drawer:has(.rental-record-drawer)>header {
+  flex:none; align-items:flex-start; min-height:0; padding:22px var(--record-inset) 18px;
+  border-bottom:1px solid var(--border);
+}
+.business-drawer:has(.rental-record-drawer)>header h2 {
+  font:500 17px/1.55 var(--fleet-font); letter-spacing:-.4px; overflow-wrap:anywhere;
+}
+.business-drawer:has(.rental-record-drawer)>header p {
+  margin:4px 0 0; color:var(--text-3); font:400 11px/1.55 var(--fleet-font);
+}
+.business-drawer:has(.rental-record-drawer)>header .business-button {
+  flex:none; width:32px; min-height:32px; height:32px; padding:0; border:0; color:var(--text-3); background:transparent;
+}
+.business-drawer:has(.rental-record-drawer)>.business-drawer-body {
+  display:flex; flex:1; min-height:0; padding:0; overflow:hidden;
+}
+.rental-record-drawer {display:flex; flex-direction:column; width:100%; min-width:0; min-height:0; flex:1}
+.rental-record-body {min-height:0; min-width:0; flex:1; overflow:auto; overscroll-behavior:contain; padding:24px var(--record-inset); scrollbar-width:thin}
+.rental-record-body :is(h3,.rental-detail h3) {margin:0 0 10px; font:500 13px/1.55 var(--fleet-font); color:var(--text-2)}
+.rental-record-body .rental-detail-top {margin:0; padding-bottom:16px; border-bottom:1px solid var(--border)}
+.rental-record-body .rental-detail-top h3 {margin:0}
+.rental-contract-car {display:flex; align-items:center; gap:10px; min-width:0; flex:1}
+.rental-contract-car>span {display:grid; place-items:center; width:55px; height:36px; flex:none; color:var(--text-3); background:var(--surface-2); border-radius:6px}
+.rental-contract-car>span img {width:100%; height:100%; object-fit:contain}
+.rental-contract-car>div {min-width:0; overflow-wrap:anywhere}
+.rental-contract-car small {display:block; margin-top:8px; color:var(--text-3); font:400 12px/1.55 var(--fleet-font)}
+.rental-record-body :is(.rental-record-fields,.rental-detail dl) {display:grid; margin:0}
+.rental-record-body :is(.rental-record-fields,.rental-detail dl)>div {
+  display:flex; justify-content:space-between; align-items:flex-start; gap:18px; border:0; border-bottom:1px solid var(--border);
+  padding:10px 0; font:400 12px/1.55 var(--fleet-font);
+}
+.rental-record-body :is(.rental-record-fields,.rental-detail dl)>div:last-child {border-bottom:0}
+.rental-record-body dt {flex:none; color:var(--text-3)}
+.rental-record-body dd {margin:0; text-align:end; color:var(--text-2); overflow-wrap:anywhere}
+.rental-record-body>.rental-record-fields+section {margin-top:20px}
+.rental-record-text {margin:0; white-space:pre-wrap; font-size:13px; overflow-wrap:anywhere; color:var(--text-2)}
+.rental-record-footer,.rental-record-links {display:flex; flex-wrap:wrap; gap:7px; align-items:center}
+.rental-record-footer {flex:none; justify-content:flex-end; border-top:1px solid var(--border); padding:17px var(--record-inset) max(17px,env(safe-area-inset-bottom)); background:var(--surface-2)}
+.rental-record-footer:empty {display:none}
+.rental-record-drawer :is(.rental-record-footer,.rental-record-links) button {
+  min-height:36px; padding:7px 11px; font:400 12px/1.55 var(--fleet-font); border-radius:8px; white-space:normal;
+}
+.rental-record-drawer .rental-record-links .business-button {min-height:30px; padding:5px 9px; border-color:transparent; background:transparent; font-size:11px}
+.rental-record-links .business-button:hover {background:var(--surface-2)}
+.rental-office .ro-table tr[data-record] {cursor:pointer}
+.rental-office .ro-table tr[data-record]:hover {background:var(--surface-2)}
+.rental-office .ro-table .ro-detail-link {padding:0; border:0; background:transparent; color:inherit; font:inherit; text-align:start; cursor:pointer}
+.rental-office .ro-detail-link:hover,.rental-record-related:hover {color:var(--primary)}
+.rental-record-related {display:flex; justify-content:space-between; gap:12px; width:100%; min-height:40px; align-items:center; padding:8px 0; border:0; border-bottom:1px solid var(--border); background:transparent; font:inherit; color:var(--text); text-align:start; cursor:pointer}
+.rental-record-related small {color:var(--text-3)}
+@media(max-width:760px) {
+  .business-drawer-backdrop .business-drawer:has(.rental-record-drawer) {--record-inset:20px}
+  .business-drawer:has(.rental-record-drawer)>header {padding:22px var(--record-inset) 18px}
+  .rental-record-body {padding:20px var(--record-inset)}
+  .rental-record-footer {padding:15px var(--record-inset) max(15px,env(safe-area-inset-bottom)); max-height:34dvh; overflow-y:auto}
+}

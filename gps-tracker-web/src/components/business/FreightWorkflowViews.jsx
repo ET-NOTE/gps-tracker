@@ -25,8 +25,8 @@ export function WorkflowTable({page,data,rows,open,form}){
   })}/>;
 }
 
-export function DispatchView({data,orders:shown,requests,form,open}){
-  const [orderId,setOrderId]=useState(''),[owner,setOwner]=useState(''),[possible,setPossible]=useState(false);
+export function DispatchView({data,orders:shown,requests,form,open,orderId,setOrderId}){
+  const [owner,setOwner]=useState(''),[possible,setPossible]=useState(false);
   const order=shown.find(o=>o.id===orderId)||shown[0];
   const candidates=order?data.vehicles.map(v=>candidate(data,order,v)).filter(c=>(!owner||(owner==='own')===!c.vehicle.carrierId)&&(!possible||!c.reason)).sort((a,b)=>Number(!!a.reason)-Number(!!b.reason)):[];
   return <>

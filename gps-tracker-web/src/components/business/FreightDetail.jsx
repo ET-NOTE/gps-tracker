@@ -1,8 +1,15 @@
-import BusinessDrawer from './BusinessDrawer';
-import {FreightBadge,FreightButton,FreightFacts} from './FreightKit';
+import {useState} from 'react';
+import Icon from '../Icon';
+import truckArt from './freight-truck.svg';
+import {FreightBadge,FreightButton,FreightDrawer,FreightFacts} from './FreightKit';
+import {FreightCatalogDialogs} from './FreightCatalog';
+import {financeRow,FreightLedgerDialogs} from './FreightLedger';
 import {FreightPhotos} from './FreightShipmentForms';
 import useFreightStaff from './useFreightStaff';
-import {costLabel,firstOrder,nameOf,orderStates,proofStates,routeName,shipStates,stepMap,timeLabel,vehicleName,weekdays} from '../../lib/freightWorkflow';
+import {costLabel,firstOrder,getRow,nameOf,orderStates,proofStates,shipStates,stepMap,timeLabel,vehicleName,weekdays} from '../../lib/freightWorkflow';
+import {shipmentFinance} from '../../lib/freightFinance';
+
+const eventLabels={requested:'배차 요청',confirmed:'배차 확정',arrived:'상차지 도착',loaded:'상차 완료',delivered:'하차 완료',reassigned:'배차 변경',cancelled:'배차 취소',declined:'배차 거절'};
 
 export const tone=k=>({open:'amber',requested:'amber',loading:'amber',assigned:'blue',confirmed:'blue',in_transit:'blue',submitted:'blue',approved:'green',delivered:'green',completed:'green',cancelled:'red',rework:'red'}[k]||'neutral');
 export function Status({value,labels}){return <FreightBadge tone={tone(value)}>{labels[value]||'—'}</FreightBadge>;}
@@ -15,42 +22,98 @@ export function nextAction(s){
   }
   return null;
 }
-export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage}){
-  const s=kind==='shipments'?r:null,o=s?firstOrder(data,s):r, recurring=kind==='recurring',service=kind==='services';
-  const staff=useFreightStaff(!!o?.userId && !service);
-  const next=s&&nextAction(s), linked=s?.orderIds||[];
-  const beforeStart=s&&['requested','confirmed'].includes(s.status);
-  const mayReassign=beforeStart&&s.invoiceStatus!=='issued'&&s.payableStatus!=='confirmed'&&!data.payments.some(p=>p.shipmentId===s.id);
-  const recurringOrders=recurring?data.orders.filter(o=>o.recurringId===r.id):[];
-  const title={shipments:'운송 상세',orders:'운송 주문 상세',recurring:'정기 주문 상세',services:'정비·보험 일정'}[kind];
-  return <BusinessDrawer title={title} subtitle={r.number||r.name||r.type} onClose={onClose}><div className="fr-section">
-    {service?<><FreightFacts items={[['차량',vehicleName(data,r.vehicleId)],['시작',timeLabel(r.start)],['종료',timeLabel(r.end)],['상태',r.status==='done'?'완료':'예정'],['메모',r.note||'—']]}/><div><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 관리</FreightButton></div></>:<>
-      <div className="fr-toolbar"><strong>{routeName(data,o)}</strong>{recurring?<FreightBadge>{r.active?'사용 중':'사용 중지'}</FreightBadge>:<Status value={r.status} labels={s?shipStates:orderStates}/>}</div>
-      <FreightFacts items={[
-        ['화주',nameOf(data,'shippers',o?.shipperId)],['담당 지점',nameOf(data,'branches',r.branchId)],
-        ...(!recurring?[['배차 담당자',o?.userId?(staff.rows.find(p=>String(p.id)===String(o.userId))?.name||'기존 담당자'):'운영 관리자']]:[]),
-        ...(recurring?[['반복 요일',r.weekdays.map(d=>weekdays[d]).join(' · ')],['상차 / 하차 시간',r.startTime+' / '+r.endTime],['최근 주문 생성',r.lastGenerated||'—']]:[['상차 예정',timeLabel(r.start)],['하차 예정',timeLabel(r.end)]]),
-        ['화물',o?.cargoName],['수량 / 중량',(o?.quantity??'—')+' '+(o?.unit||'')+' / '+(o?.weightKg??'—')+' kg'],
-        ['필요 차량',o?.vehicleType+' · '+o?.capacityKg+' kg'],['운송 조건',[o?.temperature,o?.tripType,o?.mixedAllowed?'혼적 허용':'단독'].join(' · ')],
-        ...(s?[['배차 차량',vehicleName(data,s.vehicleId)],['운행 기사',nameOf(data,'drivers',s.driverId)],['운송사',s.carrierId?nameOf(data,'carriers',s.carrierId):'직영']]:[['화주 주문번호',r.externalRef||'—']]),
-        ['화주 합의 운임',costLabel(r.sellAmount)],['운송 합의 원가',costLabel(r.buyAmount)],['메모',r.note||'—'],
-      ]}/>
-      {s&&<><section className="fr-section"><h3>인수증·수령 확인</h3><FreightFacts items={[
-        ['확인 상태',<Status value={s.proof.status} labels={proofStates}/>],['수령인',s.proof.receiver||'—'],['수령 확인',timeLabel(s.proof.at)],['수령 메모',s.proof.note||'—'],
-        ...(s.proof.reviewedAt?[['검토 일시',timeLabel(s.proof.reviewedAt)],['검토 메모',s.proof.reviewNote||'—']]:[]),
-      ]}/><FreightPhotos files={s.proof.files}/></section>
-      <div className="fr-actions">{linked.map(id=><FreightButton key={id} onClick={()=>open('orders',id)}>{data.orders.find(o=>o.id===id)?.number||'연결 주문'}</FreightButton>)}</div></>}
-      {r.history?.length>0&&<section className="fr-section"><h3>처리 이력</h3><ul className="fr-history">{r.history.map((item,i)=><li key={i}>{timeLabel(item.at)} · {item.text}</li>)}</ul></section>}
-      {recurringOrders.length>0&&<section className="fr-section"><h3>생성한 주문</h3><div className="fr-actions">{recurringOrders.map(o=><FreightButton key={o.id} onClick={()=>open('orders',o.id)}>{o.number}</FreightButton>)}</div></section>}
-      <div className="fr-actions">
-        {recurring&&<><FreightButton primary disabled={!r.active} onClick={()=>form('generate',kind,r.id)}>주문 생성</FreightButton><FreightButton onClick={()=>form('edit',kind,r.id)}>수정</FreightButton>
-          <FreightButton disabled={!!recurringOrders.length} onClick={()=>form('deleteTemplate',kind,r.id)}>삭제</FreightButton></>}
-        {kind==='orders'&&(r.status==='open'?<><FreightButton primary onClick={()=>form('assign',kind,r.id)}>배차 등록</FreightButton><FreightButton onClick={()=>form('edit',kind,r.id)}>주문 수정</FreightButton><FreightButton onClick={()=>form('cancelOrder',kind,r.id)}>주문 취소</FreightButton></>:r.shipmentId&&<FreightButton onClick={()=>open('shipments',r.shipmentId)}>연결된 운송 보기</FreightButton>)}
-        {next&&<FreightButton primary onClick={()=>form(next[0],kind,r.id)}>{next[1]}</FreightButton>}
-        {s?.status==='requested'&&<FreightButton onClick={()=>form('decline',kind,r.id)}>배차 거절</FreightButton>}
-        {mayReassign&&<><FreightButton onClick={()=>form('assign',kind,r.id)}>재배차</FreightButton><FreightButton onClick={()=>form('release',kind,r.id)}>배차 해제</FreightButton></>}
-        {s?.status==='delivered'&&s.proof.status==='submitted'&&<><FreightButton onClick={()=>form('rework',kind,r.id)}>보완 요청</FreightButton><FreightButton onClick={()=>form('proof',kind,r.id)}>인수증 수정</FreightButton></>}
-      </div>
-    </>}
-  </div></BusinessDrawer>;
+
+function Block({title,children}) {
+  return <section className="fr-record-block"><h3>{title}</h3>{children}</section>;
+}
+
+export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage,onDispatch,save}){
+  const shipment=kind==='shipments'?r:null,order=shipment?firstOrder(data,shipment):r;
+  const recurring=kind==='recurring',service=kind==='services';
+  const staff=useFreightStaff(!!order?.userId && !service);
+  const [related,setRelated]=useState(null);
+  const next=shipment&&nextAction(shipment);
+  const beforeStart=shipment&&['requested','confirmed'].includes(shipment.status);
+  const mayReassign=beforeStart&&shipment.invoiceStatus!=='issued'&&shipment.payableStatus!=='confirmed'&&!data.payments.some(p=>p.shipmentId===shipment.id);
+  const orders=shipment?(shipment.orderIds||[]).map(id=>getRow(data,'orders',id)).filter(Boolean):[];
+  const finance=shipment&&shipmentFinance(data,shipment);
+  const generated=recurring?data.orders.filter(o=>o.recurringId===r.id):[];
+  const shipments=kind==='orders'?data.shipments.filter(s=>s.id===r.shipmentId||s.orderIds?.includes(r.id)):[];
+  const title={shipments:'배차·운송 상세',orders:'운송 주문 상세',recurring:'정기 주문 상세',services:'정비·보험 일정'}[kind];
+  const close=<FreightButton onClick={onClose}>닫기</FreightButton>;
+
+  function catalogButton(key,id,label,icon) {
+    if(!getRow(data,key,id))return null;
+    return <FreightButton icon={icon} onClick={()=>setRelated({kind:key,id,action:'detail'})}>{label}</FreightButton>;
+  }
+  function setRelatedView(view) {
+    setRelated(previous=>view?{...previous,...view}:null);
+  }
+  const actions=<div className="fr-actions">
+    {service&&<FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 관리</FreightButton>}
+    {recurring&&<><FreightButton disabled={!!generated.length} onClick={()=>form('deleteTemplate',kind,r.id)}>삭제</FreightButton>
+      <FreightButton onClick={()=>form('edit',kind,r.id)}>수정</FreightButton>
+      <FreightButton primary disabled={!r.active} onClick={()=>form('generate',kind,r.id)}>주문 생성</FreightButton></>}
+    {kind==='orders'&&(r.status==='open'?<>
+      <FreightButton onClick={()=>form('cancelOrder',kind,r.id)}>주문 취소</FreightButton>
+      <FreightButton icon="edit" onClick={()=>form('edit',kind,r.id)}>주문 수정</FreightButton>
+      <FreightButton primary icon="car" onClick={()=>onDispatch(r.id)}>차량·기사 배차</FreightButton>
+    </>:close)}
+    {next&&<FreightButton primary onClick={()=>form(next[0],kind,r.id)}>{next[1]}</FreightButton>}
+    {shipment?.status==='requested'&&<FreightButton onClick={()=>form('decline',kind,r.id)}>배차 거절</FreightButton>}
+    {mayReassign&&<><FreightButton onClick={()=>form('assign',kind,r.id)}>재배차</FreightButton><FreightButton onClick={()=>form('release',kind,r.id)}>배차 해제</FreightButton></>}
+    {shipment?.status==='delivered'&&shipment.proof.status==='submitted'&&<><FreightButton onClick={()=>form('rework',kind,r.id)}>보완 요청</FreightButton><FreightButton onClick={()=>form('proof',kind,r.id)}>인수증 수정</FreightButton></>}
+    {shipment&&<FreightButton onClick={()=>setRelated({kind:'finance',id:r.id,action:'detail',billing:true})}>운임·정산</FreightButton>}
+  </div>;
+  const staffName=order?.userId?(staff.rows.find(p=>String(p.id)===String(order.userId))?.name||'기존 담당자'):'운영 관리자';
+  const branchName=nameOf(data,'branches',r.branchId);
+  const cargoConditions=<Block title="화물·차량 조건"><FreightFacts items={[
+    ['화물',order?.cargoName],['수량',order?.quantity==null?'—':order.quantity.toLocaleString('ko-KR')+' '+(order.unit||'')],
+    ['화물 중량',order?.weightKg==null?'—':order.weightKg.toLocaleString('ko-KR')+' kg'],
+    ['요청 차량',[order?.vehicleType,order?.capacityKg!=null&&order.capacityKg.toLocaleString('ko-KR')+' kg 이상'].filter(Boolean).join(' · ')||'—'],
+    ['온도 / 운송 형태',[order?.temperature,order?.tripType].filter(Boolean).join(' / ')||'—'],['혼적 허용',order?.mixedAllowed?'허용 조건으로 접수':'단독 운송'],
+  ]}/></Block>;
+  const orderExtras=<>{cargoConditions}
+    <Block title="합의 운임"><FreightFacts items={[[ '화주 운임',costLabel(r.sellAmount)],['운송 원가',costLabel(r.buyAmount)]]}/></Block>
+    <div className="fr-actions fr-record-shortcuts">{catalogButton('shippers',order?.shipperId,'화주 정보','office')}
+      {catalogButton('locations',order?.pickupLocationId,'상차지 안내','mapPin')}{catalogButton('locations',order?.dropoffLocationId,'하차지 안내','mapPin')}</div>
+    <Block title="작업 요청사항"><p className="fr-record-note">{r.note||'등록된 요청사항이 없습니다.'}</p></Block>
+  </>;
+  return <>
+    <FreightDrawer title={title} subtitle={r.number||r.name||r.type} onClose={onClose} footer={actions}>
+      {service?<FreightFacts items={[[ '차량',vehicleName(data,r.vehicleId)],['시작',timeLabel(r.start)],['종료',timeLabel(r.end)],['상태',r.status==='done'?'완료':'예정'],['메모',r.note||'—']]}/>:<>
+        <div className="fr-record-heading">{shipment?<div className="fr-record-vehicle"><img src={truckArt} width="56" height="34" alt=""/>
+          <div><strong>{vehicleName(data,r.vehicleId)}</strong><small>{nameOf(data,'drivers',r.driverId)}</small></div></div>:<strong>{nameOf(data,'shippers',order?.shipperId)}</strong>}
+          {recurring?<FreightBadge>{r.active?'사용 중':'사용 중지'}</FreightBadge>:<Status value={r.status} labels={shipment?shipStates:orderStates}/>}</div>
+        <div className="fr-record-route"><span>{nameOf(data,'locations',order?.pickupLocationId)}</span><Icon name="chevron-right" size={15}/><span>{nameOf(data,'locations',order?.dropoffLocationId)}</span></div>
+        {shipment?<><FreightFacts items={[[ '상차 / 하차 예정',timeLabel(r.start)+' / '+timeLabel(r.end)],['소속 운송사',r.carrierId?nameOf(data,'carriers',r.carrierId):'자사 차량'],['담당 지점',branchName]]}/>
+          <div className="fr-actions fr-record-shortcuts">{catalogButton('vehicles',r.vehicleId,'차량 정보','car')}{catalogButton('drivers',r.driverId,'기사 정보','user')}{catalogButton('carriers',r.carrierId,'운송사 정보','office')}</div>
+        </>:<><FreightFacts items={[
+          ...(recurring?[['반복 요일',r.weekdays.map(d=>weekdays[d]).join(' · ')],['상차 / 하차 시간',r.startTime+' / '+r.endTime],['최근 주문 생성',r.lastGenerated||'—']]:[['상차 예정',timeLabel(r.start)],['하차 예정',timeLabel(r.end)]]),
+          ['화주 주문번호',r.externalRef||'—'],recurring?['담당 지점',branchName]:['담당 지점 / 직원',branchName+' / '+staffName],
+        ]}/>{orderExtras}</>}
+        {kind==='orders'&&<Block title="연결된 배차·운송">{shipments.length?shipments.map(s=><button type="button" key={s.id} className="fr-record-link" onClick={()=>open('shipments',s.id)}>
+          <span>{s.number}<small>{vehicleName(data,s.vehicleId)} · {nameOf(data,'drivers',s.driverId)}</small></span><Status value={s.status} labels={shipStates}/></button>):<p className="fr-record-note">아직 배차되지 않았습니다.</p>}</Block>}
+        {shipment&&<><Block title="연결 주문">{orders.map(o=><button type="button" className="fr-record-link" key={o.id} onClick={()=>open('orders',o.id)}><span>{o.number} · {nameOf(data,'shippers',o.shipperId)}<small>{o.cargoName} · {o.weightKg==null?'—':o.weightKg.toLocaleString('ko-KR')+' kg'}</small></span><Icon name="chevron-right" size={14}/></button>)}</Block>
+          <Block title="운임·정산"><FreightFacts items={[
+            ['화주 청구 예정',costLabel(finance.sell)],['운송 지급 예정',costLabel(finance.buy)],['운임 차익',costLabel(finance.margin)],
+            ['화주 순수납',costLabel(finance.received)],['운송비 순지급',costLabel(finance.paid)],
+            ['화주 청구 상태',r.invoiceStatus==='issued'?'청구 기록 완료':'청구 전'],['운송비 정산',r.payableStatus==='confirmed'?'금액 확인 완료':'금액 확인 전'],
+          ]}/></Block>
+          <Block title="운송 진행">{r.events?.length?<ol className="fr-record-history">{r.events.map((event,i)=><li key={i}>{eventLabels[event.type]||event.type}<small>{timeLabel(event.at)}</small>{event.note&&<p className="fr-record-note">{event.note}</p>}</li>)}</ol>:<p className="fr-record-note">진행 기록이 없습니다.</p>}</Block>
+          <Block title="인수증·수령 확인"><FreightFacts items={[
+            ['확인 상태',<Status value={r.proof.status} labels={proofStates}/>],['수령인',r.proof.receiver||'—'],['수령 확인',timeLabel(r.proof.at)],['수령 메모',r.proof.note||'—'],
+            ...(r.proof.reviewedAt?[['검토 일시',timeLabel(r.proof.reviewedAt)],['검토 메모',r.proof.reviewNote||'—']]:[]),
+          ]}/><FreightPhotos files={r.proof.files}/></Block>
+          <details className="fr-record-more"><summary>주문 조건·요청사항</summary><FreightFacts items={[[ '배차 담당자',staffName]]}/>{orderExtras}</details></>}
+        {!!generated.length&&<Block title="생성한 주문">{generated.map(o=><button type="button" className="fr-record-link" key={o.id} onClick={()=>open('orders',o.id)}>{o.number}<Status value={o.status} labels={orderStates}/></button>)}</Block>}
+        <Block title="처리 이력">{r.history?.length?<ul className="fr-record-history">{r.history.map((h,i)=><li key={i}>{h.text}<small>{timeLabel(h.at)}</small></li>)}</ul>:<p className="fr-record-note">등록된 이력이 없습니다.</p>}</Block>
+      </>}
+    </FreightDrawer>
+    {related&&(related.kind==='finance'?<FreightLedgerDialogs data={data} save={save} onPage={onPage}
+      billing={related.billing} view={related} setView={setRelatedView}
+      r={financeRow(data,r,related.billing,finance)}
+      onSideChange={billing=>setRelated({...related,billing})}/>
+    :<FreightCatalogDialogs kind={related.kind} data={data} save={save} view={related} setView={setRelatedView}/>)}
+  </>;
 }

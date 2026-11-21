@@ -1,0 +1,101 @@
+@import './fleet-workspace-layout.css';
+
+.gps-modal .corporate-booking-fields,
+.gps-modal form.expense-entry-fields {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:17px;
+  min-width:0; border:0; padding:0; margin:0;
+}
+.corporate-booking-fields>*,.expense-entry-fields>* {min-width:0}
+.corporate-booking-fields .business-datetime-fields,.expense-entry-fields .expense-form-grid {display:contents}
+.corporate-booking-fields>:is(p,.corporate-editor-field),.corporate-booking-fields>div:has(>textarea),
+.expense-entry-fields>:is(p,fieldset),.expense-entry-fields>div:has(>textarea) {grid-column:1/-1}
+.gps-modal .corporate-booking-fields :is(input,select,textarea) {
+  width:100%; min-width:0; max-width:100%; font-family:inherit; border:1px solid var(--border); color:var(--text); background:var(--surface);
+}
+.gps-modal .corporate-booking-fields textarea,.gps-modal .expense-entry-fields textarea {min-height:78px}
+.corporate-booking-fields .business-note,.gps-modal .expense-entry-fields .expense-note {
+  margin:0; padding:0; color:var(--text-2); background:none; font:400 12px/1.55 var(--fleet-font)
+}
+.corporate-booking-fields .fleet-hours-warning {color:var(--danger)}
+.corporate-booking-fields .corporate-editor-options button {min-height:36px; padding:7px 10px; font-size:13px; border-radius:8px}
+.corporate-booking-fields .corporate-editor-label {font:400 12px/1.55 var(--fleet-font)!important}
+.corporate-reservation-table .booking-detail-row {cursor:pointer}
+.corporate-reservation-table .booking-detail-link {border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;padding:0}
+.corporate-reservation-table .booking-detail-link:hover,.corporate-reservation-table .booking-detail-link:focus-visible {color:var(--primary);text-decoration:underline}
+.corporate-reservation-table .booking-detail-row:hover {background:var(--surface-2)}
+.gps-member-modal:has(.corporate-record-body),.business-drawer-backdrop:has(.expense-detail-content) {
+  --record-line:var(--border); --record-muted:var(--text-2); --record-footer:var(--surface-2);
+  --modal-padding:0; --modal-gap:0; --modal-title-weight:500; --modal-title-size:18px; --modal-subtitle-size:12px;
+  font-family:var(--fleet-font); padding:0!important; align-items:stretch!important;
+}
+:root:not([data-theme=dark]) :is(.gps-member-modal:has(.corporate-record-body),.business-drawer-backdrop:has(.expense-detail-content)) {
+  --text:#353b45; --text-2:#737f8e; --record-muted:#788394; --border:#e7eaf0; --record-line:#edf0f4;
+  --record-footer:#fcfdff; --primary:#3676e5;
+  background:rgba(35,45,61,.24)!important;
+}
+.gps-member-modal .gps-modal:has(.corporate-record-body),.business-drawer-backdrop .business-drawer:has(.expense-detail-content) {
+  width:min(470px,100%)!important; max-width:100%; height:100%; max-height:100%!important; min-height:0;
+  padding:0!important; gap:0!important; border:0; --modal-title-size:17px; --modal-subtitle-size:12px; font-size:14px; line-height:1.55;
+  border-radius:0!important; overflow:hidden; box-shadow:-15px 0 60px rgba(28,40,58,.1)!important;
+}
+.gps-member-modal .gps-modal:has(.corporate-record-body)>div:first-child,.business-drawer-backdrop .business-drawer:has(.expense-detail-content)>header {
+  padding:22px 26px 18px; border-bottom:1px solid var(--record-line)
+}
+.business-drawer-backdrop .business-drawer:has(.expense-detail-content)>header h2 {font:500 17px/1.55 var(--fleet-font)}
+.business-drawer-backdrop .business-drawer:has(.expense-detail-content)>header p {font:400 12px/1.55 var(--fleet-font);color:var(--record-muted)}
+.gps-modal:has(.corporate-record-body)>.gps-modal-body,.expense-detail-content .expense-detail-scroll {padding:24px 26px}
+.booking-detail-vehicle,.expense-detail-record .expense-detail-amount {display:flex;justify-content:space-between;align-items:center;gap:10px}
+.booking-detail-vehicle>div {min-width:0;overflow-wrap:anywhere}
+.booking-detail-vehicle strong {font:500 16px/1.55 var(--fleet-font)}
+.booking-detail-vehicle small,.expense-detail-amount>div>small {display:block;font:400 12px/1.55 var(--fleet-font);color:var(--record-muted)}
+.corporate-record-body dl {margin:17px 0 0;border-top:1px solid var(--record-line)}
+.corporate-record-body dl>div {display:grid;grid-template-columns:minmax(75px,auto) minmax(0,1fr);gap:14px;padding:10px 0;border-bottom:1px solid var(--record-line)}
+.corporate-record-body :is(dt,dd),.expense-detail-content .expense-details :is(dt,dd) {
+  font:400 12px/1.55 var(--fleet-font);background:transparent;
+}
+.corporate-record-body dt,.expense-detail-content .expense-details dt {color:var(--record-muted)}
+.corporate-record-body dd,.expense-detail-content .expense-details dd {margin:0;text-align:right;overflow-wrap:anywhere;white-space:pre-wrap}
+.corporate-record-body .fleet-reservation-review {margin-top:18px;font-size:13px}
+.gps-modal:has(.corporate-record-body)>.gps-modal-body+div {margin:0!important}
+.corporate-detail-actions,.expense-detail-content .expense-detail-footer {
+  width:100%; display:flex; justify-content:flex-end; align-items:center; flex-wrap:wrap; gap:8px;
+  padding:17px 26px; border-top:1px solid var(--record-line); background:var(--record-footer)
+}
+.corporate-detail-actions .business-button,.expense-detail-content .business-button {
+  font:400 12px/1.5 var(--fleet-font);padding:8px 13px;min-width:0;min-height:36px;border-radius:8px
+}
+.expense-detail-content .expense-detail-grid {grid-template-columns:minmax(0,1fr);gap:0}
+.expense-detail-content .expense-detail-record {gap:18px}
+.expense-detail-content .expense-detail-amount strong {display:block;margin:5px 0;font:400 30px/1.3 var(--fleet-font)}
+.expense-detail-content .expense-detail-grid .business-badge,.corporate-record-body .corporate-reservation-badge {padding:3px 8px;font:500 11px/1.55 var(--fleet-font);border-radius:5px}
+.expense-detail-content .expense-details {grid-template-columns:minmax(68px,auto) minmax(0,1fr);border:0;border-top:1px solid var(--record-line);border-radius:0}
+.expense-detail-content .expense-details :is(dt,dd) {padding:10px 0;border-bottom:1px solid var(--record-line)}
+.expense-detail-content .expense-detail-section h3 {font:500 14px/1.55 var(--fleet-font);margin:0 0 8px}
+.expense-detail-content :is(.expense-detail-file-management,.expense-detail-history)>summary {font:500 13px/1.55 var(--fleet-font);min-height:36px}
+.expense-detail-content :is(.expense-note,.expense-history small,.expense-detail-review-note p) {font:400 12px/1.55 var(--fleet-font)}
+.expense-detail-content :is(.expense-detail-close-actions,.expense-detail-review-actions) {gap:6px}
+@media(max-width:600px){
+  .gps-modal .corporate-booking-fields,.gps-modal form.expense-entry-fields {grid-template-columns:minmax(0,1fr)}
+  .gps-member-modal .gps-modal:has(.corporate-record-body)>div:first-child,.business-drawer-backdrop .business-drawer:has(.expense-detail-content)>header {padding:18px 19px}
+  .gps-modal:has(.corporate-record-body)>.gps-modal-body,.expense-detail-content .expense-detail-scroll {padding:20px 19px}
+  .corporate-detail-actions,.expense-detail-content .expense-detail-footer {padding:12px 16px max(12px,env(safe-area-inset-bottom))}
+}
+
+.fleet-people-table .person-detail-row {cursor:pointer}
+.fleet-people-table .person-detail-link:hover,.fleet-people-table .person-detail-link:focus-visible {color:var(--primary);text-decoration:underline}
+.fleet-mobile-people-scroll .mobile-person>button {width:100%;border:0;border-radius:0;background:transparent;font:inherit;color:inherit;text-align:start;cursor:pointer}
+.fleet-person-detail section+section {margin-top:22px}
+.fleet-person-detail h3 {margin:0;font:500 14px/1.55 var(--fleet-font)}
+.fleet-person-detail section dl {margin:8px 0 0}
+.fleet-person-profile {display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.fleet-person-profile>div {min-width:0;flex:1;overflow-wrap:anywhere}
+.fleet-person-avatar {width:43px;height:43px;display:grid;place-items:center;flex-shrink:0;border-radius:50%;background:var(--surface-2);color:var(--primary);font:500 16px/1 var(--fleet-font)}
+.fleet-person-profile strong {font:500 16px/1.55 var(--fleet-font)}
+.fleet-person-profile small {display:block;color:var(--record-muted);font:400 12px/1.55 var(--fleet-font)}
+.fleet-person-account-actions {display:flex;justify-content:flex-end;margin-top:10px}
+.fleet-person-account-actions .business-button {min-height:32px;padding:5px 10px;font:400 12px/1.5 var(--fleet-font);border-radius:8px}
+
+@media(max-width:440px){
+  .corporate-detail-actions.fleet-person-detail-actions {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px}
+  .gps-member-modal .fleet-person-detail-actions .business-button {width:100%;min-width:0;min-height:36px;font:400 12px/1.45 var(--fleet-font);padding:6px 4px;white-space:normal}
+}

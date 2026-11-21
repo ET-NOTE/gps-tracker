@@ -5,7 +5,7 @@ import Modal from '../ui/Modal';
 import { useAccountType } from '../../state';
 import { clearTokens } from '../../api';
 import { terminalName } from '../../lib/corporateOverview';
-import { corporateTabs } from '../../lib/corporateNavigation';
+import { corporateTabs, corporateSections } from '../../lib/corporateNavigation';
 import { freightMenu } from '../../lib/freightMenu';
 import { rentalMenu } from '../../lib/rentalMenu';
 import TerminalAlerts from './TerminalAlerts';
@@ -49,8 +49,12 @@ export function PlatformRail({ view, availableServices = [], servicePaths = {}, 
   </aside>;
 }
 
+const companySections = corporateSections(true);
 const OWNER_PAGES = {
-  corporate_fleet: corporateTabs.map(item => [item.id, item.label]),
+  corporate_fleet: corporateTabs.flatMap(item => [
+    [item.id,item.label],
+    ...(companySections[item.id]||[]).filter(([,label])=>label!==item.label).map(([section,label])=>[item.id,label,section])
+  ]),
   rentcar: rentalMenu.flatMap(group => group.pages),
   delivery: freightMenu.flatMap(group => group.pages),
 };
@@ -69,27 +73,26 @@ export function ScopeSelect({ scope, scopeOptions = [], onScopeChange, labelled 
 function GlobalSearch({ services, owned, devices, isAdmin, onDevice, onClose }) {
   const [text, setText] = useState('');
   const query = text.trim().toLocaleLowerCase();
-  const shortcuts = [...CORE_LINKS, { label: '이용 서비스 설정', path: SETTINGS_PATH, icon: 'settings' },
-    ...services, ...(isAdmin ? [ADMIN] : [])];
-  if (query) {
-    for (const service of services) {
-      if (!owned.includes(service.key) || service.path.includes('?')) continue;
-      for (const [page, label] of OWNER_PAGES[service.key]) {
-        shortcuts.push({ label, context: service.label, icon: service.icon, path: service.path + '?page=' + encodeURIComponent(page) });
-      }
+  const shortcuts = [...CORE_LINKS.map(item=>({...item,context:item.view==='profile'?'내 계정':'위치관리'})),
+    { label: '이용 서비스 설정', path: SETTINGS_PATH, icon: 'settings',context:'내 계정' },
+    ...services.map(item=>({...item,context:'업무 공간'})), ...(isAdmin ? [ADMIN] : [])];
+  for (const service of services) {
+    if (!owned.includes(service.key) || service.path.includes('?')) continue;
+    for (const [page, label, section] of OWNER_PAGES[service.key]) {
+      const params = new URLSearchParams({page});
+      if(section)params.set('section',section);
+      shortcuts.push({ label, context: service.label, icon: service.icon, path: service.path + '?' + params });
     }
   }
-  const links = shortcuts.filter(s => !query || [s.label, s.context].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
+  const links = query ? shortcuts.filter(s=>[s.label,s.context].filter(Boolean).join(' ').toLocaleLowerCase().includes(query)) : shortcuts.slice(0,9);
   const matches = query ? devices.filter(device => deviceMatches(device, text)) : [];
-  return <Modal open title="통합 검색" onClose={onClose} size="lg"
+  return <Modal open className="pt-standard-dialog" title="통합 검색" subtitle="메뉴와 현재 조회 범위의 단말기를 찾습니다." onClose={onClose} size={530}
     footer={<div className="pt-dialog-actions"><button className="pt-button" type="button" aria-label="통합 검색 닫기" onClick={onClose}>닫기</button></div>}>
     <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" value={text} onChange={e => setText(e.target.value)} autoComplete="off" placeholder="메뉴, 단말기 이름 또는 차량번호" aria-label="단말기와 메뉴 검색"/></label>
     <div className="pt-search-results">
-      {links.length > 0 && <h3>메뉴</h3>}
       {links.map(item => <Link key={item.path} to={item.path} onClick={onClose}><Icon name={item.icon}/><span>{item.label}</span>{item.context && <small>{item.context}</small>}</Link>)}
-      {matches.length > 0 && <h3>단말기</h3>}
       {matches.map(device => <button type="button" key={device.id} onClick={() => { onClose(); onDevice(device.id); }}>
-        <Icon name="antenna"/><span>{terminalName(device)}</span>{device.device_uid && <small>{device.device_uid}</small>}
+        <Icon name="antenna"/><span>{terminalName(device)}</span><small>{device.license_plate || device.car_plate || device.device_uid}</small>
       </button>)}
       {!links.length && !matches.length && <p className="pt-empty">일치하는 단말기나 메뉴가 없습니다.</p>}
     </div>
@@ -120,7 +123,7 @@ export function PlatformHeader({ view, availableServices = [], servicePaths = {}
     <div className="pt-header-actions">
       <ScopeSelect {...{scope, scopeOptions, onScopeChange}}/>
       <button type="button" className="pt-search-trigger" onClick={() => setPanel('search')} aria-label="통합 검색" aria-haspopup="dialog" aria-keyshortcuts="Control+k Meta+k"><Icon name="search" size={17}/><span>메뉴·단말기 검색</span><kbd>Ctrl K</kbd></button>
-      <TerminalAlerts devices={devices} meta={meta} onDevice={openDevice}/>
+      <TerminalAlerts devices={devices} meta={meta} onDevice={openDevice} scopeLabel={scopeOptions.find(item=>item.value===scope)?.label}/>
       <Link className="pt-avatar" aria-label="내 계정" title={name} to="/profile?tab=account">{Array.from(name)[0]}</Link>
     </div>
     {panel === 'search' && <GlobalSearch services={links} owned={ownerServices(account)} {...{devices,isAdmin}} onDevice={openDevice} onClose={() => setPanel('')}/>}

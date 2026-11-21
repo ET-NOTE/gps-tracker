@@ -36,7 +36,7 @@ async function components({trips=[],staff=[],access={manage_reports:true,staff_i
   const button=({children,...props})=>React.createElement('button',props,children);
   const real={'react':React,'react/jsx-runtime':jsx,'../lib/business':business,'../lib/businessExport':businessExport,
     '../lib/businessWorkspace':businessWorkspace,'../lib/ntsReport':ntsReport,'../lib/monthlySummary':monthlySummary,'../lib/tripOdometer':tripOdometer,
-    '../lib/tripQuality':tripQuality,'../lib/tripAssignments':tripAssignments,'../lib/incompleteTrips':incompleteTrips};
+    '../lib/tripQuality':tripQuality,'../lib/tripAssignments':tripAssignments,'../lib/incompleteTrips':incompleteTrips,'../lib/corporateNavigation':navigation};
   await mod.link(name=>{
     if(real[name])return moduleOf(real[name]);
     if(name==='../api')return moduleOf({api});

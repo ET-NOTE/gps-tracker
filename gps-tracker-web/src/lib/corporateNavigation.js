@@ -28,6 +28,15 @@ export const corporateGroups = [
   { id: 'settings', label: '관리 설정', icon: 'wrench' },
 ];
 
+export function corporateSections(canManageTeam) {
+  return {
+    staff: [['users','사용자 목록'],['organization','부서·직책'],['permissions','권한 관리'],...(canManageTeam?[['audit','변경 이력']]:[])],
+    sites: [['sites','지점 목록'],['visits','방문 기록'],...(canManageTeam?[['groups','그룹 관리']]:[])],
+    settings: [['purposes','운행 목적'],['policy','운영 정책'],['notifications','알림 설정'],['company','회사 정보'],['subscription','이용권 관리']],
+    analytics: [['trips','운행 통계'],['costs','지출 통계']],
+  };
+}
+
 const pageHints = {
   overview: '차량 위치와 오늘 처리할 업무를 확인하세요.',
   vehicles: '차량의 기본 정보와 운영 상태를 확인하세요.',

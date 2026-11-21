@@ -31,7 +31,7 @@ import { filterTrips, tripReport, tripDistance, monthlyReport, monthDateBounds, 
 import { BusinessWorkspace, BusinessLocation, useBusinessVehicle, BusinessButton, BusinessError, BusinessEmpty, BusinessSection, BusinessMetrics, BusinessTask, BusinessSettings, BusinessVehicles } from './business/BusinessWorkspace';
 import { tripCompleteness } from '../lib/businessWorkspace';
 import { corporateAttention, corporateVehicleName, terminalName, missingMaintenance } from '../lib/corporateOverview';
-import { corporateGroups, corporateTabs } from '../lib/corporateNavigation';
+import { corporateGroups, corporateTabs, corporateSections } from '../lib/corporateNavigation';
 import { ntsTripReport, reportVehicleLabel } from '../lib/ntsReport';
 import { validateOdometerInput, odometerSummary } from '../lib/tripOdometer';
 import { classifyDevice, ageString } from '../colors';
@@ -50,6 +50,7 @@ import {
 import { useQuery,useQueryClient } from '@tanstack/react-query';
 import './business/corporate-console.css';
 import './business/corporate-trips-cartax.css';
+import './business/corporate-record-dialogs.css';
 import './business/directory-layout.css';
 import './business/fleet-design-shell.css';
 import './business/fleet-member.css';
@@ -116,12 +117,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const openVehicles=(missingOnly=false,create=false)=>{setInitialCreate(create);setMissingSchedulesOnly(missingOnly);setTab('vehicles');};
   const defaults = {staff:'users',sites:'sites',settings:'company',analytics:'trips'};
   const [lastSections, setLastSections] = useState(() => ({...defaults, ...(restored?.section ? {[restored.page]:restored.section} : {})}));
-  const sectionNavigation = {
-    staff: [['users','사용자 목록'],['organization','부서·직책'],['permissions','권한 관리'],...(access.manage_team?[['audit','변경 이력']]:[])],
-    sites: [['sites','지점 목록'],['visits','방문 기록'],...(access.manage_team?[['groups','그룹 관리']]:[])],
-    settings: [['purposes','운행 목적'],['policy','운영 정책'],['notifications','알림 설정'],['company','회사 정보'],['subscription','이용권 관리']],
-    analytics: [['trips','운행 통계'],['costs','지출 통계']],
-  };
+  const sectionNavigation = corporateSections(access.manage_team);
   const routeSection = params?.get('section') || (!params?.has('page') && restored?.section);
   const sectionTabs = onRoute ? {...lastSections,[tab]:sectionNavigation[tab]?.some(([id])=>id===routeSection) ? routeSection : defaults[tab]} : lastSections;
   function setTab(page, requestedSection) {
@@ -917,6 +913,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const [statusFilter, setStatusFilter] = useState(requestsOnly?'pending':'all');
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...} | {new: 'YYYY-MM-DD'}
+  const [opened, setOpened] = useState(null);
   useEffect(() => { if (request?.new&&canWrite) setEditing({new:true,vehicleId:request.vehicleId}); else if (request?.reservation) setEditing(request.reservation); }, [request,canWrite]);
   // (2026-07-28) Stage-4F-2: 뷰 모드 (리스트 / 캘린더).
   const [viewMode, setViewMode] = useState(() => requestsOnly?'list':localStorage.getItem('resv_view') || 'list');
@@ -968,6 +965,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
     return { from, to };
   }, [viewMode, calYm, week, dates, invalidPeriod]);
   const { data: allReservations, isLoading: loading, error: qError, refetch } = useReservations(resvParams, {enabled:!invalidPeriod,refetchInterval: 60_000});
+  const detail = opened && (allReservations?.find(r=>r.id===opened.id) || opened);
   const driverDepartments=useMemo(()=>new Map((staffAll||[]).map(person=>[person.id,person.department||''])),[staffAll]);
   const departmentOptions=[...new Set(driverDepartments.values())].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
   const purposeOptions=[...new Set((allReservations||[]).map(bookingPurpose))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
@@ -1030,15 +1028,16 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
       {!error && !invalidPeriod && viewMode==='list' && list && <section className="corporate-reservation-ledger">
         <div className="corporate-reservation-scroll" role="region" aria-label="차량 예약 목록 · 좌우 스크롤" tabIndex={0}>
           <table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">목적·메모</th><th scope="col">상태</th><th scope="col">관리</th></tr></thead>
-            <tbody>{list.map(r=><ReservationRow key={r.id} r={r} readOnly={!canWrite||r.can_edit===false} onEdit={()=>setEditing(r)} onDelete={()=>cancelBooking(r)}/>)}</tbody>
+            <tbody>{list.map(r=><ReservationRow key={r.id} r={r} readOnly={!canWrite||r.can_edit===false} onOpen={()=>setOpened(r)} onEdit={()=>setEditing(r)} onDelete={()=>cancelBooking(r)}/>)}</tbody>
           </table>
           {!list.length&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
         </div>
         <footer className="corporate-reservation-footer">{list.length}건</footer>
       </section>}
-      {!error && viewMode==='calendar' && <ReservationCalendar ym={calYm} list={list||[]} onDayClick={canWrite?dateStr=>setEditing({new:dateStr}):undefined} onEventClick={r=>setEditing(r)}/>}
-      {!error && viewMode==='week' && <ReservationWeek week={week} today={reservationDay} list={shown} setWeek={setWeek} onNew={canWrite?day=>setEditing({new:day}):undefined} onOpen={setEditing}/>}
-      {editing && <ReservationDialog init={editing==='new'||editing?.new?null:editing} devices={devices} staff={staff} presetVehicleId={editing?.vehicleId} presetDate={typeof editing?.new==='string'?editing.new:null} onCancel={cancelBooking} onClose={()=>setEditing(null)} onSaved={saved=>{if(saved?.status==='pending')setStatusFilter('pending');setEditing(null);}}/>}
+      {!error && viewMode==='calendar' && <ReservationCalendar ym={calYm} list={list||[]} onDayClick={canWrite?dateStr=>setEditing({new:dateStr}):undefined} onEventClick={setOpened}/>}
+      {!error && viewMode==='week' && <ReservationWeek week={week} today={reservationDay} list={shown} setWeek={setWeek} onNew={canWrite?day=>setEditing({new:day}):undefined} onOpen={setOpened}/>}
+      {detail && <ReservationDetails row={detail} onEdit={()=>setEditing(detail)} onCancel={cancelBooking} onClose={()=>setOpened(null)}/>}
+      {editing && <ReservationDialog init={editing==='new'||editing?.new?null:editing} devices={devices} staff={staff} presetVehicleId={editing?.vehicleId} presetDate={typeof editing?.new==='string'?editing.new:null} onCancel={cancelBooking} onClose={()=>setEditing(null)} onSaved={saved=>{if(saved?.status==='pending')setStatusFilter('pending');setEditing(null);setOpened(null);}}/>}
     </div>
   );
 }
@@ -1066,18 +1065,41 @@ function ReservationWeek({week,today,list,setWeek,onNew,onOpen}) {
   </section>;
 }
 
-function ReservationRow({r,onEdit,onDelete,readOnly=false}) {
+function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
+  const access=useFleetAccess();
+  const writable=access.write_reservations!==false && r.can_edit!==false;
+  const editable=writable && !(r.approval_required && ['rejected','cancelled','completed'].includes(r.status));
+  const state=RESV_STATUS[r.status] || RESV_STATUS.planned;
+  const details=[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
+    ['종료 시간',kstDateTime(r.ends_at)],['운행기록부 용무',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']];
+  return <Modal open placement="end" size={470} title="예약 상세" subtitle={kstDateTime(r.starts_at)+' · '+(r.driver_name||'운전자 미지정')} onClose={onClose}
+    footer={<div className="corporate-detail-actions">
+      {writable && !['cancelled','rejected'].includes(r.status) && <BusinessButton onClick={async()=>{if(await onCancel(r))onClose();}}>예약 취소</BusinessButton>}
+      <BusinessButton onClick={onClose}>닫기</BusinessButton>{editable && <BusinessButton primary icon="edit" onClick={onEdit}>예약 변경</BusinessButton>}
+    </div>}>
+    <div className="corporate-record-body"><div className="booking-detail-vehicle"><div><strong>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</strong>
+      {r.license_plate && r.vehicle_name && r.vehicle_name!==r.license_plate && <small>{r.vehicle_name}</small>}</div>
+      <span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span></div>
+      <dl>{details.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      {r.approval_required && <ReservationApproval row={r} reviewable={access.review_reservations!==false} onFinished={onClose}/>}
+    </div>
+  </Modal>;
+}
+
+function ReservationRow({r,onOpen,onEdit,onDelete,readOnly=false}) {
   const detailsOnly=readOnly||(r.approval_required&&['rejected','cancelled','completed'].includes(r.status));
   const state=RESV_STATUS[r.status]||RESV_STATUS.planned;
   const untilStart=Math.round((Date.parse(r.starts_at)-Date.now())/60000),untilEnd=Math.round((Date.parse(r.ends_at)-Date.now())/60000);
   const imminent=r.status==='planned'&&untilStart>=0&&untilStart<=60;
   const returning=r.status==='in_progress'&&untilEnd>=0&&untilEnd<=60;
-  return <tr>
-    <td data-label="차량"><strong>{r.vehicle_name||r.device_name||'차량'}</strong>{r.license_plate&&<small>{r.license_plate}</small>}</td>
+  return <tr className="booking-detail-row" onClick={event=>{
+    if(!event.target.closest('button')){event.currentTarget.querySelector('.booking-detail-link')?.focus({preventScroll:true});onOpen();}
+  }}>
+    <td data-label="차량"><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&<small>{r.license_plate}</small>}</td>
     <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></td>
     <td data-label="목적·메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
     <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
-    <td><div className="corporate-reservation-row-actions"><BusinessButton onClick={onEdit} aria-label={`예약 ${r.id} ${detailsOnly?'상세':'상세·수정'}`}>{detailsOnly?'상세':'상세·수정'}</BusinessButton>{!readOnly&&!['cancelled','rejected'].includes(r.status)&&<BusinessButton onClick={onDelete} aria-label={`예약 ${r.id} 취소`}>취소</BusinessButton>}</div></td>
+    <td><div className="corporate-reservation-row-actions"><BusinessButton onClick={detailsOnly?onOpen:onEdit} aria-label={`예약 ${r.id} ${detailsOnly?'상세':'상세·수정'}`}>{detailsOnly?'상세':'수정'}</BusinessButton>{!readOnly&&!['cancelled','rejected'].includes(r.status)&&<BusinessButton onClick={onDelete} aria-label={`예약 ${r.id} 취소`}>취소</BusinessButton>}</div></td>
   </tr>;
 }
 
@@ -1281,7 +1303,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
   }
 
   return (
-    <Modal open onClose={busy ? undefined : close} size={720} title={init?.id ? (locked?'예약 상세':'예약 편집') : '새 예약'} footer={<div className="corporate-editor-footer">
+    <Modal open mobileForm onClose={busy ? undefined : close} size={720} title={init?.id ? (locked?'예약 상세':'예약 편집') : '새 예약'} subtitle="차량과 운전자를 선택하고 이용 일정을 확인하세요." footer={<div className="service-form-actions booking-form-actions">
       {onCancel&&init?.status==='completed'&&access.write_reservations!==false&&init.can_edit!==false&&<Button disabled={busy} variant="ghost" onClick={async()=>{if(await onCancel(init)&&mounted.current)onClose();}}>완료된 예약 취소</Button>}
       <Button onClick={close} disabled={busy} variant="ghost" size="lg">{locked?'닫기':'취소'}</Button>
       {!locked&&<Button onClick={save} busy={busy} disabled={busy||!vehicleAllowed} variant="primary" size="lg">
@@ -1292,7 +1314,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
         {!init&&approvalRequired&&<p className="business-note">승인 대기 중에도 이 차량의 이용 시간이 확보됩니다. 반려하거나 취소하면 같은 시간에 다시 예약할 수 있습니다.</p>}
         {!init&&policy?.error&&<p className="business-note" role="status">승인 정책을 조회하지 못했습니다. 저장 시 회사의 현재 정책이 적용됩니다.</p>}
         {init?.approval_required&&init.status==='planned'&&!locked&&<p className="business-note">예약 내용을 수정하면 다시 승인을 받아야 합니다.</p>}
-        <fieldset className="corporate-editor-fields" disabled={busy||locked} aria-busy={busy}>
+        <fieldset className="corporate-booking-fields" disabled={busy||locked} aria-busy={busy}>
         <FormField label="차량">
           <select aria-label="예약 차량" value={vehicleAllowed?deviceId:''} onChange={e => {setDeviceId(e.target.value);setDriverId(access.manage_reports?'':access.staff_id);}}>
             {!vehicleAllowed&&<option value="">예약 가능한 차량 선택</option>}

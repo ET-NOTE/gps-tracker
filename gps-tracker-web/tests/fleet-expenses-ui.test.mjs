@@ -198,7 +198,7 @@ test('search and status changes reset pagination and exports include the full fi
 
 test('memo and receipt controls open the correct record while the date retains detail access',async()=>{
  const data=rows.map((r,i)=>({...r,note:i===0?'거래처 방문\n주차비 정산':i===1?'   ':'',receipt_count:i===0?2:0}));
- const {r,close}=await mount(data);
+ const {r,close}=await mount(data,{detail:{receipts:[{id:11,filename:'주차.png',mime:'image/png',size_bytes:1024}]}});
  try{
   assert.equal(r.root.findAllByProps({'aria-label':'메모 없음'}).length,2);
   assert.equal(r.root.findAllByProps({'aria-label':'첨부파일 없음'}).length,2);
@@ -207,18 +207,18 @@ test('memo and receipt controls open the correct record while the date retains d
   assert.match(text(r.root.findByProps({'aria-label':'지출 메모'}).children),/거래처 방문\n주차비 정산/);
   await act(async()=>{button(r,'지출 상세 보기').props.onClick();await settle();});
   assert.equal(r.root.findAllByProps({'aria-label':'지출 메모'}).length,0);
-  assert.equal(r.root.findAllByProps({'aria-label':'유류비 · 50,000원'}).length,1);
+  assert.equal(r.root.findAllByProps({'aria-label':'지출 상세'}).length,1);
   await act(async()=>button(r,'닫기').props.onClick());
   const thumbnail=r.root.findByType('receipt-thumbnail');
   assert.equal(thumbnail.props.expenseId,1);assert.equal(thumbnail.props.count,2);
   await act(async()=>{thumbnail.props.onOpen();await settle();});await act(settle);
-  assert.equal(r.root.findAllByProps({'aria-label':'유류비 · 50,000원'}).length,1);
+  assert.equal(r.root.findAllByProps({'aria-label':'지출 상세'}).length,1);
   assert.equal(r.root.findByType('receipt-panel').props.expenseId,1);
   await act(async()=>r.root.findByType('receipt-panel').props.onOpen(11));
   assert.equal(r.root.findByType('receipt-viewer').props.expenseId,1);
   await act(async()=>r.root.findByType('receipt-viewer').props.onClose());
   await act(async()=>{r.root.findByProps({'aria-label':'지출 2 상세'}).props.onClick();await settle();});
-  assert.equal(r.root.findAllByProps({'aria-label':'숙박비 · 80,000원'}).length,1);
+  assert.equal(r.root.findAllByProps({'aria-label':'지출 상세'}).length,1);
  }finally{await close();}
 });
 
@@ -254,9 +254,9 @@ test('read-only expense detail keeps ledger context and opens the selected recei
  const {r,close}=await mount(rows,{detail:{expense:{can_edit:false,can_review:false,can_cancel:false,note:'고객 방문'},receipts:files}});
  try{
   await act(async()=>{r.root.findByProps({'aria-label':'지출 1 상세'}).props.onClick();await settle();});await act(settle);
-  assert.equal(r.root.findByProps({'aria-label':'유류비 · 50,000원'}).props['data-view'],'drawer');
+  assert.equal(r.root.findByProps({'aria-label':'지출 상세'}).props['data-view'],'drawer');
   assert.equal(r.root.findAllByType('table').length,1,'the ledger remains mounted behind the drawer');
-  assert.match(text(r.root.findByProps({className:'expense-detail-content'}).children),/기본 정보.*50,000원.*고객 방문/);
+  assert.match(text(r.root.findByProps({className:'expense-detail-content'}).children),/50,000원.*기본 정보.*고객 방문/);
   assert.equal(button(r,'수정'),undefined);assert.equal(button(r,'제외'),undefined);
   assert.equal(r.root.findAllByProps({type:'file'}).length,0);
   assert.equal(button(r,'승인'),undefined);assert.equal(button(r,'반려'),undefined);assert.equal(button(r,'지출 취소'),undefined);
@@ -265,7 +265,7 @@ test('read-only expense detail keeps ledger context and opens the selected recei
   assert.equal(viewer.props.expenseId,1);assert.equal(viewer.props.initialReceiptId,12);
   await act(async()=>viewer.props.onClose());
   assert.equal(r.root.findAllByType('receipt-viewer').length,0);
-  assert.equal(r.root.findAllByProps({'aria-label':'유류비 · 50,000원'}).length,1);
+  assert.equal(r.root.findAllByProps({'aria-label':'지출 상세'}).length,1);
  }finally{await close();}
 });
 
@@ -284,7 +284,7 @@ test('drawer review retains required reasons and blocks duplicate mutations unti
   assert.deepEqual({...reviews[0].payload},{status:'rejected',note:'증빙 확인 필요',updated_at:'snapshot-v1'});
   assert.equal(button(r,'처리 중…').props.disabled,true);
   assert.equal(r.root.findByProps({'aria-label':'지출 처리 사유'}).props.disabled,true);
-  assert.equal(r.root.findByProps({'aria-label':'숙박비 · 80,000원'}).props.onClose,undefined);
+  assert.equal(r.root.findByProps({'aria-label':'지출 상세'}).props.onClose,undefined);
   await act(async()=>{release();await settle();});await act(settle);
   assert.equal(r.root.findAllByProps({'aria-label':'지출 처리 사유'}).length,0);
   await act(async()=>button(r,'지출 취소').props.onClick());

@@ -11,9 +11,14 @@ export function Field({label,children,wide=false}) {
 export function Options({items}) {
   return Object.entries(items).map(([value,label])=><option key={value} value={value}>{label}</option>);
 }
-export function Table({columns,rows,empty}) {
+export function Table({columns,rows,empty,onRecord}) {
   return <div className="ro-table-box" role="region" aria-label={columns[0][0]+'별 목록'} tabIndex={0}><table className="ro-table"><thead><tr>{columns.map(([label])=><th key={label} scope="col">{label}</th>)}</tr></thead>
-    <tbody>{rows.length ? rows.map(row=><tr key={row.id}>{columns.map(([label,render])=><td key={label} data-label={label}><div>{render(row) ?? '—'}</div></td>)}</tr>) :
+    <tbody>{rows.length ? rows.map(row=><tr key={row.id} data-record={onRecord?true:undefined} onClick={onRecord?event=>{
+      if (!event.target.closest('button,a,input,select,textarea,label')) {
+        event.currentTarget.querySelector('.ro-detail-link')?.focus({preventScroll:true});
+        onRecord(row);
+      }
+    }:undefined}>{columns.map(([label,render])=><td key={label} data-label={label}><div>{render(row) ?? '—'}</div></td>)}</tr>) :
       <tr><td className="rental-list-empty" colSpan={columns.length}>{empty}</td></tr>}</tbody></table></div>;
 }
 export function Toolbar({count,unit='건',children}) {
@@ -28,8 +33,9 @@ export function PeriodFields({period,onChange}) {
 export function Metrics({items}) {
   return <dl className="ro-metrics">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
 }
-export function FormModal({title,onClose,save,children,canSave=true}) {
+export function FormModal({title,onClose,save,children,canSave=true,size=720}) {
   const [busy,setBusy] = useState(false), [error,setError] = useState('');
+  const formId=React.useId();
   const lock=React.useRef(false);
   async function submit(e) {
     e.preventDefault();
@@ -39,10 +45,11 @@ export function FormModal({title,onClose,save,children,canSave=true}) {
     catch(e){ setError(e?.message || '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'); }
     finally { lock.current=false;setBusy(false); }
   }
-  return <Modal open size="lg" title={title} onClose={busy?undefined:onClose} closeOnEsc={!busy} closeOnBackdrop={!busy}>
-    <form className="ro-modal" onSubmit={submit}><fieldset disabled={busy} className="ro-form-grid">{children}</fieldset>
+  return <Modal open size={size} mobileForm title={title} onClose={busy?undefined:onClose} closeOnEsc={!busy} closeOnBackdrop={!busy}
+    footer={<div className="service-form-actions"><Button variant="ghost" onClick={onClose} disabled={busy}>취소</Button>
+      <Button variant="primary" type="submit" form={formId} busy={busy} disabled={!canSave}>저장</Button></div>}>
+    <form id={formId} className="ro-modal" onSubmit={submit}><fieldset disabled={busy} className="ro-form-grid">{children}</fieldset>
       {error && <p role="alert" className="ro-error">{error}</p>}
-      <div className="ro-actions"><Button variant="ghost" onClick={onClose} disabled={busy}>취소</Button><Button type="submit" busy={busy} disabled={!canSave}>저장</Button></div>
     </form>
   </Modal>;
 }

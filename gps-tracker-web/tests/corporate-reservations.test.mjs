@@ -9,6 +9,7 @@ import {transform} from 'esbuild';
 import * as business from '../src/lib/business.js';
 import * as businessExport from '../src/lib/businessExport.js';
 import * as businessWorkspace from '../src/lib/businessWorkspace.js';
+import * as navigation from '../src/lib/corporateNavigation.js';
 import * as ntsReport from '../src/lib/ntsReport.js';
 import * as tripOdometer from '../src/lib/tripOdometer.js';
 import * as monthlySummary from '../src/lib/monthlySummary.js';
@@ -33,7 +34,7 @@ async function chooseStatus(r,label){
  const value=statusOption(r,label).props.value;
  await act(async()=>statusSelect(r).props.onChange({target:{value}}));
 }
-const rowIds=r=>r.root.findByType('tbody').findAllByType('tr').map(row=>row.findAllByType('button')[0].props['aria-label']);
+const rowIds=r=>r.root.findByType('tbody').findAllByType('tr').map(row=>row.findByProps({className:'corporate-reservation-row-actions'}).findAllByType('button')[0].props['aria-label']);
 
 async function mount(t,{data=reservations,request}={}){
  const state={data,error:null,isLoading:false,confirm:true,cancelError:null};
@@ -46,7 +47,7 @@ async function mount(t,{data=reservations,request}={}){
  const mod=new vm.SourceTextModule(code,{context});
  const noop=()=>null,tag=type=>({children,...props})=>React.createElement(type,props,children);
  const body=tag('section');
- const real={'react':React,'react/jsx-runtime':jsx,'../lib/business':business,'../lib/businessExport':businessExport,
+ const real={'react':React,'react/jsx-runtime':jsx,'../lib/business':business,'../lib/businessExport':businessExport,'../lib/corporateNavigation':navigation,
   '../lib/businessWorkspace':businessWorkspace,'../lib/ntsReport':ntsReport,'../lib/monthlySummary':monthlySummary,'../lib/tripOdometer':tripOdometer,
   '../lib/tripQuality':tripQuality,'../lib/tripAssignments':tripAssignments,'../lib/incompleteTrips':incompleteTrips};
  await mod.link(name=>{
@@ -168,8 +169,13 @@ test('calendar overflow lists every matching booking across KST month boundaries
    }
    assert.match(text(actions[2].children),day===dates[0]?/12:00 ~ 2026-12-01 02:00/:/2026-11-30 12:00 ~ 02:00/);
    await press(actions[2]);
+   const detail=r.root.findByProps({'aria-label':'예약 상세'});
+   assert.match(text(detail.children),new RegExp(bookings[2].purpose));
+   await press(button(r,'예약 변경'));
    assert.equal(r.root.findByProps({placeholder:'거래처 방문, 외근...'}).props.value,bookings[2].purpose);
    await act(()=>r.root.findByProps({'aria-label':'예약 편집'}).props.onClose());
+   assert.equal(r.root.findAllByProps({role:'dialog'}).length,2);
+   await act(()=>detail.props.onClose());
    assert.equal(r.root.findAllByProps({role:'dialog'}).length,1);
    await act(()=>dayDialog.props.onClose());
  }

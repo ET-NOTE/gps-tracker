@@ -24,7 +24,7 @@ function describe(r,billing) {
   if (confirmed)return [billing?'수납 대기':'지급 대기','blue'];
   return [billing?'청구 준비':'정산 준비','neutral'];
 }
-function financeRow(data,s,billing,fin) {
+export function financeRow(data,s,billing,fin) {
   const orders=(s.orderIds||[]).map(id=>getRow(data,'orders',id)).filter(Boolean);
   const parties=billing?Array.from(new Set(orders.map(o=>o.shipperId))):[s.carrierId||'own'];
   const party=billing?parties.map(id=>nameOf(data,'shippers',id)).join(', '):(s.carrierId?nameOf(data,'carriers',s.carrierId):'자사 운송');
@@ -69,17 +69,6 @@ export default function FreightLedger({kind,data,save,onPage}) {
   const headings=['운송번호',partyLabel,'운송 예정 · 지점','운송 상태',totalLabel,netLabel,balanceLabel,'정산 상태'];
   function values(r) {return [r.s.number,r.party,timeLabel(r.s.start)+' · '+nameOf(data,'branches',r.s.branchId),shipStates[r.s.status],costLabel(r.total),costLabel(r.net),costLabel(r.balance),describe(r,billing)[0]];}
   const r=all.find(x=>x.id===view?.id);
-  const toDetail=()=>setView({id:r.id,action:'detail'}),open=action=>setView({id:r.id,action}),close=()=>setView(null);
-  async function submit(form) {
-    const next=structuredClone(data), s=getRow(next,'shipments',r.id),values=Object.fromEntries(form);
-    if (view.action==='agreement')setAgreement(next,s,values);
-    if (view.action==='confirm')confirmFinance(next,s,billing,(values.note||'').trim());
-    if (view.action==='payment')addPayment(next,s,values);
-    await save(next);toDetail();
-  }
-  const receipts=r?.fin.receipts.filter(x=>x.side.startsWith(billing?'receipt':'payout')).sort((a,b)=>b.at.localeCompare(a.at));
-  const awaitingProof=r&&billing&&r.s.status!=='cancelled'&&data.policies.requireProofForBilling&&r.s.proof?.status!=='approved';
-  const canConfirm=r&&!r.confirmed&&r.total!=null&&(!billing||['cancelled','delivered'].includes(r.s.status))&&!awaitingProof;
   const eligible=rows.filter(item=>item.balance>0||item.net>0);
   const unknown=rows.filter(r=>r.total==null).length;
   return <section className="fr-section fr-ledger">
@@ -96,10 +85,30 @@ export default function FreightLedger({kind,data,save,onPage}) {
       cells[0]=<button className="fr-link" onClick={()=>setView({id:r.id,action:'detail'})}>{r.s.number}</button>;
       cells[cells.length-1]=<FreightBadge tone={tone}>{label}</FreightBadge>; return {id:r.id,onOpen:()=>setView({id:r.id,action:'detail'}),cells};
     })} empty="조회 조건에 해당하는 운송 건이 없습니다."/>
-    {r&&view.action==='detail'&&<FreightDrawer title="운송 정산 상세" subtitle={r.s.number+' · '+r.party} onClose={close} footer={<div className="fr-actions">
+    {r&&<FreightLedgerDialogs {...{billing,data,save,onPage,view,setView,eligible,r}}/>}
+  </section>;
+}
+
+export function FreightLedgerDialogs({billing,data,save,onPage,view,setView,eligible,r,onSideChange}) {
+  const partyLabel=billing?'화주':'지급 대상',totalLabel=billing?'청구액':'지급 대상액',netLabel=billing?'순수납액':'순지급액',balanceLabel=billing?'미수금':'미지급금';
+  const toDetail=()=>setView({id:r.id,action:'detail'}),open=action=>setView({id:r.id,action}),close=()=>setView(null);
+  async function submit(form) {
+    const next=structuredClone(data), s=getRow(next,'shipments',r.id),values=Object.fromEntries(form);
+    if (view.action==='agreement')setAgreement(next,s,values);
+    if (view.action==='confirm')confirmFinance(next,s,billing,(values.note||'').trim());
+    if (view.action==='payment')addPayment(next,s,values);
+    await save(next);toDetail();
+  }
+  const receipts=r?.fin.receipts.filter(x=>x.side.startsWith(billing?'receipt':'payout')).sort((a,b)=>b.at.localeCompare(a.at));
+  const awaitingProof=r&&billing&&r.s.status!=='cancelled'&&data.policies.requireProofForBilling&&r.s.proof?.status!=='approved';
+  const canConfirm=r&&!r.confirmed&&r.total!=null&&(!billing||['cancelled','delivered'].includes(r.s.status))&&!awaitingProof;
+  return <>
+    {(!view.fromList||view.action==='detail')&&<FreightDrawer title={onSideChange?'운임·정산 상세':'운송 정산 상세'} subtitle={r.s.number+' · '+r.party} onClose={close} footer={<div className="fr-actions">
       <FreightButton onClick={close}>닫기</FreightButton><FreightButton onClick={()=>open('agreement')}>합의 운임</FreightButton>
       {!r.confirmed&&<FreightButton disabled={!canConfirm} onClick={()=>open('confirm')}>{billing?'청구 확인':'지급 대상 확인'}</FreightButton>}
       <FreightButton primary disabled={!(r.balance>0||r.net>0)} onClick={()=>open('payment')}>{billing?'수납·환불 기록':'지급·환수 기록'}</FreightButton></div>}>
+      {onSideChange&&<div className="fr-tabs" role="group" aria-label="정산 구분"><button type="button" className="fr-tab" aria-pressed={billing} onClick={()=>onSideChange(true)}>화주 청구·수납</button>
+        <button type="button" className="fr-tab" aria-pressed={!billing} onClick={()=>onSideChange(false)}>운송비 정산·지급</button></div>}
       <section className="fr-section"><FreightFacts items={[[partyLabel,r.party],['운송 상태',shipStates[r.s.status]],['기본 합의액',costLabel(billing?r.s.sellAmount:r.s.buyAmount)],
         [totalLabel,costLabel(r.total)],[netLabel,costLabel(r.net)],[balanceLabel,costLabel(r.balance)],['초과 거래액',costLabel(r.excess)],
         ['회사 부담 추가 비용',costLabel(r.fin.cost)],['운송 손익',costLabel(r.fin.margin)],['확인 일시',timeLabel(billing?r.s.invoiceAt:r.s.payableAt)]]}/>
@@ -119,5 +128,5 @@ export default function FreightLedger({kind,data,save,onPage}) {
     {r&&view.action==='confirm'&&<FreightForm title={billing?'청구 확인 기록':'지급 대상 확인 기록'} subtitle={r.s.number} onClose={toDetail} onSubmit={submit} submitLabel="확인 기록">
       <p className="fr-note">{r.party} · {totalLabel} {costLabel(r.total)}</p><FormField field={{key:'note',label:'확인 메모',type:'textarea',maxLength:500}}/>
     </FreightForm>}
-  </section>;
+  </>;
 }

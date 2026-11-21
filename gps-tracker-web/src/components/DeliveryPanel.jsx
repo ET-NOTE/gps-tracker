@@ -24,6 +24,7 @@ const reports = new Set(['cargo-reports','cargo-utilization','cargo-profit']);
 function OwnerWorkspace({page,onPage,devices,onMap,onNavigate,destinations,onRegisterDevice}) {
   const qc=useQueryClient(), key=['cargo-workspace',authScope()], lock=useRef(false);
   const [epoch,reset]=useState(0), [message,setMessage]=useState('');
+  const [dispatchOrderId,setDispatchOrderId]=useState('');
   const q=useQuery({queryKey:key,queryFn:api.cargoWorkspace,staleTime:0,refetchOnWindowFocus:false,refetchOnReconnect:false,refetchInterval:(!page||page==='cargo-live'||page==='cargo-dashboard')?30000:false,retry:false});
   const snapshot=q.data;
   async function save(next){
@@ -45,7 +46,11 @@ function OwnerWorkspace({page,onPage,devices,onMap,onNavigate,destinations,onReg
       throw e;
     } finally {lock.current=false;}
   }
-  const id=freightPages.has(page)?page:'cargo-dashboard', props={page:id,data:snapshot?.data,save,onPage,devices,onMap,onRegisterDevice};
+  function startDispatch(orderId) {
+    setDispatchOrderId(orderId);
+    onPage('cargo-dispatch');
+  }
+  const id=freightPages.has(page)?page:'cargo-dashboard', props={page:id,data:snapshot?.data,save,onPage,devices,onMap,onRegisterDevice,startDispatch,dispatchOrderId,setDispatchOrderId};
   let body;
   if(q.isPending) body=<p role="status">화물배차 정보를 불러오는 중…</p>;
   else if(q.error) body=<BusinessError onRetry={q.refetch}>화물배차 정보를 불러올 수 없습니다.</BusinessError>;

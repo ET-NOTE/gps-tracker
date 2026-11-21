@@ -79,12 +79,12 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
         </label>
       </section>
     </div>
-    <Modal open={!!detail} title={detail?.label} subtitle={detail?.description} onClose={() => setDetail(null)}
-      footer={detail && <><button type="button" className="pt-button" onClick={() => setDetail(null)}>닫기</button>{availableServices.includes(detail.key) || own.includes(detail.key)
+    <Modal open={!!detail} className="pt-standard-dialog" size={530} title={detail?.label} subtitle={detail?.description} onClose={() => setDetail(null)}
+      footer={detail && <div className="pt-dialog-actions"><button type="button" className="pt-button" onClick={() => setDetail(null)}>닫기</button>{availableServices.includes(detail.key) || own.includes(detail.key)
           ? <Link to={servicePaths[detail.key] || detail.path} className="pt-button pt-primary" onClick={() => setDetail(null)}>서비스 열기</Link>
           : <button type="button" className="pt-button pt-primary" disabled={busy} onClick={async () => {
           setDetail(null); await update({service:detail.key, enabled:true});
-        }}>서비스 사용하기</button>}</>}>
+        }}>서비스 사용하기</button>}</div>}>
       {detail && <ul className="pt-feature-list pt-feature-checks">{detail.features.map(feature => <li key={feature}><Icon name="check" size={16}/>{feature}</li>)}</ul>}
     </Modal>
   </>;

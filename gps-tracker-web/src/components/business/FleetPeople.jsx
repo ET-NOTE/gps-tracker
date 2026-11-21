@@ -21,12 +21,14 @@ import Icon from '../Icon';
 import useCorporatePhone from '../../useCorporatePhone';
 import './fleet-people-cartax.css';
 import './fleet-administration.css';
+import './corporate-record-dialogs.css';
 
 export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
  const access=useFleetAccess(),qc=useQueryClient(),staff=useStaff(),org=useFleetOrganization(),vehicles=useFleetAssets();
  const mobile=useCorporatePhone();
  const [importing,setImporting]=useState(false),[internalTab,setInternalTab]=useState('users'),[edit,setEdit]=useState(null),[item,setItem]=useState(null),[invite,setInvite]=useState(null),[query,setQuery]=useState(''),[department,setDepartment]=useState(''),[status,setStatus]=useState('all'),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [roleFilter,setRoleFilter]=useState('');
+ const [detailId,setDetailId]=useState(null);
  const [checkedIds,setCheckedIds]=useState([]),[assignment,setAssignment]=useState(null),[notice,setNotice]=useState('');
  const [exporting,setExporting]=useState(false), exportLock=useRef(false), mounted=useRef(true);
  useEffect(()=>{mounted.current=true;return ()=>{mounted.current=false;};},[]);
@@ -43,6 +45,7 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
  const editable=s=>access.manage_team&&(access.role==='owner'||s.access_role!=='admin');
  const ready=!staff.error&&!staff.isPending;
  const roster=ready?scopedStaff(staff.data||[],access):[];
+ const selectedPerson=roster.find(s=>s.id===detailId);
  const searched=roster.filter(s=>matchesPerson(s,query,roleFilter));
  const matches=searched.filter(s=>inDepartment(s,department));
  const rows=matches.filter(s=>inStatus(s,status));
@@ -86,7 +89,10 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
  const roleSelect=<select className="fleet-people-role-filter" aria-label="사용자 권한 필터" value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}><option value="">전체 권한</option>{['admin','department_manager','member'].map(key=><option key={key} value={key}>{fleetRoles[key]}</option>)}{canAssign&&groups.data?.length>0&&<optgroup label="맞춤 권한 그룹">{groups.data.map(g=><option key={g.id} value={'group:'+g.id}>{g.name}</option>)}</optgroup>}</select>;
  const manageOrganization=<button type="button" className="business-button" aria-label="부서·직책 관리" onClick={()=>setTab('organization')}>부서·직책 관리</button>;
  const pendingInvites=(invites.data||[]).filter(i=>!i.accepted_at&&!i.revoked_at&&Date.parse(i.expires_at)>Date.now());
- const personActions=s=><div className="fleet-row-actions"><button className="business-button" disabled={busy} onClick={()=>setEdit(s)}>수정</button>{s.active&&!s.account_id&&<button className="business-button" disabled={busy} onClick={()=>run(async()=>setInvite({...await api.inviteFleetStaff(s.id),name:s.name}))}>초대</button>}{s.account_id&&<button className="business-button" disabled={busy} onClick={async()=>{if(await confirmDialog({title:'계정 연결 해제',body:`${s.name}님의 회사 접근을 해제할까요? 운행 기록은 유지됩니다.`}))run(()=>api.unlinkFleetStaff(s.id));}}>연결 해제</button>}<button className="business-button" disabled={busy} onClick={async()=>{if(await confirmDialog({title:s.active?'사용자 비활성화':'사용자 활성화',body:s.active?'회사 접근과 신규 운행 배정을 중지합니다. 과거 기록은 유지됩니다.':'사용자를 다시 활성화할까요? 연결된 계정의 회사 접근도 복원됩니다.'}))run(()=>api.updateStaff(s.id,{active:!s.active,updated_at:s.updated_at}));}}>{s.active?'비활성화':'활성화'}</button></div>;
+ const editAction=(s,inDetail=false)=><button type="button" className={inDetail?"business-button is-primary":"business-button"} disabled={busy} onClick={()=>setEdit(s)}>{inDetail?'정보 수정':'수정'}</button>;
+ const accountActions=s=><>{s.active&&!s.account_id&&<button className="business-button" disabled={busy} onClick={()=>run(async()=>setInvite({...await api.inviteFleetStaff(s.id),name:s.name}))}>초대</button>}{s.account_id&&<button className="business-button" disabled={busy} onClick={async()=>{if(await confirmDialog({title:'계정 연결 해제',body:`${s.name}님의 회사 접근을 해제할까요? 운행 기록은 유지됩니다.`}))run(()=>api.unlinkFleetStaff(s.id));}}>연결 해제</button>}</>;
+ const statusAction=s=><button className="business-button" disabled={busy} onClick={async()=>{if(await confirmDialog({title:s.active?'사용자 비활성화':'사용자 활성화',body:s.active?'회사 접근과 신규 운행 배정을 중지합니다. 과거 기록은 유지됩니다.':'사용자를 다시 활성화할까요? 연결된 계정의 회사 접근도 복원됩니다.'}))run(()=>api.updateStaff(s.id,{active:!s.active,updated_at:s.updated_at}));}}>{s.active?'비활성화':'활성화'}</button>;
+ const personActions=s=><div className="fleet-row-actions">{editAction(s)}{accountActions(s)}{statusAction(s)}</div>;
  const invitePanel=access.manage_team&&<details className="fleet-people-invites"><summary>초대 대기 ({invites.error||invites.isPending?'—':pendingInvites.length})</summary><p className="fleet-team-note">사용자를 등록한 뒤 초대 코드를 전달하세요. 직원이 자기 계정으로 수락하면 회사에 연결됩니다.</p>{invites.error?<BusinessError onRetry={invites.refetch}>초대 상태를 불러오지 못했습니다.</BusinessError>:invites.isPending?<p className="fleet-team-empty">초대 상태를 불러오는 중…</p>:pendingInvites.length?pendingInvites.map(i=><div className="fleet-pending-invite" key={i.id}><span>{i.name} <small>{kstDateTime(i.expires_at)} 만료</small></span><button className="business-button" disabled={busy} onClick={()=>run(()=>api.revokeFleetInvite(i.id))}>초대 취소</button></div>):<p className="fleet-team-empty">대기 중인 초대가 없습니다.</p>}</details>;
  return <div className="fleet-team fleet-people-cartax">
   {!hideNavigation&&<div className="business-switch"><button className="business-switch-item" aria-pressed={tab==='users'} onClick={()=>setTab('users')}>사용자 목록</button><button className="business-switch-item" aria-pressed={tab==='organization'} onClick={()=>setTab('organization')}>부서·직책</button><button className="business-switch-item" aria-pressed={tab==='permissions'} onClick={()=>setTab('permissions')}>권한 관리</button>{access.manage_team&&<button className="business-switch-item" aria-pressed={tab==='audit'} onClick={()=>setTab('audit')}>변경 이력</button>}</div>}
@@ -113,8 +119,8 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
     {staff.error?<BusinessError onRetry={staff.refetch}/>:staff.isPending?<p className="fleet-team-empty">사용자를 불러오는 중…</p>:rows.length?
       <div className={'fleet-mobile-people-scroll'+(canAssign?' has-selection':'')} role="region" aria-label="사용자 목록 · 좌우 스크롤" tabIndex={0}>
        <div className="fleet-people-columns">{canAssign&&allCheck}<span>사용자</span><span>부서 · 직책</span><span>권한</span><span>상태</span></div>
-       <ul className="mobile-fleet-rows">{rows.map(s=><li key={s.id}>{canAssign&&rowCheck(s)}<details className="mobile-person">
-        <summary className="mobile-fleet-row" aria-label={`${s.name} 상세`}>
+       <ul className="mobile-fleet-rows">{rows.map(s=><li key={s.id}>{canAssign&&rowCheck(s)}<div className="mobile-person">
+        <button type="button" className="mobile-fleet-row" aria-haspopup="dialog" aria-label={`${s.name} 상세`} onClick={()=>setDetailId(s.id)}>
           <span className="mobile-fleet-row-main">
             <strong className="mobile-fleet-row-title">{s.name}</strong>
             {s.account_email&&<span className="mobile-fleet-row-copy">{s.account_email}</span>}
@@ -122,23 +128,13 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
           <span>{[s.department,s.position].filter(Boolean).join(' / ')||'미지정'}</span>
           <span>{s.permission_group_id!=null ? groupName(s) : fleetRoles[s.access_role]||'일반 사용자'}</span>
           <span className={`mobile-fleet-pill ${s.active?'is-primary':''}`}>{s.active?'활성':'비활성'}</span>
-        </summary>
-        <div className="mobile-person-details">
-          <dl>
-            {s.role&&<div><dt>담당 업무</dt><dd>{s.role}</dd></div>}
-            <div><dt>연락처</dt><dd>{s.phone||'미등록'}</dd></div>
-            <div><dt>권한</dt><dd>{fleetRoles[s.access_role]||'일반 사용자'}{s.permission_group_id!=null&&' · 맞춤 그룹 적용'}</dd></div>
-            <div><dt>운행 가능 차량</dt><dd><PersonVehicles person={s} vehicles={vehicles}/></dd></div>
-            <div><dt>계정 연결</dt><dd>{s.account_id?(s.account_email||'연결됨'):'미연결'}</dd></div>
-            <div><dt>등록일</dt><dd>{kstDateTime(s.created_at).slice(0,10)}</dd></div>
-            <div><dt>상태</dt><dd>{s.active?'활성':'비활성'}</dd></div>
-          </dl>
-          {canAssign&&canAssignFleetMember(s)&&<button type="button" className="business-button" onClick={()=>setAssignment([s])}>권한 그룹 변경</button>}
-          {editable(s)&&personActions(s)}
-        </div>
-      </details></li>)}</ul></div>:<p className="fleet-team-empty">{roster.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}
+        </button>
+      </div></li>)}</ul></div>:<p className="fleet-team-empty">{roster.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}
     </>:<>
-   {staff.error?<BusinessError onRetry={staff.refetch}/>:staff.isPending?<p className="fleet-team-empty">사용자를 불러오는 중…</p>:<div className="fleet-asset-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="fleet-asset-table fleet-people-table"><thead><tr>{canAssign&&<th scope="col" className="fleet-person-check-cell">{allCheck}</th>}{['이름','부서·직책','연락처','권한','운행 가능 차량','계정 연결','등록일','상태','관리'].map(v=><th scope="col" key={v}>{v}</th>)}</tr></thead><tbody>{rows.map(s=><tr key={s.id}>{canAssign&&<td className="fleet-person-check-cell">{rowCheck(s)}</td>}<td>{editable(s)?<button type="button" className="fleet-people-name" disabled={busy} onClick={()=>setEdit(s)}>{s.name}</button>:<strong>{s.name}</strong>}{s.role&&<small>{s.role}</small>}</td><td>{s.department||'—'}<small>{s.position||'—'}</small></td><td>{s.phone||'—'}</td><td>{canAssign&&canAssignFleetMember(s)?<button type="button" className="fleet-people-name" aria-label={s.name+' 권한 그룹 변경'} onClick={()=>setAssignment([s])}>{s.permission_group_id!=null?groupName(s):fleetRoles[s.access_role]||'일반 사용자'}</button>:fleetRoles[s.access_role]||'일반 사용자'}{s.permission_group_id!=null&&<small>{fleetRoles[s.access_role]||'일반 사용자'}</small>}</td><td><PersonVehicles person={s} vehicles={vehicles}/></td><td>{s.account_id?<><span className="business-badge good">연결됨</span>{s.account_email&&<small className="fleet-people-account-email" title={s.account_email}>{s.account_email}</small>}</>:<span className="business-note">미연결</span>}</td><td>{kstDateTime(s.created_at).slice(0,10)}</td><td><span className={`business-badge ${s.active?'good':''}`}>{s.active?'활성':'비활성'}</span></td><td>{editable(s)&&<details className="fleet-people-row-menu"><summary aria-label={`${s.name} 관리`}>관리</summary>{personActions(s)}</details>}</td></tr>)}</tbody></table>{!rows.length&&<p className="fleet-team-empty">{roster.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}</div>}
+   {staff.error?<BusinessError onRetry={staff.refetch}/>:staff.isPending?<p className="fleet-team-empty">사용자를 불러오는 중…</p>:<div className="fleet-asset-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="fleet-asset-table fleet-people-table"><thead><tr>{canAssign&&<th scope="col" className="fleet-person-check-cell">{allCheck}</th>}{['이름','부서·직책','연락처','권한','운행 가능 차량','계정 연결','등록일','상태','관리'].map(v=><th scope="col" key={v}>{v}</th>)}</tr></thead><tbody>{rows.map(s=><tr key={s.id} className="person-detail-row" onClick={event=>{
+     if(event.target.closest('button,input,summary,details,a,label'))return;
+     event.currentTarget.querySelector('.person-detail-link')?.focus({preventScroll:true});setDetailId(s.id);
+   }}>{canAssign&&<td className="fleet-person-check-cell">{rowCheck(s)}</td>}<td><button type="button" className="fleet-people-name person-detail-link" aria-haspopup="dialog" aria-label={s.name+' 상세'} onClick={()=>setDetailId(s.id)}>{s.name}</button>{s.role&&<small>{s.role}</small>}</td><td>{s.department||'—'}<small>{s.position||'—'}</small></td><td>{s.phone||'—'}</td><td>{canAssign&&canAssignFleetMember(s)?<button type="button" className="fleet-people-name" aria-label={s.name+' 권한 그룹 변경'} onClick={()=>setAssignment([s])}>{s.permission_group_id!=null?groupName(s):fleetRoles[s.access_role]||'일반 사용자'}</button>:fleetRoles[s.access_role]||'일반 사용자'}{s.permission_group_id!=null&&<small>{fleetRoles[s.access_role]||'일반 사용자'}</small>}</td><td><PersonVehicles person={s} vehicles={vehicles}/></td><td>{s.account_id?<><span className="business-badge good">연결됨</span>{s.account_email&&<small className="fleet-people-account-email" title={s.account_email}>{s.account_email}</small>}</>:<span className="business-note">미연결</span>}</td><td>{kstDateTime(s.created_at).slice(0,10)}</td><td><span className={`business-badge ${s.active?'good':''}`}>{s.active?'활성':'비활성'}</span></td><td>{editable(s)&&<details className="fleet-people-row-menu"><summary aria-label={`${s.name} 관리`}>관리</summary>{personActions(s)}</details>}</td></tr>)}</tbody></table>{!rows.length&&<p className="fleet-team-empty">{roster.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}</div>}
     </>}
    </section>
    <details className="fleet-people-invites fleet-people-scopes">
@@ -158,6 +154,11 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
   </>}
   {tab==='audit'&&access.manage_team&&<section className="fleet-people-ledger" aria-label="변경 이력">{audit.error?<BusinessError onRetry={audit.refetch}/>:audit.isPending?<p className="fleet-team-empty">불러오는 중…</p>:<div className="fleet-asset-table-wrap" tabIndex={0} role="region" aria-label="변경 이력 표"><table className="fleet-asset-table"><thead><tr><th>시각</th><th>작업</th><th>작업자 계정</th><th>대상</th></tr></thead><tbody>{audit.data?.map(a=><tr key={a.id}><td>{kstDateTime(a.created_at)}</td><td>{{permission_group:'권한 그룹 변경',permission_assignment:'권한 그룹 배정',site:'지점 변경',site_group:'지점 그룹 변경',staff:'사용자 변경',staff_import:'사용자 일괄 등록',organization:'부서·직책 변경',invite_create:'초대 생성',invite_revoke:'초대 취소',invite_accept:'초대 수락',account_unlink:'계정 연결 해제',delegated_request:'직원 작업'}[a.action]||a.action}{a.action==='delegated_request'&&<small>{a.after_value?.method} · {a.after_value?.status}</small>}</td><td>{a.actor_id??'탈퇴 계정'}</td><td>{a.target_id||'—'}</td></tr>)}</tbody></table>{!audit.data?.length&&<p className="fleet-team-empty">변경 이력이 없습니다.</p>}</div>}</section>}
   {importing&&<FleetStaffImport onClose={()=>setImporting(false)} onSaved={refresh}/>}
+  {tab==='users'&&selectedPerson&&<PersonDetails person={selectedPerson} vehicles={vehicles} groupName={groupName(selectedPerson)}
+    edit={editable(selectedPerson)&&editAction(selectedPerson,true)} status={editable(selectedPerson)&&statusAction(selectedPerson)}
+    account={editable(selectedPerson)&&(selectedPerson.active||selectedPerson.account_id)?accountActions(selectedPerson):null}
+    onAssign={canAssign&&canAssignFleetMember(selectedPerson)?()=>setAssignment([selectedPerson]):undefined}
+    onClose={()=>setDetailId(null)}/>}
   {edit&&<PersonForm person={edit} org={org.data||[]} vehicles={vehicles.data||[]} onClose={()=>setEdit(null)} onSaved={()=>{setEdit(null);refresh();}}/>}
   {item&&<OrgForm item={item} onClose={()=>setItem(null)} onSaved={()=>{setItem(null);refresh();qc.invalidateQueries({queryKey:['business','corporate','vehicles']});}}/>}
   {invite&&<InviteCode value={invite} onClose={()=>setInvite(null)}/>}
@@ -190,6 +191,31 @@ function RoleAccess({access,onMembers}) {
     return <div key={key}><dt>{label}</dt><dd className={allowed?'allowed':''}>{allowed?'사용 가능':'권한 없음'}</dd></div>;
   })}</dl></div>
  </section>;
+}
+
+function PersonDetails({person,vehicles,groupName,edit,status,account,onAssign,onClose}){
+ const role=fleetRoles[person.access_role]||'일반 사용자';
+ const blocks=[
+   ['기본 정보',[['이름',person.name],['이메일',person.account_email||'미등록'],['연락처',person.phone||'미등록'],['부서',person.department||'미지정'],['직책',person.position||'미지정'],...(person.role?[['담당 업무',person.role]]:[])]],
+   ['권한 정보',[['기본 역할',role],['권한 그룹',person.permission_group_id==null?'기본 역할 적용':groupName]]],
+   ['연결 정보',[['운행 가능 차량',<PersonVehicles person={person} vehicles={vehicles}/>],['계정 연결',person.account_id?'연결됨':'미연결'],['등록일',kstDateTime(person.created_at).slice(0,10)]]],
+ ];
+ return <Modal open title="사용자 상세" subtitle={person.account_email||undefined} size={470} placement="end" onClose={onClose}
+   footer={<div className="corporate-detail-actions fleet-person-detail-actions">
+     {!edit&&!onAssign&&<button type="button" className="business-button" onClick={onClose}>닫기</button>}
+     {status}{onAssign&&<button type="button" className="business-button" onClick={onAssign}>권한 그룹 적용</button>}{edit}
+   </div>}>
+   <div className="corporate-record-body fleet-person-detail">
+     <div className="fleet-person-profile"><span className="fleet-person-avatar" aria-hidden="true">{Array.from(person.name||'')[0]}</span>
+       <div><strong>{person.name}</strong><small>{[person.department,person.position].filter(Boolean).join(' · ')||'부서 미지정'}</small></div>
+       <span className={'business-badge'+(person.active?' good':'')}>{person.active?'사용 중':'사용 중지'}</span>
+     </div>
+     {blocks.map(([heading,items])=><section key={heading}><h3>{heading}</h3>
+       <dl>{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+       {heading==='연결 정보'&&account&&<div className="fleet-person-account-actions">{account}</div>}
+     </section>)}
+   </div>
+ </Modal>;
 }
 
 function PersonVehicles({person,vehicles}){

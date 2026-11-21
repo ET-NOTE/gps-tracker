@@ -48,7 +48,7 @@ async function mount(name,{access={manage_team:true,role:'owner'},phone=false,pr
   useFleetAssets:()=>({data:[{id:100,name:'영업 차량'},{id:101,name:'관리 차량'}],...assetQuery}),fleetRoles:{member:'일반 사용자',admin:'관리자'},confirmDialog:async()=>true,
   BusinessSection:({children,action,title})=>React.createElement('section',{},React.createElement('h3',{},title),action,children),
   BusinessButton:tag('button'),BusinessEmpty:({title})=>React.createElement('p',{},title),BusinessError:({children})=>React.createElement('div',{role:'alert'},children),
-  Modal:({children,title})=>React.createElement('section',{role:'dialog','aria-label':title},children),
+  Modal:({children,title,onClose,footer})=>React.createElement('section',{role:'dialog','aria-label':title},React.createElement('button',{'aria-label':'닫기',onClick:onClose}),children,footer),
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../lib/business':business,'../../lib/businessExport':businessExport,'../../lib/fleetSites':{...sites,...siteServices},'../../lib/fleetAssets':assets,'../../lib/fleetPeopleReport':peopleReport};
  const assignmentSource=await readFile(new URL('../src/components/business/FleetGroupAssignment.jsx',import.meta.url),'utf8');
@@ -97,9 +97,14 @@ test('phone employee details keep contact information and restrict management ac
   assert.equal(r.root.findAllByType('table').length,0);
   const employees=r.root.findAllByProps({className:'mobile-person'});
   assert.equal(employees.length,3);
-  assert.match(text(employees[0].children),/010-1111-1111/);
-  assert.ok(employees[0].findAllByType('button').some(b=>text(b.children)==='수정'));
-  assert.equal(employees[2].findAllByType('button').length,0);
+  await act(async()=>employees[0].findByType('button').props.onClick());
+  let detail=r.root.findByProps({role:'dialog','aria-label':'사용자 상세'});
+  assert.match(text(detail.children),/010-1111-1111/);
+  assert.ok(detail.findAllByType('button').some(b=>text(b.children)==='정보 수정'));
+  await act(async()=>detail.findByProps({'aria-label':'닫기'}).props.onClick());
+  await act(async()=>employees[2].findByType('button').props.onClick());
+  detail=r.root.findByProps({role:'dialog','aria-label':'사용자 상세'});
+  assert.deepEqual(detail.findAllByType('button').filter(b=>!b.props['aria-label']).map(b=>text(b.children)),['닫기']);
  }finally{await close();}
 });
 
@@ -341,7 +346,8 @@ test('opening a user by name preserves values after save errors and retries with
  const directory=await mount('FleetPeople',{apiOverrides:{updateStaff:async(id,body)=>{saves.push({id,body});if(saves.length===1)throw Error('저장 충돌입니다. 다시 확인하세요.');}}});
  try{
   await act(async()=>button(directory.r,'김영업').props.onClick());
-  const dialog=directory.r.root.findByProps({role:'dialog'});
+  await act(async()=>button(directory.r,'정보 수정').props.onClick());
+  const dialog=directory.r.root.findByProps({role:'dialog','aria-label':'사용자 수정'});
   assert.ok(dialog.findByProps({'aria-label':'기본 정보'}));assert.ok(dialog.findByProps({'aria-label':'상세 정보'}));
   const nameInput=()=>directory.r.root.findAll(n=>n.type==='label'&&n.props.label==='이름')[0].findByType('input');
   await act(async()=>nameInput().props.onChange({target:{value:'김영업 수정'}}));
@@ -350,7 +356,8 @@ test('opening a user by name preserves values after save errors and retries with
   assert.equal(nameInput().props.value,'김영업 수정');assert.equal(button(directory.r,'저장').props.disabled,false);
   await act(async()=>directory.r.root.findByType('form').props.onSubmit({preventDefault(){}}));
   assert.equal(saves.length,2);assert.equal(saves[1].id,1);assert.equal(saves[1].body.name,'김영업 수정');assert.equal(saves[1].body.updated_at,'people-v1');
-  assert.equal(directory.r.root.findAllByProps({role:'dialog'}).length,0);
+  assert.equal(directory.r.root.findAllByProps({role:'dialog','aria-label':'사용자 수정'}).length,0);
+  assert.ok(directory.r.root.findByProps({role:'dialog','aria-label':'사용자 상세'}));
  }finally{await directory.close();}
 });
 
