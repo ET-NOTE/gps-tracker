@@ -869,6 +869,18 @@ mod tests {
     }
 
     #[test]
+    fn rental_customer_history_and_single_contract_are_reviewed_contract_reads() {
+        for (file, route) in [
+            ("rentcar.rs", "/rentcar/contracts/:id"),
+            ("rentcar_office.rs", "/rentcar/office/customers/:id/contracts"),
+        ] {
+            assert!(classified("GET", route));
+            assert_eq!(reviewed_routes()[format!("{file} GET {route}")]["class"], "non_location");
+        }
+        assert_eq!(reviewed_routes()["rentcar.rs GET /rentcar/contracts/:id/photos"]["class"], "ledger");
+    }
+
+    #[test]
     fn ingest_monitor_get_is_rejected_as_a_method_not_an_outage() {
         // Nginx exposes /ingest; Axum's matched route includes the mount prefix.
         assert!(!classified("GET", "/gps-tracker/ingest"));

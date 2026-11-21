@@ -1215,6 +1215,10 @@
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
   },
+  "rentcar.rs GET /rentcar/contracts/:id": {
+    "class": "non_location",
+    "reason": "One owner's rental contract from the same projection as the contract list. Pickup and return are contractual locations, not GPS telemetry."
+  },
   "rentcar.rs GET /rentcar/contracts/:id/handoff-tokens": {
     "class": "non_location",
     "reason": "Account, billing, administrative metadata or mutation acknowledgement; no stored GPS coordinates/track response."
@@ -1426,6 +1430,10 @@
   "rentcar_office.rs GET /rentcar/office/catalog": {
     "class": "non_location",
     "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."
+  },
+  "rentcar_office.rs GET /rentcar/office/customers/:id/contracts": {
+    "class": "non_location",
+    "reason": "Owner-scoped customer and driver roles, contractual dates, vehicle labels and rental status. No GPS positions, tracks or files."
   },
   "rentcar_office.rs PATCH /rentcar/office/catalog/:kind/:id": {
     "class": "non_location",
