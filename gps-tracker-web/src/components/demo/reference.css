@@ -1,0 +1,23 @@
+.fleet-demo-frame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  background: #f4f5f7;
+}
+.fleet-demo-frame > iframe { display: block; width: 100%; flex: 1; min-height: 0; border: 0; }
+.fleet-demo-frame [role="status"] { padding: 8px 16px; color: #5c451c; background: #fff3dd; }
+.fleet-demo-status, .demo-shell.fleet-demo-history {
+  font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  background: #f4f5f7;
+  color: #353b45;
+}
+.fleet-demo-status { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 10px; }
+.fleet-demo-status button, .fleet-demo-history > header button {
+  padding: 8px 14px; border-radius: 8px; background: white; color: #365d94; border: 1px solid #d9e1eb; cursor: pointer;
+}
+.demo-shell.fleet-demo-history { display: flex; flex-direction: column; }
+.fleet-demo-history > header { flex: none; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px clamp(12px,3vw,36px); background: white; border-bottom: 1px solid #e3e7ed; }
+.fleet-demo-history > header h1 { font-size: clamp(17px,2vw,22px); font-weight: 500; margin: 0 auto 0 0; }
+.fleet-demo-history > main { flex: 1; min-height: 0; padding-bottom: env(safe-area-inset-bottom); }

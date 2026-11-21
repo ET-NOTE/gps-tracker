@@ -95,16 +95,23 @@ export default function Auth({ onLogin, loginNext }) {
       </> : <div className="entry-options">
         <label><input type="checkbox" checked={rememberEmail} onChange={e => {setRememberEmail(e.target.checked); if (!e.target.checked) saveEmail('');}}/>이메일 기억하기</label>
         <label title="최대 30일"><input type="checkbox" checked={rememberLogin} onChange={e => setRememberLogin(e.target.checked)}/>로그인 상태 유지</label>
+        <button type="button" className="entry-text-button" disabled={busy} onClick={() => setRecovery('password')}>비밀번호 찾기</button>
       </div>}
       {notice && <p className="entry-notice" role="status">{notice}</p>}
       {error && <p className="entry-error" role="alert">{error}</p>}
       <button type="submit" className="entry-primary" disabled={busy}>{busy ? '처리 중…' : register ? '가입하기' : '로그인'}</button>
     </form>
-    {!register && <Link className="entry-demo-link" to="/demo" state={{loginNext}}>데모 체험하기</Link>}
+    {!register && <>
+      <div className="entry-demo-divider">계정 없이 둘러보기</div>
+      <Link className="entry-demo-link" to="/demo" state={{loginNext}}>데모 체험하기</Link>
+      <details className="entry-demo-help">
+        <summary>체험 데이터 안내</summary>
+        <p>예시 차량과 예약을 직접 등록하고 수정할 수 있습니다. 체험 종료를 누르면 이 탭에서 바꾼 내용이 초기화됩니다.</p>
+      </details>
+    </>}
     <div className="entry-links">
       {register ? <button type="button" disabled={busy} onClick={() => switchForm(false)}>로그인으로 돌아가기</button> : <>
         <button type="button" disabled={busy} onClick={() => setRecovery('id')}>아이디 찾기</button>
-        <button type="button" disabled={busy} onClick={() => setRecovery('password')}>비밀번호 찾기</button>
         <button type="button" disabled={busy} onClick={() => switchForm(true)}>회원가입</button>
       </>}
     </div>

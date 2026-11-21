@@ -3,7 +3,7 @@
 .fleet-operations-card header,.fleet-operations-card footer{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .fleet-dashboard-toolbar,.fleet-operations-toolbar{justify-content:space-between;gap:10px 16px}
 .fleet-dashboard-toolbar time,.fleet-dashboard-partial{color:var(--text-2);font-size:14px}
-.fleet-dashboard-toolbar h2,.fleet-assets-table-heading h2{margin:0;font-size:19px;line-height:1.4}
+.fleet-dashboard-toolbar h2,.fleet-assets-table-heading h2{margin:0;font-size:19px;font-weight:400;line-height:1.4}
 .business-workspace--corporate .business-overview.fleet-dashboard{gap:16px}
 .fleet-dashboard-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px 0}
 .fleet-dashboard-metrics button{display:grid;min-width:0;gap:4px;border:0;border-right:1px solid var(--border);padding:2px 17px;border-radius:0;background:transparent;text-align:left;color:var(--text);font:inherit;cursor:pointer}
@@ -14,12 +14,12 @@
 .fleet-dashboard i,.fleet-operations-card header i,.fleet-operations-schedules article>i{display:inline-grid;place-items:center;flex:none;width:27px;height:27px;background:var(--surface-2);border-radius:8px;color:var(--primary);font-style:normal}
 .fleet-dashboard-metrics .green i{color:#26705f;background:#eaf5f0}
 .fleet-dashboard-metrics .amber i{color:#955c15;background:#fff3df}
-.fleet-dashboard-metrics strong{font-size:27px;font-weight:650;line-height:1.2;font-variant-numeric:tabular-nums}
+.fleet-dashboard-metrics strong{font-size:24px;font-weight:400;line-height:1.2;font-variant-numeric:tabular-nums}
 .fleet-dashboard-metrics strong small,.fleet-vehicle-hero dd small{margin-left:3px;font-weight:500;font-size:14px;color:var(--text-2)}
 .business-workspace--corporate .fleet-dashboard .fleet-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(330px,1fr);align-items:stretch;gap:16px}
 .business-workspace--corporate .fleet-dashboard .business-section{min-width:0;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
 .business-workspace--corporate .fleet-dashboard .business-section-title{padding:14px 17px 10px}
-.business-workspace--corporate .fleet-dashboard .business-section-title h3{font-size:18px;line-height:1.4}
+.business-workspace--corporate .fleet-dashboard .business-section-title h3{font-size:16px;font-weight:500;line-height:1.4}
 .business-workspace--corporate .fleet-dashboard .business-section-title p{font-size:14px;color:var(--text-2)}
 .business-workspace--corporate .fleet-dashboard .business-map-wrap{margin:0 12px 9px;min-height:210px;height:clamp(210px,24vh,270px);border-radius:9px;isolation:isolate;overflow:hidden}
 .fleet-dashboard-tasks{min-width:0}

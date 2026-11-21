@@ -11,7 +11,7 @@ const services=[
 
 export default function LoginLayout({register, children}) {
   return <div className="entry-scroll"><div className="entry-screen">
-    <header className="entry-header"><span className="entry-brand-icon"><Icon name="car" size={23}/></span><span>시리얼링크</span></header>
+    <header className="entry-header"><span className="entry-brand-icon"><Icon name="car" size={19}/></span><span>시리얼링크</span></header>
     <main className="entry-main">
       <section className="entry-intro" aria-label="제공 서비스">
         <h2>차량 위치와<br/>운행 관리</h2>
@@ -21,7 +21,7 @@ export default function LoginLayout({register, children}) {
           <img src={car} width="390" height="169" alt="" />
           <div className="entry-route"><i/><i/><i/></div>
         </div>
-        <ul className="entry-services">{services.map(s=><li key={s.title}><Icon name={s.icon} size={19}/><div><strong>{s.title}</strong><small>{s.detail}</small></div></li>)}</ul>
+        <ul className="entry-services">{services.map(s=><li key={s.title}><Icon name={s.icon} size={17}/><div><span>{s.title}</span><small>{s.detail}</small></div></li>)}</ul>
       </section>
       <section className="entry-panel" aria-labelledby="entry-title">
         <h1 id="entry-title">{register?'회원가입':'로그인'}</h1>

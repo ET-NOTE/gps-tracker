@@ -1,59 +1,41 @@
 import { useEffect } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import Icon from '../components/Icon';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import DemoMapHome from '../components/demo/DemoMapHome';
-import DemoCorporate from '../components/demo/DemoCorporate';
-import DemoOperations from '../components/demo/DemoOperations';
+import ReferenceFrame from '../components/demo/ReferenceFrame';
+import { demoHref, demoTarget } from '../components/demo/referenceNavigation';
+import { endSampleSession } from '../components/demo/referenceSession';
 import { useDemoTheme } from '../components/demo/useDemoTheme';
 import { internalDestination } from '../lib/platformNavigation';
 import '../components/demo/demoWorkspace.css';
+import '../components/demo/reference.css';
 
-const areas = [
-  {id:'map',path:'/demo',label:'지도 홈',icon:'map'},
-  {id:'corporate',path:'/demo/corporate',label:'법인운행',icon:'office'},
-  {id:'rentcar',path:'/demo/rentcar',label:'렌트카',icon:'car'},
-  {id:'cargo',path:'/demo/cargo',label:'화물배차',icon:'route'},
-];
-const pages = {corporate:['vehicles','trips','expenses'],rentcar:['reservations','fleet'],cargo:['dispatch','orders']};
+const paths = ['/demo', '/demo/corporate', '/demo/rentcar', '/demo/cargo'];
+const mapLinks = {corporate:'/demo/corporate?view=trips', rentcar:'/demo/rentcar?view=rent-reservations', cargo:'/demo/cargo?view=cargo-dispatch'};
 
 export default function DemoWorkspace() {
   useDemoTheme();
-  const location=useLocation(), navigate=useNavigate();
-  const area=areas.find(item=>item.path===location.pathname.replace(/\/+$/,''));
-  const params=new URLSearchParams(location.search);
-  const loginNext=internalDestination(location.state?.loginNext);
-  const state=loginNext ? {loginNext} : null;
-  const exitPath=loginNext ? '/login?next='+encodeURIComponent(loginNext) : '/login';
-  const choices=pages[area?.id] || [];
-  const page=choices.includes(params.get('page')) ? params.get('page') : choices[0];
-  useEffect(()=>{
-    const before=document.title;
-    document.title=(area?.label || '지도 홈')+' · 시리얼링크 데모';
-    return ()=>{document.title=before;};
-  },[area]);
-  if (!area) return <Navigate to="/demo" state={state} replace/>;
-  const change=(to, replace=false)=>navigate(to,{state,replace});
-  const showMap=id=>change('/demo?device='+encodeURIComponent(id),area.id==='map');
-  const showBusiness=id=>change(id==='corporate'?'/demo/corporate?page=trips':'/demo/'+id);
-  const changePage=id=>{if(choices.includes(id))change(area.path+'?page='+encodeURIComponent(id));};
-  return <div className="demo-shell">
-    <header className="demo-top">
-      <Link className="demo-wordmark" to="/demo" state={state}><span><Icon name="car" size={20}/></span>시리얼링크</Link>
-      <span className="demo-mode">데모 체험</span>
-      <div className="demo-top-actions"><span>예시 데이터 · 조회 전용</span><Link to={exitPath} replace className="demo-exit">체험 종료<Icon name="chevron-right" size={14}/></Link></div>
-    </header>
-    <nav className="demo-rail" aria-label="데모 서비스">
-      {areas.map(item=><Link to={item.path} key={item.id} state={state} aria-current={item.id===area.id?'page':undefined}>
-        <Icon name={item.icon} size={21}/><span>{item.label}</span>
-      </Link>)}
-    </nav>
-    <main className="demo-main" key={area.id} aria-label={area.label}>
-      <div className="demo-content">
-        <div className="demo-heading"><h1>{area.label}</h1><time dateTime="2026-11-20T15:00:00+09:00">2026. 11. 20. 15:00 기준</time></div>
-        {area.id === 'map' ? <DemoMapHome device={params.get('device')} onDevice={showMap} openBusiness={showBusiness}/>
-          : area.id === 'corporate' ? <DemoCorporate page={page} onPage={changePage} onMap={showMap}/>
-          : <DemoOperations key={area.id} service={area.id} page={page} onPage={changePage} onMap={showMap}/>}
-      </div>
-    </main>
+  const location = useLocation();
+  const navigate = useNavigate();
+  const path = location.pathname.replace(/\/+$/, '');
+  const loginNext = internalDestination(location.state?.loginNext);
+  const state = loginNext ? {loginNext} : null;
+  const device = path === '/demo' && new URLSearchParams(location.search).get('device');
+  const target = demoTarget(path, location.search);
+  useEffect(() => {
+    const previous = document.title;
+    document.title = '시리얼링크 · 데모 체험';
+    return () => { document.title = previous; };
+  }, []);
+  if (!paths.includes(path)) return <Navigate to="/demo" state={state} replace/>;
+  function change(url, replace = false) { navigate(url, {state, replace}); }
+  function exit() {
+    endSampleSession();
+    change(loginNext ? '/login?next=' + encodeURIComponent(loginNext) : '/login', true);
+  }
+  function openDevice(id) { change('/demo?device=' + encodeURIComponent(id), Boolean(device)); }
+  if (!device) return <ReferenceFrame target={target} onRoute={next => change(demoHref(next))} onExit={exit} onMap={() => openDevice('seoul-01')}/>;
+  return <div className="demo-shell fleet-demo-history">
+    <header><button onClick={() => change('/demo')}>‹ 지도 홈</button><h1>차량 경로 재생</h1><button onClick={exit}>체험 종료</button></header>
+    <main className="demo-main"><div className="demo-content"><DemoMapHome device={device} onDevice={openDevice} openBusiness={service => change(mapLinks[service])}/></div></main>
   </div>;
 }

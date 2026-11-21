@@ -1,6 +1,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
-:root { --bottom-nav-content-height: 56px; }
+:root {
+  --bottom-nav-content-height: 56px;
+  --fleet-font: Pretendard, 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+}
+:root:not([data-theme="dark"]) :is(.pt-rail, .pt-header, .pt-account, .pt-device-pane, .rnt-shell) {
+  --bg: #f4f5f7;
+  --surface: #fff;
+  --surface-2: #f8f9fb;
+  --text: #353b45;
+  --text-2: #606b7a;
+  --text-3: #707b8b;
+  --border: #e7eaf0;
+  --primary: #3676e5;
+  --status-info-bg: #edf3ff;
+}
 /* Flutter SafeArea owns the system inset for every tab. */
 .app-bottom-nav { height: calc(var(--bottom-nav-content-height) + 1px); padding-bottom: 0; box-sizing: border-box; }
 body {

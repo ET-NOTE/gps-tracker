@@ -1,5 +1,6 @@
 /* Corporate console surfaces. Portalled account and vehicle dialogs keep the app theme. */
 .business-workspace--corporate {
+  font-family: var(--fleet-font);
   --fleet-surface-soft: var(--surface-alt, var(--bg));
   --fleet-blue-soft: var(--status-info-bg);
   --fleet-content-width: 1280px;
@@ -7,11 +8,11 @@
 .business-workspace--corporate[data-view-width="wide"] { --fleet-content-width: none; }
 :root:not([data-theme="dark"]) .business-workspace--corporate {
   --bg:#f4f5f7; --surface:#fff; --fleet-surface-soft:#f8f9fb; --text:#353b45;
-  --text-2:#606b7a; --text-3:#707b8b; --border:#e1e6ed; --primary:#306ed6; --fleet-blue-soft:#eaf1ff;
+  --text-2:#606b7a; --text-3:#707b8b; --border:#e7eaf0; --surface-2:#f8f9fb; --primary:#3676e5; --fleet-blue-soft:#edf3ff;
 }
 .fleet-brand-symbol {display:inline-grid; flex:none; place-items:center; width:29px; height:29px; border-radius:9px; background:var(--primary); color:white}
 .business-workspace--corporate .fleet-page-title {margin:0 0 17px; padding:0}
-.business-workspace--corporate .fleet-page-title h1 {margin:0; color:var(--text); font-size:clamp(23px,1.7vw,28px); font-weight:600; line-height:1.4; letter-spacing:-.04em}
+.business-workspace--corporate .fleet-page-title h1 {margin:0; color:var(--text); font-size:25px; font-weight:400; line-height:1.4; letter-spacing:-.04em}
 .fleet-breadcrumb,.fleet-topbar-inner,.fleet-top-search,.fleet-width {display:flex; align-items:center}
 .fleet-topbar-inner {width:100%; max-width:var(--fleet-content-width); margin:auto; min-width:0; gap:16px}
 .fleet-breadcrumb {flex:1; gap:7px; color:var(--text-2); font-size:13px; white-space:nowrap}
@@ -23,23 +24,23 @@
 @media screen and (min-width:900px) {
   .business-workspace--corporate .business-layout {grid-template-columns:216px minmax(0,1fr)}
   .business-workspace--corporate .business-nav {background:var(--fleet-surface-soft); border-right:1px solid var(--border); padding:20px 13px 15px; gap:4px}
-  .business-workspace--corporate .business-nav button {width:100%; min-height:43px; padding:9px 13px; gap:11px; border-radius:10px; line-height:1.5; color:var(--text-2); font-size:15px; font-weight:500; background:transparent}
+  .business-workspace--corporate .business-nav button {width:100%; min-height:45px; padding:9px 13px; gap:11px; border-radius:10px; line-height:1.5; color:var(--text-2); font-size:14px; font-weight:400; background:transparent}
   .business-workspace--corporate .business-nav button:hover {color:var(--text); background:var(--bg)}
-  .business-workspace--corporate .business-nav button[aria-current] {color:var(--primary); background:var(--fleet-blue-soft); font-weight:600}
-  .business-workspace--corporate .business-nav .fleet-brand-home {font-size:21px; font-weight:600; letter-spacing:-.06em; color:var(--text); padding:4px 10px 19px; margin-bottom:4px; border-radius:0}
+  .business-workspace--corporate .business-nav button[aria-current] {color:var(--primary); background:var(--fleet-blue-soft); font-weight:500}
+  .business-workspace--corporate .business-nav .fleet-brand-home {font-size:17px; font-weight:400; letter-spacing:-.6px; color:var(--text); padding:4px 10px 19px; margin-bottom:4px; border-radius:0}
   .fleet-nav-group>.business-nav-item svg:last-child:not(:first-child) {margin-left:auto}
   .fleet-nav-children {display:grid; margin:3px 0 5px 23px; border-inline-start:1px solid var(--border)}
   .business-workspace--corporate .business-nav .fleet-nav-children button {min-height:33px; padding:5px 12px; margin-left:-1px; border-inline-start:2px solid transparent; border-radius:0; font-size:14px}
   .business-workspace--corporate .business-nav .fleet-nav-children button[aria-current] {border-inline-start-color:var(--primary); background:transparent}
   .business-workspace--corporate .business-nav-tools {border-top:1px solid var(--border); padding-top:10px}
   .business-workspace--corporate .business-nav .business-map-shortcut {margin-top:8px; border-top:1px solid var(--border); border-radius:0; padding-top:13px}
-  .business-workspace--corporate .business-topbar {min-height:67px; padding:8px 22px; border-block-end:1px solid var(--border); background:var(--surface); box-sizing:border-box}
+  .business-workspace--corporate .business-topbar {min-height:64px; padding:6px 20px; border-block-end:1px solid var(--border); background:var(--surface); box-sizing:border-box}
   .business-workspace--corporate .business-topbar-account {padding:0; margin:0; border:0; width:auto; min-width:0}
   .business-workspace--corporate .business-content {display:block; min-width:0; padding:24px 22px 40px; background:var(--bg)}
   .business-workspace--corporate .business-content>* {max-width:var(--fleet-content-width); margin-inline:auto}
   .business-workspace--corporate .business-content .business-section {border-radius:14px; border:1px solid var(--border); box-shadow:0 4px 18px rgb(39 53 73 / 3%)}
   .business-workspace--corporate .business-content .business-section-title {padding:16px 18px; gap:12px}
-  .business-workspace--corporate .business-content .business-section h3 {font-size:18px; font-weight:600; line-height:1.45}
+  .business-workspace--corporate .business-content .business-section h3 {font-size:16px; font-weight:500; line-height:1.45}
   .business-workspace--corporate .business-content .business-button {min-height:38px; padding:7px 12px; font-size:14px; border-radius:8px}
   .business-workspace--corporate .business-content :is(input:not([type="checkbox"]):not([type="radio"]),select) {min-height:39px; border-radius:8px!important}
 }
@@ -52,7 +53,7 @@
   .business-workspace--corporate .business-layout>.business-nav,.business-workspace--corporate .business-mobile-nav {display:none}
   .business-workspace--corporate .business-layout {display:block}
   .business-workspace--corporate .business-content {min-width:0; padding:16px 12px calc(24px + env(safe-area-inset-bottom,0px))}
-  .corporate-phone-header .corporate-phone-brand {display:flex; align-items:center; gap:8px; font-size:19px; color:var(--text); font-weight:600}
+  .corporate-phone-header .corporate-phone-brand {display:flex; align-items:center; gap:8px; font-size:19px; color:var(--text); font-weight:400}
   .corporate-phone-header .corporate-phone-brand .fleet-brand-symbol {color:white}
   .corporate-phone-menu .business-drawer {background:var(--surface); color:var(--text)}
   .corporate-phone-menu .business-drawer>header,.corporate-phone-menu .corporate-phone-map {border-color:var(--border)}
