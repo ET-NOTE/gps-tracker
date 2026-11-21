@@ -3,10 +3,10 @@ import {useQueryClient} from '@tanstack/react-query';
 import {Button,Modal} from '../ui';
 import {api} from '../../api';
 import {Field,FormModal,Metrics,Options,Search,Table,Toolbar} from './RentalOfficeKit';
-import {costKinds,dailyFigures,entryKinds,kstDay,kstInput,matchOfficeCustomer,methods,readTime,recordLimit,suggestedRecordAmount,vehicleUsage,won} from '../../lib/rentalOffice';
+import {costKinds,entryKinds,kstDay,kstInput,matchOfficeCustomer,methods,outstandingReturns,readTime,recordLimit,suggestedRecordAmount,won} from '../../lib/rentalOffice';
 import ExportButtons from './ExportButtons';
 import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
-import RentalOfficeCharts from './RentalOfficeCharts';
+import Figures from './RentalOfficeFigures';
 import {matchesVehicle} from '../../lib/rentalInventory';
 
 const sum=(rows,fn)=>rows.reduce((n,row)=>n+fn(row),0);
@@ -61,56 +61,28 @@ function CostEditor({devices,row,close}) {
 }
 const entryCols=[['거래 일시',e=>readTime(e.recorded_at)],['예약·계약',e=>'#'+e.contract_id+' · '+e.renter_name],['구분',e=>entryKinds[e.kind]],
   ['수단',e=>methods[e.method]],['금액',e=><strong>{won(e.amount_krw)}</strong>],['메모',e=>e.memo||'—']];
-function Figures({book:all,devices:allVehicles,period,dates,pending,usage}){
-  const [branch,setBranch]=useState(''),[model,setModel]=useState('');
-  const profileOf=row=>allVehicles.find(v=>matchesVehicle(row,v));
-  const modelOf=c=>c.requested_model||profileOf(c)?.class_name||profileOf(c)?.car_model||'차종 미지정';
-  const branchOf=c=>c.pickup_location||profileOf(c)?.branch||'';
-  const matches=c=>(!branch||branch===branchOf(c))&&(!model||model===modelOf(c));
-  const contractRows=all.contracts.filter(matches), ids=new Set(contractRows.map(c=>c.id));
-  const devices=allVehicles.filter(d=>matches({vehicle_id:d.id,device_id:d.device_id}));
-  const book={contracts:contractRows,costs:all.costs.filter(matches),entries:all.entries.filter(e=>ids.has(e.contract_id))};
-  const source=[...all.contracts,...allVehicles.map(d=>({vehicle_id:d.id,device_id:d.device_id}))];
-  const branches=[...new Set(source.map(branchOf).filter(Boolean))].sort(),models=[...new Set(source.map(modelOf))].sort();
-  const start=Date.parse(period.from+'T00:00:00+09:00'),end=Date.parse(period.to+'T00:00:00+09:00')+86400000;
-  const periodContracts=contractRows.filter(c=>c.status!=='cancelled'&&Date.parse(c.starts_at)<end&&Date.parse(c.ends_at)>start);
-  let metrics,cols,rows,reportRows;
-  if (usage){
-    rows=vehicleUsage(book,devices,period);
-    metrics=[['조회 차량',rows.length+'대'],['대여 시간',sum(rows,r=>r.hours).toLocaleString('ko-KR',{maximumFractionDigits:1})+'시간'],['차량 운영비',won(sum(rows,r=>r.cost))]];
-    cols=[['차량',r=>r.name],['대여 시간',r=>r.hours.toLocaleString('ko-KR',{maximumFractionDigits:1})+'시간'],['가동률',r=>r.utilization.toFixed(1)+'%'],['이용료 순수납',r=>won(r.revenue)],['운영비',r=>won(r.cost)]];
-    reportRows=rows.map(r=>[r.name,r.hours.toFixed(1),r.utilization.toFixed(1)+'%',r.revenue,r.cost]);
-  } else {
-    rows=dailyFigures(book);
-    const pay=sum(rows,r=>r.payment),refund=sum(rows,r=>r.refund),cost=sum(rows,r=>r.cost);
-    metrics=[['대여 계약',periodContracts.length+'건'],['이용료 순수납',won(pay-refund)],['환불',won(refund)],['운영비',won(cost)]];
-    cols=[['날짜',r=>r.id],['이용료 수납',r=>won(r.payment)],['이용료 환불',r=>won(r.refund)],['운영비',r=>won(r.cost)],['수납 차액',r=>won(r.payment-r.refund-r.cost)]];
-    reportRows=rows.map(r=>[r.id,r.payment,r.refund,r.cost,r.payment-r.refund-r.cost]);
-  }
-  const title=usage?'차량 가동·운영비':'대여·매출 통계';
-  return <><div className="ro-filters">{dates}<Field label="소속 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{branches.map(b=><option key={b}>{b}</option>)}</select></Field>
-    <Field label="차종"><select value={model} onChange={e=>setModel(e.target.value)}><option value="">전체 차종</option>{models.map(m=><option key={m}>{m}</option>)}</select></Field></div>
-    <Metrics items={metrics}/>{!usage&&<RentalOfficeCharts figures={rows} contracts={periodContracts} period={period} modelOf={modelOf}/>}
-    <section className="ro-panel"><Toolbar count={rows.length} unit={usage?'대':'일'}><ExportButtons csvOnly disabled={pending} report={{title,filename:title+'_'+period.from+'_'+period.to,columns:cols.map(([label],key)=>({key,label})),rows:reportRows}}/></Toolbar>
-    <Table columns={cols} rows={rows} empty="조회 기간에 집계할 내역이 없습니다."/></section></>;
-}
-export default function RentalOfficeBook({kind,book,catalog,devices,period,dates,pending}) {
+export default function RentalOfficeBook({kind,book,catalog,devices,period,dates,pending,onResetPeriod}) {
   const [query,setQuery]=useState(''),[filter,setFilter]=useState('all'),[device,setDevice]=useState('all'),[account,setAccount]=useState('all'),[branch,setBranch]=useState('');
-  const [editing,setEditing]=useState(undefined),[detail,setDetail]=useState(null);
+  const [editing,setEditing]=useState(undefined),[detail,setDetail]=useState(null),[costDetail,setCostDetail]=useState(null);
+  const [method,setMethod]=useState('all');
   const matches=(...values)=>values.some(v=>String(v??'').toLowerCase().includes(query.trim().toLowerCase()));
-  if (kind==='reports'||kind==='utilization') return <Figures book={book} devices={devices} period={period} dates={dates} pending={pending} usage={kind==='utilization'}/>;
-  const isCost=kind==='costs',isPayments=kind==='payments';
+  if (kind==='reports'||kind==='utilization') return <Figures book={book} devices={devices} period={period} dates={dates} onResetPeriod={onResetPeriod} pending={pending} usage={kind==='utilization'}/>;
+  const isCost=kind==='costs',isPayments=kind==='payments',isRefunds=kind==='refunds';
   const balance=c=>c.billed_krw-c.paid_krw;
   const contracts=book.contracts.filter(c=>matches(c.id,c.renter_name,c.renter_phone,c.vehicle_name)&&
     (!branch||c.pickup_location===branch)&&
     (account==='all'||String(matchOfficeCustomer(c,catalog)?.account_id??'')===account) &&
-    (filter==='all'||(filter==='pending'?balance(c)>0:filter==='excess'?balance(c)<0:balance(c)===0)));
+    (filter==='all'||(filter==='pending'?balance(c)>0:filter==='excess'?balance(c)<0:balance(c)<=0)));
   const entries=book.entries.filter(e=>(isPayments||e.kind!=='payment')&&matches(e.contract_id,e.renter_name,e.memo)&&
-    (isPayments || filter==='all'||e.kind===filter));
-  const costs=book.costs.filter(c=>(filter==='all'||c.category===filter)&&(device==='all'||matchesVehicle(c,devices.find(v=>String(v.id)===device)))&&matches(c.vehicle_name,c.vendor,c.memo));
-  const cols=isCost?[['지출일',k=>k.occurred_on],['차량',k=><strong>{k.vehicle_name}</strong>],['구분',k=>costKinds[k.category]],['거래처',k=>k.vendor||'—'],['금액',k=>won(k.amount_krw)],['메모',k=>k.memo||'—'],['관리',k=><Button size="sm" variant="ghost" onClick={()=>setEditing(k)}>수정</Button>]]
-    :isPayments?[['예약·계약',c=><strong>{label(c)}</strong>],['차량',c=>c.vehicle_name||'차량 미배정'],['약정·정산액',c=>won(c.billed_krw)],['순수납',c=>won(c.paid_krw)],
-      ['미수금',c=>won(Math.max(0,balance(c)))],['보증금 잔액',c=>won(c.held_krw)],['관리',c=><Button size="sm" variant="ghost" onClick={()=>setDetail(c)}>상세</Button>]]:entryCols;
+    (isPayments || filter==='all'||e.kind===filter) && (!isRefunds || method==='all'||e.method===method));
+  const returns=isRefunds?outstandingReturns(book.contracts.filter(c=>matches(c.id,c.renter_name))):[];
+  const costs=book.costs.filter(c=>(filter==='all'||c.category===filter)&&(device==='all'||matchesVehicle(c,devices.find(v=>String(v.id)===device)))&&
+    (!branch||devices.some(v=>v.branch===branch&&matchesVehicle(c,v)))&&matches(c.vehicle_name,c.vendor,c.memo));
+  const cols=isCost?[['지출일',k=>k.occurred_on],['차량',k=><button type="button" className="ro-contract-link" onClick={()=>setCostDetail(k)}><strong>{k.vehicle_name||'차량 상세'}</strong></button>],
+    ['항목',k=>costKinds[k.category]],['거래처 / 사용처',k=>k.vendor||'—'],['금액',k=>won(k.amount_krw)]]
+    :isPayments?[['계약 / 고객',c=><button type="button" className="ro-contract-link" onClick={()=>setDetail(c)}><strong>#{c.id}</strong><span>{c.renter_name} · {c.vehicle_name||'차량 미배정'}</span></button>],
+      ['대여 기간',c=><>{kstDay(c.starts_at)}<span className="ro-secondary">~ {kstDay(c.ends_at)}</span></>],['청구액',c=>won(c.billed_krw)],['순수납액',c=>won(c.paid_krw)],
+      ['미수금',c=>won(Math.max(0,balance(c)))],['보유 보증금',c=>won(c.held_krw)],['수납 상태',c=><span className={'ro-status'+(balance(c)>0?' amber':'')}>{balance(c)<0?'초과 수납':balance(c)>0?(c.paid_krw?'부분 수납':'수납 전'):'미수금 없음'}</span>]]:entryCols;
   const rows=isCost?costs:isPayments?contracts:entries;
   const csvTitle=isCost?'차량 운영비':isPayments?'청구·수납':'환불·보증금';
   const csvLabels=isCost?['지출일','차량','비용 구분','거래처','금액(원)','메모']:isPayments?
@@ -120,25 +92,43 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
     contracts.map(c=>[c.id,c.renter_name,c.vehicle_name,readTime(c.starts_at),readTime(c.ends_at),c.billed_krw,c.paid_krw,Math.max(0,balance(c)),c.held_krw]):
     entries.map(e=>[readTime(e.recorded_at),e.contract_id,e.renter_name,entryKinds[e.kind],methods[e.method],e.amount_krw,e.memo]);
   const liveDetail=detail&&book.contracts.find(c=>c.id===detail.id);
+  const actions=<>
+    <ExportButtons csvOnly disabled={pending} report={{title:csvTitle,filename:csvTitle+'_'+period.from+'_'+period.to,columns:csvLabels.map((label,key)=>({key,label})),rows:csvRows}}/>
+    <Button disabled={pending||(isCost?!devices.length:!book.contracts.length)} onClick={()=>setEditing(isCost?null:{kind:isPayments?'payment':'refund'})}>{isCost?'운영비 등록':isRefunds?'환불·반환 기록':'결제 기록'}</Button>
+  </>;
   return <>
-    <div className="ro-filters ro-finance-filters">{dates}<Search value={query} setValue={setQuery} label={isCost?'차량·거래처·메모 검색':'계약번호·고객 검색'}/>
-      <Field label={isPayments?'수납 상태':'구분'}><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">전체</option>
-        <Options items={isPayments?{pending:'미수금 있음',paid:'정산 완료',excess:'초과 수납'}:isCost?costKinds:{refund:entryKinds.refund,deposit_in:entryKinds.deposit_in,deposit_out:entryKinds.deposit_out}}/></select></Field>
+    <div className="ro-filters ro-finance-filters">{dates}
       {isCost&&<Field label="차량"><select value={device} onChange={e=>setDevice(e.target.value)}><option value="all">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{vehicle(d)}</option>)}</select></Field>}
+      {isCost&&<Field label="차량 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(devices.map(v=>v.branch).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
+      <Field label={isPayments?'수납 상태':isCost?'지출 항목':'기록 구분'}><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">전체</option>
+        <Options items={isPayments?{pending:'미수금 있음',paid:'미수금 없음',excess:'초과 수납'}:isCost?costKinds:{refund:entryKinds.refund,deposit_in:entryKinds.deposit_in,deposit_out:entryKinds.deposit_out}}/></select></Field>
+      {isRefunds&&<Field label="거래 수단"><select value={method} onChange={e=>setMethod(e.target.value)}><option value="all">전체 수단</option><Options items={methods}/></select></Field>}
       {isPayments&&<Field label="거래처"><select value={account} onChange={e=>setAccount(e.target.value)}><option value="all">전체 거래처</option><option value="">미연결</option>{catalog.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {isPayments&&<Field label="대여 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(book.contracts.map(c=>c.pickup_location).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
+      <Search value={query} setValue={setQuery} label={isCost?'차량·거래처·메모 검색':isRefunds?'계약번호·고객·메모 검색':'계약번호·고객·차량 검색'}/>
+      <Button variant="ghost" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</Button>
     </div>
-    <Metrics items={isCost?[['운영비 합계',won(sum(costs,c=>c.amount_krw))],['지출 건수',costs.length+'건']]:
+    <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw))],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
       isPayments?[['약정·정산액',won(sum(contracts,c=>c.billed_krw))],['순수납',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보증금 잔액',won(sum(contracts,c=>c.held_krw))]]:
-      [['이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw))],['보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))]]}/>
-    <section className="ro-panel"><Toolbar count={rows.length}>
-      <ExportButtons csvOnly disabled={pending} report={{title:csvTitle,filename:csvTitle+'_'+period.from+'_'+period.to,columns:csvLabels.map((label,key)=>({key,label})),rows:csvRows}}/>
-      <Button disabled={pending||(isCost?!devices.length:!book.contracts.length)} onClick={()=>setEditing(isCost?null:{kind:isPayments?'payment':'refund'})}>{isCost?'운영비 등록':'결제 기록'}</Button></Toolbar>
+      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw))],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['처리 대기',returns.length+'건']]}/>
+    {isRefunds&&<>
+      <div className="ro-refund-actions"><span>보증금은 이용료 수납액과 별도로 집계합니다.</span><div>{actions}</div></div>
+      <section className="ro-panel"><header className="ro-section-heading"><div><h2>현재 환불·반환 대기</h2><p>조회 기간에 포함된 계약의 현재 잔액입니다.</p></div><span>{returns.length}건</span></header>
+        <Table rows={returns} columns={[
+          ['계약 / 고객',r=><button type="button" className="ro-contract-link" onClick={()=>setDetail(r.contract)}><strong>#{r.id}</strong><span>{r.contract.renter_name}</span></button>],
+          ['계약 상태',r=>r.contract.cancel_outcome==='no_show'?'미방문':r.contract.settlement_finalized?'정산 완료':({draft:'예약 접수',active:'대여 중',overdue:'반납 지연',returned:'반납 완료',cancelled:'취소'})[r.contract.status]||'—'],
+          ['이용료 초과수납',r=>won(r.excess)],['반환 대상 보증금',r=>won(r.deposit)]
+        ]} empty="환불·반환 대기 항목이 없습니다."/>
+      </section></>}
+    <section className="ro-panel">{isRefunds?<header className="ro-section-heading"><h2>거래 기록</h2><span>{rows.length}건</span></header>:<Toolbar count={rows.length}>{actions}</Toolbar>}
       <Table columns={cols} rows={rows} empty={isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
+    {costDetail&&<Modal open title="운영비 상세" onClose={()=>setCostDetail(null)}><div className="rental-office"><dl className="ro-cost-details">
+      {[['차량',costDetail.vehicle_name],['지출일',costDetail.occurred_on],['항목',costKinds[costDetail.category]],['금액',won(costDetail.amount_krw)],['거래처 / 사용처',costDetail.vendor],['메모',costDetail.memo]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value||'—'}</dd></div>)}</dl>
+      <div className="ro-actions"><Button onClick={()=>{setEditing(costDetail);setCostDetail(null);}}>운영비 수정</Button></div></div></Modal>}
     {liveDetail&&<Modal open size="xl" title={label(liveDetail)} subtitle="결제 상세" onClose={()=>setDetail(null)}>
       <div className="rental-office"><Metrics items={[['약정·정산액',won(liveDetail.billed_krw)],['순수납',won(liveDetail.paid_krw)],['보증금 잔액',won(liveDetail.held_krw)]]}/>
         <h3>조회 기간의 거래</h3><Table columns={entryCols} rows={book.entries.filter(e=>e.contract_id===liveDetail.id)} empty="조회 기간에 기록된 거래가 없습니다."/>
-        <div className="ro-actions"><Button onClick={()=>{setDetail(null);setEditing({contract:liveDetail});}}>결제 기록</Button></div></div></Modal>}
+        <div className="ro-actions"><Button onClick={()=>{setDetail(null);setEditing({contract:liveDetail,kind:isRefunds?(liveDetail.paid_krw>liveDetail.billed_krw?'refund':'deposit_out'):'payment'});}}>결제 기록</Button></div></div></Modal>}
     {editing!==undefined&&(isCost?<CostEditor devices={devices} row={editing} close={()=>setEditing(undefined)}/>:<LedgerEditor initial={editing} book={book} close={()=>setEditing(undefined)}/>)}
   </>;
 }

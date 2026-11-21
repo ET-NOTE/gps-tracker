@@ -4,7 +4,7 @@ import {FleetJoin} from './business/FleetAccess';
 import Switch from './ui/Switch';
 // 내정보 패널 — 서브탭 구조: 계정 / 포인트 / 채팅 / 알림 / 테마.
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, clearTokens } from '../api';
@@ -32,7 +32,7 @@ function initialProfileTab() {
 
 // (F2-b) accountType 은 backward-compat prop (부모 렌더 hints 용). AccountTypeCard 는
 // 이제 useAccountType/useSetAccountType 훅으로 자체 완결 — onAccountTypeChange 불필요.
-export default function ProfilePanel({ onLogout, portalTab, onPortalTab }) {
+export default function ProfilePanel({ onLogout, portalTab, onPortalTab, companySection }) {
   // (F2-a) useState+useEffect fetch → useMe hook (dedup, focus refetch).
   // 아래 setMe 호출은 qc.setQueryData(qk.me(), ...) 로 캐시 optimistic 갱신.
   const { data: me } = useMe();
@@ -86,11 +86,11 @@ export default function ProfilePanel({ onLogout, portalTab, onPortalTab }) {
       </nav>}
 
       <div style={portalTab ? undefined : tab === 'chat' ? st.bodyFill : st.body}>
-        {tab === 'account' && <AccountTab embedded={!!portalTab} me={me} setMe={setMe} onLogout={onLogout} onPrivacy={()=>setTab('privacy')} />}
+        {tab === 'account' && <AccountTab embedded={!!portalTab} companySection={companySection} me={me} setMe={setMe} onLogout={onLogout} onPrivacy={()=>setTab('privacy')} />}
         {tab === 'privacy' && <PrivacyRequests />}
         {tab === 'credit'  && <CreditTab />}
         {tab === 'chat'    && !isAdmin && <ChatTab onRead={() => setChatUnread(0)} />}
-        {tab === 'notif'   && <NotifTab />}
+        {tab === 'notif'   && <NotifTab embedded={!!portalTab} onServices={()=>setTab('services')}/>}
         {tab === 'theme'   && <ThemeTab />}
         {tab === 'lab'     && <LabTab />}
       </div>
@@ -100,11 +100,12 @@ export default function ProfilePanel({ onLogout, portalTab, onPortalTab }) {
 
 // ─── 계정 (이메일/이름/비번/탈퇴) ─────────────────────────
 // (F2-b) accountType prop 제거 — AccountTypeCard 자체 완결.
-function AccountTab({ me, setMe, onLogout, onPrivacy, embedded }) {
+function AccountTab({ me, setMe, onLogout, onPrivacy, embedded, companySection }) {
   const navigate=useNavigate(),qc=useQueryClient();
   const [joinFleet,setJoinFleet]=useState(false);
   const [name, setName]     = useState(me.display_name || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const phonesSection = useRef(null);
 
   const [pwOpen, setPwOpen] = useState(false);
   const [pwCur, setPwCur]   = useState('');
@@ -135,10 +136,24 @@ function AccountTab({ me, setMe, onLogout, onPrivacy, embedded }) {
 
   return (
     <div className={embedded ? 'pt-account-fields' : undefined} style={embedded ? undefined : { display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <Card>
+      {embedded && <section className="pt-panel pt-account-form">
+        <div className="pt-section-head"><h3>프로필</h3><span className="pt-tag">{{user:'일반 사용자',admin:'관리자'}[me.role] || me.role}</span></div>
+        <form onSubmit={e => {e.preventDefault(); if (!savingProfile) saveProfile();}}>
+          <label>이름<input value={name} autoComplete="name" onChange={e=>setName(e.target.value)}/></label>
+          <div className="pt-account-phone-read">
+            <div className="pt-account-phone-label"><label htmlFor="pt-profile-phone">휴대폰</label><button type="button" className="pt-text-button" onClick={()=>phonesSection.current?.focus()}>연락처 관리</button></div>
+            <input id="pt-profile-phone" readOnly type="tel" value={me.phone || ''} placeholder="등록된 번호 없음"/>
+          </div>
+          <label className="pt-account-email">이메일<input readOnly type="email" value={me.email}/></label>
+          <div className="pt-account-form-actions"><button type="button" className="pt-button" disabled={savingProfile} onClick={()=>setName(me.display_name || '')}>취소</button>
+            <button type="submit" className="pt-button pt-primary" disabled={savingProfile}>{savingProfile ? '저장 중…' : '프로필 저장'}</button></div>
+        </form>
+      </section>}
+      {embedded && companySection}
+      {!embedded && <Card>
         <Field label="이메일" value={me.email} />
         <Field label="권한"   value={{ user: '일반 사용자', admin: '관리자' }[me.role] || me.role} />
-      </Card>
+      </Card>}
 
       {!embedded && <Card title="회사 초대 연결">
         <p className="profile-help">초대 코드로 회사에 참여하세요.</p>
@@ -150,18 +165,18 @@ function AccountTab({ me, setMe, onLogout, onPrivacy, embedded }) {
       {joinFleet&&<FleetJoin onClose={()=>setJoinFleet(false)} onJoined={async id=>{rememberFleetOwner(id);await qc.invalidateQueries({queryKey:['fleet-memberships']});setJoinFleet(false);navigate('/corporate');}}/>}
       {!embedded && <AccountTypeCard />}
 
-      <PhonesCard me={me} setMe={setMe} />
+      <div className={embedded ? 'pt-account-phones' : undefined} ref={phonesSection} tabIndex={embedded ? -1 : undefined}><PhonesCard me={me} setMe={setMe} /></div>
 
-      <Card title="프로필">
+      {!embedded && <Card title="프로필">
         <input placeholder="이름 (표시될 이름)" value={name}
           onChange={e => setName(e.target.value)} style={st.input} />
         <button onClick={saveProfile} disabled={savingProfile}
           style={{ ...st.btn, marginTop: 8, opacity: savingProfile ? 0.6 : 1 }}>
           {savingProfile ? '저장 중...' : '저장'}
         </button>
-      </Card>
+      </Card>}
 
-      <Card title="보안">
+      <Card title="계정 보안" className="pt-security-card">
         {!pwOpen ? (
           <button onClick={() => setPwOpen(true)} style={st.btnSecondary}>비밀번호 변경</button>
         ) : (
@@ -1031,7 +1046,10 @@ function ChatTab({ onRead }) {
 }
 
 // ─── 알림 ───────────────────────────────────────────────
-function NotifTab() {
+function NotifTab({embedded, onServices}) {
+  if (embedded) return <><NotificationSettings portal/>
+    <section className="pt-panel pt-work-alerts"><div><h3>업무 알림</h3><p>회사별 예약·대여·운송 알림은 해당 업무 서비스의 알림 설정에서 관리합니다.</p></div>
+      <button className="pt-button" type="button" onClick={onServices}>이용 서비스 보기</button></section></>;
   return (
     <Card>
       <div style={{ ...st.cardTitle, marginBottom: 8 }}>알림 설정</div>
@@ -1202,9 +1220,9 @@ function LabToggleRow({ label, desc, on, onChange, busy }) {
 }
 
 // ─── 공용 sub-컴포넌트 ─────────────────────────────────
-function Card({ title, children }) {
+function Card({ title, children, className }) {
   return (
-    <section className="profile-card" style={st.card}>
+    <section className={'profile-card' + (className ? ' ' + className : '')} style={st.card}>
       {title && <h2 style={st.cardTitle}>{title}</h2>}
       {children}
     </section>

@@ -8,7 +8,7 @@ const TYPES = [
   { id: 'hybrid',  label: '위성', title: '위성+라벨' },
 ];
 
-export default function MapControls({ mapRef, onOpenRoadview, selected }) {
+export default function MapControls({ mapRef, onOpenRoadview, selected, deviceLayout = false, zoomLevel }) {
   const [mapType, setMapType] = useState('roadmap');
   const [cadastral, setCadastral] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -30,24 +30,26 @@ export default function MapControls({ mapRef, onOpenRoadview, selected }) {
   }
 
   return (
-    <div style={s.wrap}>
+    <div className="pt-map-controls" style={s.wrap}>
       <div className="pt-map-scale" aria-label="지도 이동">
         <button type="button" aria-label="지도 확대" onClick={() => mapRef.current?.zoomBy?.(-1)}>+</button>
+        {deviceLayout && <button className="pt-scale-options" type="button" aria-label="지도 옵션" aria-expanded={expanded} title="지도 종류 및 표시 설정" onClick={toggleExpanded}>{zoomLevel == null ? '지도' : zoomLevel + '단계'}</button>}
         <button type="button" aria-label="지도 축소" onClick={() => mapRef.current?.zoomBy?.(1)}>−</button>
-        <button type="button" aria-label="단말기 위치로 이동" onClick={() => selected != null ? mapRef.current?.focusDevice?.(selected, {level:4}) : mapRef.current?.fitToAllMarkers?.()}><Icon name="mapPin" size={17}/></button>
+        {!deviceLayout && <button type="button" aria-label="단말기 위치로 이동" onClick={() => selected != null ? mapRef.current?.focusDevice?.(selected, {level:4}) : mapRef.current?.fitToAllMarkers?.()}><Icon name="mapPin" size={17}/></button>}
       </div>
+      {deviceLayout && <button type="button" className="map-action pt-map-locate" aria-label="단말기 위치로 이동" onClick={() => selected != null ? mapRef.current?.focusDevice?.(selected,{level:4}) : mapRef.current?.fitToAllMarkers?.()}><Icon name="target" size={17}/><span>위치 이동</span></button>}
       {/* 항상 보이는 토글 — 눈 아이콘. 펼친 상태일 때 primary 색상으로 활성 표시. */}
-      <button
+      {!deviceLayout && <button
         onClick={toggleExpanded}
         aria-label="지도 옵션" aria-expanded={expanded}
         title={expanded ? '컨트롤 숨기기' : '지도 옵션'}
         style={{ ...s.iconBtn, ...(expanded ? s.iconOn : null) }}>
         <Icon name="map" size={18} /><span>지도</span>
-      </button>
+      </button>}
 
       {/* 펼침 그룹 — 토글 활성 시에만 노출. */}
       {expanded && (
-        <>
+        <div className="pt-map-options">
           {/* 지도 타입 — 세그먼트 토글 */}
           <div style={{ ...s.segment, animation: 'fadeInUp .15s ease-out' }}>
             {TYPES.map(t => (
@@ -73,7 +75,7 @@ export default function MapControls({ mapRef, onOpenRoadview, selected }) {
             style={{ ...s.iconBtn, animation: 'fadeInUp .15s ease-out' }}>
             <Icon name="cam" size={18} /><span>로드뷰</span>
           </button>
-        </>
+        </div>
       )}
     </div>
   );

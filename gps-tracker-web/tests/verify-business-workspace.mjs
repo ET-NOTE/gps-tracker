@@ -37,7 +37,8 @@ try {
     assert.equal(await page.getByRole('button', { name: '123가 4567 차량 상세', exact: true }).evaluate(el => el === document.activeElement), true);
     if (width < 1024) await page.getByRole('button', { name: '배차표', exact: true }).click();
     else await page.getByRole('button', { name: '배차·반납 일정', exact: true }).click();
-    await page.getByRole('button', { name: '차량별 배차표', exact: true }).waitFor();
+    await page.getByRole('region', { name: '월요일부터 일요일까지 배차 일정' }).waitFor();
+    await page.getByRole('button', { name: '차량별 배차표', exact: true }).click();
     await page.locator('.business-board').getByText('미리보기 고객 2', { exact: true }).first().waitFor({ state: 'attached' });
     await capture(page, `board-${width}`);
     if (width > 700) {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import './MapActions.css';
 
-export default function MapActions({ hasDevice, tracking, paused, miniOpen, bottom,
+export default function MapActions({ hasDevice, canTrack = hasDevice, tracking, paused, miniOpen, bottom, simple = false,
   onTracking, onMini, onTool, onNativeTracking }) {
   const [expanded, setExpanded] = useState(false);
   const root = useRef(null);
@@ -20,7 +20,7 @@ export default function MapActions({ hasDevice, tracking, paused, miniOpen, bott
   function open(tool) { setExpanded(false); onTool(tool); }
   const trackingLabel = !tracking ? '라이브 추적 켜기' : paused ? '추적 ON (경로 탐색 중 일시 정지)' : '추적 끄기';
   return <div ref={root} className="map-actions" style={{ bottom }}>
-    {expanded && <div className="map-tools-menu" role="group" aria-label="운행 도구 목록">
+    {!simple && expanded && <div className="map-tools-menu" role="group" aria-label="운행 도구 목록">
       {onNativeTracking && <button disabled={!hasDevice} onClick={() => { setExpanded(false); onNativeTracking(); }}>
         <Icon name="target" size={18} /><span>진행 방향 추적<small>Android 회전 지도 · 테스트</small></span>
       </button>}
@@ -35,16 +35,16 @@ export default function MapActions({ hasDevice, tracking, paused, miniOpen, bott
       </button>
       {!hasDevice && <p>운행 분석는 단말기를 선택한 뒤 사용할 수 있습니다.</p>}
     </div>}
-    <button className="map-action btn-bounce" title="운행 도구" aria-label="운행 도구"
+    {!simple && <button className="map-action btn-bounce" title="운행 도구" aria-label="운행 도구"
       aria-expanded={expanded} data-active={expanded} onClick={() => setExpanded(value => !value)}>
       <Icon name={expanded ? 'close' : 'wrench'} size={18} /><span>도구</span>
-    </button>
-    {hasDevice && <>
+    </button>}
+    {(hasDevice || simple) && <>
       <button className="map-action map-action-tracking btn-bounce" title={trackingLabel} aria-label={trackingLabel}
-        aria-pressed={tracking} data-active={tracking} data-paused={paused} onClick={() => { setExpanded(false); onTracking(); }}>
-        <Icon name="target" size={18} /><span>{tracking ? (paused ? '추적 대기' : '추적 중') : '자동 추적'}</span>
+        disabled={!canTrack} aria-pressed={canTrack && tracking} data-active={canTrack && tracking} data-paused={paused} onClick={() => { setExpanded(false); onTracking(); }}>
+        <Icon name="target" size={18} /><span>{canTrack && tracking ? (paused ? '추적 대기' : '추적 중') : '자동 추적'}</span>
       </button>
-      <button className="map-action btn-bounce" title="이동 기록" aria-label="이동 기록" aria-pressed={miniOpen}
+      <button className="map-action btn-bounce" title="이동 기록" aria-label="이동 기록" disabled={!hasDevice} aria-pressed={miniOpen}
         data-active={miniOpen} onClick={() => { setExpanded(false); onMini(); }}>
         <Icon name="clock" size={18} /><span>이동 기록</span>
       </button>

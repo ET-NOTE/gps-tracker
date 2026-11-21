@@ -277,6 +277,12 @@ test('mini/detail/management/planner are exclusive; leaving Home or losing the d
   await act(async () => r.update(React.createElement(Probe)));
   await act(async () => controls.openTool('route'));
   await act(async () => r.update(React.createElement(Probe, { view: 'devices' })));
+  assert.equal(active(), 0, 'the full route planner is scoped to Home');
+  await act(async () => controls.toggleMini());
+  assert.equal(controls.showMiniSeeker, true);
+  assert.equal(isSeekerVisible('devices', 1, false, controls.showMiniSeeker), true, 'device history pauses live layers on its map');
+  await act(async () => controls.toggleMini());
+  assert.equal(active(), 0);
   await act(async () => r.update(React.createElement(Probe)));
   assert.equal(active(), 0, 'returning Home starts with the live map');
   await act(async () => r.unmount());

@@ -13,8 +13,8 @@ async function component(api) {
   const source = await readFile(new URL('../src/components/NotificationSettings.jsx', import.meta.url), 'utf8');
   const m = new vm.SourceTextModule((await transform(source, {loader:'jsx', jsx:'automatic', format:'esm'})).code, {context});
   async function link(name) {
-    if (name === './ui/Switch') {
-      const code = await readFile(new URL('../src/components/ui/Switch.jsx', import.meta.url), 'utf8');
+    if (name === './ui/Switch' || name === './Icon') {
+      const code = await readFile(new URL('../src/components/' + name.slice(2) + '.jsx', import.meta.url), 'utf8');
       const child = new vm.SourceTextModule((await transform(code, {loader:'jsx', jsx:'automatic', format:'esm'})).code, {context});
       await child.link(link); return child;
     }
@@ -79,4 +79,19 @@ test('regular status reporting uses the persisted wake preference, independently
  await act(async()=>toggle().props.onClick());assert.equal(sent.wake_alert,false);
  assert.match(JSON.stringify(r.toJSON()),/24시간/);assert.match(JSON.stringify(r.toJSON()),/펌웨어는 업데이트가 필요/);
  await act(async()=>r.unmount());
+});
+
+test('member alert shortcuts save their individual setting and keep advanced rules available',async()=>{
+  let stored={...settings,signal_loss_alert:false,device_health_alert:true,geofence_alert:true},sent=[];
+  const C=await component({getNotificationSettings:async()=>stored,updateNotificationSettings:async patch=>{sent.push(patch);stored={...stored,...patch};return stored;}});
+  let r;await act(async()=>{r=create(React.createElement(C,{portal:true}));});
+  const toggles=()=>r.root.findAllByType('button').filter(n=>n.props.role==='switch');
+  for(const [label,key,expected] of [['새 정보 수신 지연','signal_loss_alert',true],['위치·전원 이상','device_health_alert',false],['설정한 구역 출입','geofence_alert',false]]) {
+    const matches=toggles().filter(n=>n.props['aria-label']===label);assert.equal(matches.length,1);
+    await act(async()=>matches[0].props.onClick());assert.deepEqual({...sent.at(-1)},{[key]:expected});
+  }
+  const details=r.root.findByProps({className:'pt-notif-details'});
+  assert.ok(details.findAllByType('button').some(n=>n.props['aria-label']==='차량 예약 알림'));
+  assert.equal(details.findByProps({'aria-label':'연결 확인 안내 시점'}).props.value,1440);
+  await act(async()=>r.unmount());
 });

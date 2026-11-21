@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 // One active map tool prevents two panels from owning the same map layer.
 export function useHomeMapTools(view, hasDevice) {
   const [mode, setMode] = useState(null);
-  const unavailable = view !== 'home' || (!hasDevice && (mode === 'mini' || mode === 'seeker'));
+  const mapSupportsTool = view === 'home' || (view === 'devices' && mode === 'mini');
+  const unavailable = !mapSupportsTool || (!hasDevice && (mode === 'mini' || mode === 'seeker'));
   useEffect(() => { if (unavailable) setMode(null); }, [unavailable]);
   const visibleMode = unavailable ? null : mode;
   return {

@@ -27,6 +27,12 @@ const devices=[{id:100,vehicle_name:'영업 차량',car_plate:'123가4567'},{id:
 const staff=[{id:1,name:'김영업',active:true},{id:2,name:'이관리',active:true},{id:3,name:'지난 사용자',active:false}];
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):text(node?.children||[]);
 const button=(r,label)=>r.root.find(n=>n.type==='button'&&text(n.children).trim()===label);
+const statusSelect=r=>r.root.findByProps({'aria-label':'예약 상태 필터'});
+const statusOption=(r,label)=>statusSelect(r).find(n=>n.type==='option'&&text(n.children)===label);
+async function chooseStatus(r,label){
+ const value=statusOption(r,label).props.value;
+ await act(async()=>statusSelect(r).props.onChange({target:{value}}));
+}
 const rowIds=r=>r.root.findByType('tbody').findAllByType('tr').map(row=>row.findAllByType('button')[0].props['aria-label']);
 
 async function mount(t,{data=reservations,request}={}){
@@ -74,21 +80,24 @@ async function mount(t,{data=reservations,request}={}){
 
 test('reservation search, status counts and table rows share the same query scope',async t=>{
  const {r,calls}=await mount(t);
+ assert.equal(statusSelect(r).props.value,'all');
+ assert.deepEqual(rowIds(r),reservations.map(row=>'예약 '+row.id+' 상세·수정'));
+ await chooseStatus(r,'예정·진행 (2)');
  assert.deepEqual(rowIds(r),['예약 1 상세·수정','예약 2 상세·수정']);
- assert.ok(button(r,'전체 (5)'));assert.ok(button(r,'예정·진행 (2)'));assert.ok(button(r,'완료 (2)'));assert.ok(button(r,'취소 (1)'));
+ assert.ok(statusOption(r,'전체 (5)'));assert.ok(statusOption(r,'예정·진행 (2)'));assert.ok(statusOption(r,'완료 (2)'));assert.ok(statusOption(r,'취소 (1)'));
  const scope=calls.query.at(-1);
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:' 김영업 '}}));
- assert.ok(button(r,'전체 (3)'));assert.ok(button(r,'예정·진행 (1)'));assert.ok(button(r,'완료 (1)'));assert.ok(button(r,'취소 (1)'));
+ assert.ok(statusOption(r,'전체 (3)'));assert.ok(statusOption(r,'예정·진행 (1)'));assert.ok(statusOption(r,'완료 (1)'));assert.ok(statusOption(r,'취소 (1)'));
  assert.deepEqual(rowIds(r),['예약 1 상세·수정']);
- await act(async()=>button(r,'완료 (1)').props.onClick());
+ await chooseStatus(r,'완료 (1)');
  assert.deepEqual(rowIds(r),['예약 3 상세·수정']);
- await act(async()=>button(r,'전체 (3)').props.onClick());
+ await chooseStatus(r,'전체 (3)');
  assert.equal(rowIds(r).length,3);
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:'987나'}}));
  assert.deepEqual(rowIds(r),['예약 2 상세·수정']);
  assert.deepEqual(calls.query.at(-1),scope,'search and status do not change the date query');
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:'없는 차량'}}));
- assert.equal(rowIds(r).length,0);assert.match(text(r.toJSON()),/검색 결과가 없습니다/);assert.ok(button(r,'전체 (0)'));
+ assert.equal(rowIds(r).length,0);assert.match(text(r.toJSON()),/검색 결과가 없습니다/);assert.ok(statusOption(r,'전체 (0)'));
 });
 
 test('weekly bookings use Monday KST, span midnight, and exclude the exclusive end day',async t=>{
@@ -107,7 +116,7 @@ test('weekly bookings use Monday KST, span midnight, and exclude the exclusive e
 test('a reservation refresh error hides stale rows and counts in both list and calendar',async t=>{
  const {r,state,calls,rerender}=await mount(t);
  state.error=Error('조회 실패');await rerender();
- assert.equal(r.root.findAllByType('table').length,0);assert.ok(button(r,'전체 (—)'));assert.ok(button(r,'예정·진행 (—)'));
+ assert.equal(r.root.findAllByType('table').length,0);assert.ok(statusOption(r,'전체 (—)'));assert.ok(statusOption(r,'예정·진행 (—)'));
  assert.equal(r.root.findAll(n=>n.type==='button'&&n.props['aria-label']?.includes('상세·수정')).length,0);
  await act(async()=>button(r,'다시 시도').props.onClick());assert.equal(calls.retry,1);
  await act(async()=>button(r,'캘린더').props.onClick());
@@ -118,7 +127,7 @@ test('a reservation refresh error hides stale rows and counts in both list and c
 
 test('calendar navigation preserves list filters and day selection presets a new booking',async t=>{
  const {r,storage}=await mount(t);
- await act(async()=>button(r,'완료 (2)').props.onClick());assert.equal(rowIds(r).length,2);
+ await chooseStatus(r,'완료 (2)');assert.equal(rowIds(r).length,2);
  await act(async()=>button(r,'캘린더').props.onClick());
  assert.equal(storage.get('resv_view'),'calendar');
  assert.equal(r.root.findByProps({'aria-label':'예약 조회 월'}).props.value,'2026-11');
@@ -131,7 +140,7 @@ test('calendar navigation preserves list filters and day selection presets a new
  assert.equal(dateInputs[0].props.value,'2026-11-20T09:00');assert.equal(dateInputs[1].props.value,'2026-11-20T10:00');
  await act(async()=>dialog.findByType('footer').findAllByType('button')[0].props.onClick());
  await act(async()=>button(r,'예약 목록').props.onClick());
- assert.equal(storage.get('resv_view'),'list');assert.equal(button(r,'완료 (2)').props['aria-pressed'],true);assert.equal(rowIds(r).length,2);
+ assert.equal(storage.get('resv_view'),'list');assert.equal(statusSelect(r).props.value,'completed');assert.equal(rowIds(r).length,2);
 });
 
 test('calendar overflow lists every matching booking across KST month boundaries and returns from editing',async t=>{
@@ -189,6 +198,6 @@ test('reservation row details save the selected booking and cancellation remains
  assert.deepEqual(calls.cancel,[1]);assert.equal(calls.confirm.at(-1).danger,true);
  state.cancelError=Error('이미 변경된 예약');await act(async()=>r.root.findByProps({'aria-label':'예약 2 취소'}).props.onClick());
  assert.equal(calls.alerts.at(-1).title,'예약 취소 실패');assert.equal(calls.alerts.at(-1).body,'이미 변경된 예약');
- await act(async()=>button(r,'취소 (1)').props.onClick());
+ await chooseStatus(r,'취소 (1)');
  assert.deepEqual(rowIds(r),['예약 4 상세·수정']);assert.equal(r.root.findAllByProps({'aria-label':'예약 4 취소'}).length,0);
 });

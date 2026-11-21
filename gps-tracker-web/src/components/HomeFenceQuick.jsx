@@ -43,6 +43,7 @@ export default function HomeFenceQuick({
   fabBottom = 16,   // 우하단 FAB 칼럼의 기준 bottom — Dashboard 가 계산해서 넘김 (strip + tooltip lift 포함)
   enabled = true,   // 펜스 토글 (= Dashboard 의 showFences) — false 면 토글 FAB 만 노출.
   onToggleEnabled,  // (v) => void
+  addBelow = false,
   showList = true,
   listSide = 'left',   // 'left' (모바일 기본, 좌하단) | 'right' (PC, FAB 칼럼 왼쪽 우하단)
 }) {
@@ -58,7 +59,7 @@ export default function HomeFenceQuick({
         on={enabled}
         onClick={() => onToggleEnabled?.(!enabled)}
         count={list.length}
-        fabBottom={fabBottom}
+        fabBottom={fabBottom + (addBelow && enabled ? 57 : 0)}
       />
       {enabled && (
         <>
@@ -67,6 +68,7 @@ export default function HomeFenceQuick({
             filterDeviceId={filterDeviceId}
             onCreated={onChange}
             fabBottom={fabBottom}
+            buttonOffset={addBelow ? 0 : 60}
           />
           {showList && <FenceList
             fences={list}
@@ -132,7 +134,7 @@ const ts = {
 // 우하단 FAB 칼럼 — 새 펜스 만들기. 토글 ON 일 때만 노출 (slot = fabBottom + 120,
 // 즉 기존 panel-seeker FAB 자리). 열림: 좌측 popover 카드 (FAB 칼럼 왼쪽).
 // ────────────────────────────────────────────────────────────
-function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
+function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom, buttonOffset }) {
   const [open, setOpen] = useState(false);
   const [name, setName]     = useState('');
   const [radius, setRadius] = useState(200);
@@ -221,7 +223,7 @@ function FenceCreator({ mapRef, filterDeviceId, onCreated, fabBottom }) {
     return (
       <button onClick={() => setOpen(true)}
         className="btn-bounce pt-fence-add"
-        style={{ ...cs.fab, bottom: fabBottom + 60 }}
+        style={{ ...cs.fab, bottom: fabBottom + buttonOffset }}
         title="새 지오펜스">
         <Icon name="plus" size={18} /><span>펜스 추가</span>
       </button>

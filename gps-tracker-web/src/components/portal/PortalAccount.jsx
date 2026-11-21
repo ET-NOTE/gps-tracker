@@ -12,7 +12,7 @@ import { FleetJoin } from '../business/FleetAccess';
 import { ScopeSelect } from './PlatformChrome';
 import { SERVICES, ownerServices } from './platformModel';
 
-const MAIN_TABS = [['account','계정'], ['services','이용 서비스'], ['notif','알림']];
+const MAIN_TABS = [['account','계정','users'], ['services','이용 서비스','grid'], ['notif','알림','bell']];
 const EXTRA_TABS = [['credit','포인트'], ['chat','관리자 채팅'], ['theme','화면 테마'], ['lab','연구소'], ['privacy','개인정보 요청']];
 
 function CompanyCard({ scope, scopeOptions, onScopeChange }) {
@@ -29,7 +29,7 @@ function CompanyCard({ scope, scopeOptions, onScopeChange }) {
       </div>
     </div>
     {companies.length > 0 && <ScopeSelect labelled {...{scope,scopeOptions,onScopeChange}}/>}
-    <button type="button" className="pt-text-button" onClick={() => setJoining(true)}><Icon name="link" size={15}/>초대 코드 연결</button>
+    <div className="pt-panel-foot"><span>회사 구성원과 권한은 사용자 메뉴에서 관리합니다.</span><button type="button" className="pt-text-button" onClick={() => setJoining(true)}>초대 코드 연결</button></div>
     {joining && <FleetJoin onClose={() => setJoining(false)} onJoined={async id => {
       rememberFleetOwner(id);
       await qc.invalidateQueries({ queryKey:['fleet-memberships'] });
@@ -43,11 +43,11 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
   const [detail, setDetail] = useState(null);
   const own = ownerServices(settings);
   return <>
-    <div className="pt-section-head pt-services-heading"><h2>이용 서비스</h2><span className="pt-tag">{availableServices.length}개 이용 중</span></div>
+    <div className="pt-section-head pt-services-heading"><div><h2>이용 서비스</h2><p>사용 설정을 켜면 왼쪽 메뉴에 해당 서비스가 나타납니다.</p></div><span>{availableServices.length}개 이용 중</span></div>
     <section className="pt-base-service">
       <span className="pt-service-icon"><Icon name="mapPin" size={22}/></span>
-      <div><h3>기본 위치관리</h3><p>단말기 위치와 이동 기록을 확인합니다.</p></div>
-      <Link to="/" className="pt-button">지도 홈<Icon name="chevron-right" size={14}/></Link>
+      <div><h3>기본 위치관리 <span className="pt-tag">기본 제공</span></h3><p>단말기 위치와 이동 기록, 통신 상태를 확인합니다.</p></div>
+      <Link to="/" className="pt-button">지도 열기</Link>
     </section>
     <div className="pt-services-grid">
       {SERVICES.map(service => {
@@ -57,6 +57,7 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
           <div className="pt-section-head"><span className="pt-service-icon"><Icon name={service.icon} size={22}/></span>
             <span className={'pt-tag' + (accessible ? ' pt-tag-active' : '')}>{enabled ? '사용 중' : accessible ? '직원 권한' : '사용 가능'}</span></div>
           <h3><button type="button" className="pt-service-title" aria-label={service.label + ' 기능 보기'} onClick={() => setDetail(service)}>{service.label}</button></h3><p>{service.description}</p>
+          <ul className="pt-service-tags" aria-label={service.label + ' 주요 기능'}>{service.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
           <div className="pt-card-actions"><span className="pt-toggle"><Switch label={service.label + ' 사용 설정'}
             checked={enabled} disabled={busy} onChange={value => update({service:service.key, enabled:value})}/>{accessible && !enabled ? '내 사업장 사용' : '사용'}</span>
             {accessible
@@ -66,6 +67,7 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
         </article>;
       })}
     </div>
+    <p className="pt-services-note"><Icon name="info" size={14}/>여러 업무 서비스를 함께 사용할 수 있습니다.</p>
     <div className="pt-account-bottom">
       <CompanyCard {...scopeProps}/>
       <section className="pt-panel"><div className="pt-section-head"><h3>로그인 후 시작 화면</h3><Icon name="map" size={18}/></div>
@@ -77,13 +79,13 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
         </label>
       </section>
     </div>
-    <Modal open={!!detail} title={detail?.label} onClose={() => setDetail(null)}>
-      {detail && <><p className="pt-info-copy">{detail.description}</p><ul className="pt-feature-list">{detail.features.map(feature => <li key={feature}>{feature}</li>)}</ul>
-        {availableServices.includes(detail.key) || own.includes(detail.key)
+    <Modal open={!!detail} title={detail?.label} subtitle={detail?.description} onClose={() => setDetail(null)}
+      footer={detail && <><button type="button" className="pt-button" onClick={() => setDetail(null)}>닫기</button>{availableServices.includes(detail.key) || own.includes(detail.key)
           ? <Link to={servicePaths[detail.key] || detail.path} className="pt-button pt-primary" onClick={() => setDetail(null)}>서비스 열기</Link>
           : <button type="button" className="pt-button pt-primary" disabled={busy} onClick={async () => {
           setDetail(null); await update({service:detail.key, enabled:true});
-        }}>서비스 사용하기</button>}</>}
+        }}>서비스 사용하기</button>}</>}>
+      {detail && <ul className="pt-feature-list pt-feature-checks">{detail.features.map(feature => <li key={feature}><Icon name="check" size={16}/>{feature}</li>)}</ul>}
     </Modal>
   </>;
 }
@@ -128,15 +130,15 @@ export default function PortalAccount({ availableServices = [], servicePaths = {
     {meQuery.error && <button type="button" className="pt-text-button" onClick={() => meQuery.refetch()}>다시 시도</button>}</div>;
   const name = me.display_name?.trim() || me.email;
   return <section className="pt-account" aria-label="내정보">
-    <div className="pt-account-inner"><h1>내정보</h1>
+    <div className="pt-account-inner"><header className="pt-account-heading"><h1>내정보</h1><p>계정과 이용 서비스를 한곳에서 관리하세요.</p></header>
       <section className="pt-account-summary" aria-label="계정 요약">
         <span className="pt-summary-avatar">{Array.from(name || '내')[0]}</span>
-        <div className="pt-account-person"><h2>{name}</h2>{name !== me.email && <p>{me.email}</p>}</div>
+        <div className="pt-account-person"><h2>{me.display_name?.trim() || '내 계정'}</h2><p>{me.email}</p></div>
         <div className="pt-summary-tags"><span className="pt-tag pt-tag-active">기본 위치관리</span><span className="pt-tag">업무 서비스 {availableServices.length}개</span></div>
         {onLogout && <button type="button" className="pt-text-button pt-logout" onClick={() => {clearTokens(); onLogout();}}><Icon name="power" size={15}/>로그아웃</button>}
       </section>
       <nav className="pt-account-tabs" aria-label="내정보 메뉴">
-        {MAIN_TABS.map(([id,label]) => <Link key={id} className="pt-account-tab" to={'/profile?tab=' + id} aria-current={tab === id ? 'page' : undefined}>{label}</Link>)}
+        {MAIN_TABS.map(([id,label,icon]) => <Link key={id} className="pt-account-tab" to={'/profile?tab=' + id} aria-current={tab === id ? 'page' : undefined}><Icon name={icon} size={15}/>{label}</Link>)}
         <button className="pt-account-tab pt-more-tabs" type="button" aria-current={extraTitle ? 'page' : undefined} onClick={() => setExtra(true)}>
           {extraTitle || '더보기'}{unread > 0 && <span className="pt-unread" aria-label={'읽지 않은 메시지 ' + unread + '개'}>{unread}</span>}<Icon name="chevron-down" size={13}/>
         </button>
@@ -144,7 +146,7 @@ export default function PortalAccount({ availableServices = [], servicePaths = {
       {error && <p role="alert" className="pt-error">{error}</p>}
       {tab === 'services' ? settings.data ? <ServicesPanel settings={settings.data} {...{availableServices,servicePaths,update,busy,scope,scopeOptions,onScopeChange}}/>
         : <div className="pt-empty" role="status">{settings.error ? <>서비스 설정을 불러오지 못했습니다. <button className="pt-text-button" onClick={() => settings.refetch()}>다시 시도</button></> : '서비스 설정을 확인하고 있습니다.'}</div>
-        : <ProfilePanel portalTab={tab} onPortalTab={changeTab} onLogout={onLogout}/>}
+        : <>{(tab === 'account' || tab === 'notif') && <div className="pt-section-head pt-services-heading"><div><h2>{tab === 'account' ? '내 계정 정보' : '단말기 알림'}</h2><p>{tab === 'account' ? '프로필과 연락처를 관리하세요.' : '알림을 받을 상황을 선택하세요.'}</p></div></div>}<ProfilePanel portalTab={tab} onPortalTab={changeTab} onLogout={onLogout} companySection={<CompanyCard {...{scope,scopeOptions,onScopeChange}}/>}/></>}
     </div>
     <Modal open={extra} onClose={() => setExtra(false)} title="추가 계정 메뉴"><div className="pt-search-results">
       {additional.map(([id,label]) => <button key={id} type="button" onClick={() => changeTab(id)}><span>{label}{id === 'chat' && unread > 0 ? ' (' + unread + ')' : ''}</span><Icon name="chevron-right" size={15}/></button>)}

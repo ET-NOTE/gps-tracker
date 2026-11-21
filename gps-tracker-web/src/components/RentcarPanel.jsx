@@ -16,6 +16,7 @@ import { BusinessSubscription as SubTab } from './business/BusinessPreferences';
 import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport';
 import { RentalVehicleScope, BusinessButton, BusinessError, BusinessEmpty, BusinessSettings } from './business/BusinessWorkspace';
 import RentalBoard from './business/RentalBoard';
+import RentalDispatchWeek from './business/RentalDispatchWeek';
 import ReturnDialog from './business/ReturnWizard';
 import PhotoGalleryModal from './business/PhotoGalleryModal';
 import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
@@ -38,7 +39,7 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   const tab = rentalPages.has(current) ? current : 'fleet';
   const [request, setRequest] = useState(null);
   const subscription = useBusinessSubscription('rentcar');
-  const company = useRentalTeamConfig(['vehicles','fleet','reservations','contracts','checkout','active','returns','schedule'].includes(tab));
+  const company = useRentalTeamConfig(['vehicles','fleet','reservations','contracts','checkout','active','returns','schedule','service','incidents'].includes(tab));
   const branches = company.data?.branches || [];
   const assets=useRentalAssets();
   const vehicles=useMemo(()=>rentalInventory(assets.data || [],devices),[assets.data,devices]);
@@ -53,11 +54,11 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   const activeRequest = request?.stage === tab ? request : null;
   return <RentalVehicleScope devices={devices} meta={meta} onMap={onMap} onManageVehicle={onManageVehicle} onVehicleAction={d=>openContracts({deviceId:d.id})}>
     <RentalWorkspace page={tab} onTab={visit} devices={vehicles} onSearchDevice={v=>{setRequest({stage:'vehicles',vehicleId:v.id,searchKey:crypto.randomUUID()});setTab('vehicles');}}
-      onNavigate={onNavigate} destinations={destinations} onNew={()=>openContracts({new:true})}>
+      onNavigate={onNavigate} destinations={destinations}>
       {assets.error && <BusinessError onRetry={assets.refetch}>렌트 차량 목록을 불러오지 못했습니다.</BusinessError>}
       {['fleet','vehicles','service','incidents','devices','live'].includes(tab)&&<RentalFleet key={activeRequest?.searchKey ?? tab} view={tab} devices={devices} vehicles={vehicles} onMap={onMap} onContracts={openContracts} onTab={visit} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} initialWorkId={activeRequest?.workId} initialVehicleId={activeRequest?.vehicleId}/>}
       {['reservations','contracts','checkout','active','returns'].includes(tab)&&<RentalWorkflow key={tab} stage={tab} devices={devices} vehicles={vehicles} request={activeRequest} branches={branches}/>}
-      {tab==='schedule'&&<ScheduleTab devices={devices} vehicles={vehicles} onContracts={openContracts} branches={branches}/>}
+      {tab==='schedule'&&<ScheduleTab devices={devices} vehicles={vehicles} inventoryReady={assets.isSuccess} inventoryError={assets.isError} onContracts={openContracts} branches={branches} onWork={visit}/>}
       {['staff','branches','groups'].includes(tab)&&<RentalTeam key={tab} page={tab} onTab={visit}/>}
       {tab.startsWith('rent-')&&<RentalOffice key={tab} page={tab} devices={vehicles}/>}
       {tab==='history'&&<RentalsTab devices={devices} vehicles={vehicles} request={activeRequest}/>}
@@ -78,11 +79,13 @@ export default React.memo(RentcarPanel);
 // 각 셀: 그 날 진행중이거나 반납 예정인 계약. 반납 날짜 셀은 강조.
 // 셀 클릭 → 그 날 preset 신규 계약. 계약 pill 클릭 → 편집.
 // ═══════════════════════════════════════════════════════
-function ScheduleTab({ devices, vehicles, onContracts, branches }) {
-  const [mode, setMode] = useState('board');
+function ScheduleTab({ devices, vehicles, inventoryReady, inventoryError, onContracts, branches, onWork }) {
+  const [mode, setMode] = useState('week');
   const now = useBusinessClock();
+  const tabs=<div className="rental-stage-tabs" aria-label="배차 화면">{[['week','주간 캘린더'],['dispatch','배차 목록'],['board','차량별 배차표'],['month','월간 달력']].map(([id,label])=><button key={id} type="button" aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>;
+  if(mode==='week')return <RentalDispatchWeek {...{vehicles,inventoryReady,inventoryError,branches,now,tabs,onWork}} onNew={()=>onContracts({new:true})} onContract={contract=>onContracts({contract})}/>;
   return <div className="business-schedule">
-    <div className="business-switch">{[['board','차량별 배차표'],['month','월간 달력'],['dispatch','배차 목록']].map(([id,label])=><button key={id} className="business-switch-item" aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>
+    <div className="rental-workflow-toolbar">{tabs}{mode!=='dispatch'&&<BusinessButton primary icon="plus" onClick={()=>onContracts({new:true})}>예약 등록</BusinessButton>}</div>
     {mode === 'board' ? <RentalBoard devices={vehicles} now={now} onNew={(vehicleId, day) => onContracts({ new: true, vehicleId, day })} onEdit={contract=>onContracts({contract})} /> : mode==='month'?<MonthScheduleTab devices={vehicles} onContracts={onContracts}/>:<RentalWorkflow stage="dispatch" devices={devices} vehicles={vehicles} branches={branches}/>}
   </div>;
 }

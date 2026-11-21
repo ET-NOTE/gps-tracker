@@ -14,14 +14,14 @@ const FILTERS = [
 ];
 
 export default function PortalDeviceList({ devices = [], meta = {}, selectedId, detailId, onSelect, onDetail, onPair,
-  renderTools, scope, scopeLabel, error, loading, onRetry, children }) {
+  renderTools, scope, scopeLabel, availableServices = [], error, loading, onRetry, children }) {
   const [term, setTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [service, setService] = useState('');
   const [expanded, setExpanded] = useState(null);
   const now = useVisibleNow(true, 60000);
   const rows = devices.map(device => ({ device, status: classifyDevice(device, meta[device.id], now) }));
-  const serviceOptions = SERVICES.filter(s => devices.some(d => d.portalServices?.includes(s.key)));
+  const serviceOptions = SERVICES.filter(s => availableServices.includes(s.key) || devices.some(d => d.portalServices?.includes(s.key)));
   const showServices = scope === 'company' || (!scope && scopeLabel === '내 사업장');
   const selectedService = showServices && serviceOptions.some(s => s.key === service) ? service : '';
   const filtered = rows.filter(({ device, status }) =>
@@ -34,15 +34,15 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
     onDetail?.(id);
   }
   return <section className="pt-device-pane" aria-label="단말기 관리">
-    <div className="pt-device-heading"><div><h1>{scope === 'personal' ? '내 단말기' : scopeLabel || '단말기'} <span>{devices.length}</span></h1></div>
-      {onPair && <button className="pt-button pt-primary" type="button" onClick={onPair}><Icon name="plus" size={16}/>단말기 등록</button>}
+    <div className="pt-device-heading"><div><h1>{showServices ? '회사 단말기' : '내 단말기'} <span>{devices.length}</span></h1><p>위치와 단말기 상태를 한곳에서 확인하세요.</p></div>
+      {onPair && <button className="pt-button pt-primary" type="button" aria-label="단말기 등록" onClick={onPair}><Icon name="plus" size={14}/>등록</button>}
     </div>
     {children}
     <div className="pt-device-filters">
       <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => setTerm(e.target.value)}/></label>
-      <label className="pt-filter"><Icon name="filter" size={14}/><select aria-label="단말기 상태 필터" value={filter} onChange={e => setFilter(e.target.value)}>{FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-      {showServices && serviceOptions.length > 0 && <label className="pt-filter"><select aria-label="업무 구분" value={selectedService} onChange={e => setService(e.target.value)}>
-        <option value="">전체 업무</option>{serviceOptions.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+      <label className="pt-filter"><select aria-label="단말기 상태 필터" value={filter} onChange={e => setFilter(e.target.value)}>{FILTERS.map(([key,label]) => <option key={key} value={key}>{key === 'all' ? '전체 상태' : label}</option>)}</select></label>
+      {showServices && <label className="pt-filter"><select aria-label="업무 구분" value={selectedService} onChange={e => setService(e.target.value)}>
+        <option value="">전체 서비스</option>{serviceOptions.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
       </select></label>}
     </div>
     {!error && !loading && <div className="pt-device-result-count">단말기 {filtered.length}개</div>}
@@ -53,23 +53,27 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
         const selected = selectedId === device.id;
         const open = activeDetail === device.id;
         const name = terminalName(device);
+        const vehicle = device.license_plate || device.car_plate;
+        const subtitle = (vehicle && vehicle !== name) ? vehicle : device.device_uid;
         const battery = deviceBattery(device, meta[device.id]);
         return <li key={device.id} className={'pt-device-card' + (selected ? ' is-selected' : '')}>
           <div className="pt-device-pick">
-            <span className="pt-device-identity"><strong>{name}</strong>
-              {device.device_uid && device.device_uid !== name && <small>{device.device_uid}</small>}
+            <span className="pt-device-identity">{onDetail || renderTools
+              ? <button className="pt-device-detail-link" type="button" aria-label={name + ' 상세 열기'} onClick={() => showDetail(device.id)}><strong>{name}</strong></button>
+              : <strong>{name}</strong>}
+              {subtitle && subtitle !== name && <small title={device.device_uid}>{subtitle}</small>}
             </span>
             <span className="pt-state" style={{color:status.color,background:status.background}}>{status.label}</span>
           </div>
-          {showServices && device.portalServices?.length > 0 && <small>{SERVICES.filter(s => device.portalServices.includes(s.key)).map(s => s.label).join(' · ')}</small>}
-          <BatteryStatus reading={battery} showRuntime={false}/>
-          <dl className="pt-device-times"><div><dt>최근 통신</dt><dd><DeviceReadingTime value={device.last_seen_at}/></dd></div><div><dt>최근 위치</dt><dd><DeviceReadingTime value={device.last_fix_at}/></dd></div></dl>
+          <BatteryStatus reading={battery} showRuntime={false} sourceCaption/>
+          <dl className="pt-device-times"><div><dt>최근 통신</dt><dd><DeviceReadingTime split value={device.last_seen_at}/></dd></div><div><dt>최근 위치</dt><dd><DeviceReadingTime split value={device.last_fix_at}/></dd></div></dl>
           <div className="pt-device-buttons">
             <button type="button" className={'pt-button' + (selected ? ' pt-selected-button' : '')} onClick={() => onSelect?.(device.id)} aria-label={name + ' 지도에서 보기'}><Icon name="mapPin" size={14}/>지도 보기</button>
             {(onDetail || renderTools) && <button type="button" className="pt-button" aria-label={name + ' 상세·설정'} aria-expanded={open} onClick={() => showDetail(device.id)}>상세·설정</button>}
           </div>
         </li>;
       })}</ul>}
+    <p className="pt-device-note"><Icon name="info" size={13}/>통신 시각과 위치 수신 시각은 다를 수 있습니다.</p>
     {detail && renderTools && <Modal open mobileForm placement="end" size="lg" title={terminalName(detail)} subtitle="단말기 상세·설정" onClose={() => showDetail(detail.id)}>
       <div className="pt-device-tools">{renderTools(detail)}</div>
     </Modal>}

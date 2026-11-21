@@ -61,13 +61,16 @@ function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) 
   </Modal>;
 }
 
-export default function RentalFleetWork({ incident, devices, contracts, work, now, initialId, onVehicles }) {
+export default function RentalFleetWork({ incident, devices, branches=[], contracts, work, now, initialId, onVehicles }) {
   const qc = useQueryClient();
   const [status, setStatus] = useState(initialId ? 'all' : 'open'), [deviceId, setDeviceId] = useState(''), [kind, setKind] = useState('');
   const [edit, setEdit] = useState(null), [id, setId] = useState(initialId), [closing, setClosing] = useState(false);
   const [note, setNote] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [branch,setBranch]=useState('');
   const current = work.find(row => sameId(row.id, id)), matching = work.filter(row => isIncident(row.kind) === incident);
-  const rows = matching.filter(row => (!kind || row.kind === kind) && (!deviceId || matchesVehicle(row,devices.find(v=>sameId(v.id,deviceId))))
+  const branchNames=[...new Set([...branches.map(b=>typeof b==='string'?b:b.name),...devices.map(v=>v.branch)].filter(Boolean))].sort();
+  const eligible=branch?devices.filter(v=>v.branch===branch):devices;
+  const rows = matching.filter(row => (!branch||eligible.some(v=>matchesVehicle(row,v))) && (!kind || row.kind === kind) && (!deviceId || matchesVehicle(row,eligible.find(v=>sameId(v.id,deviceId))))
     && (status === 'all' || (status === 'open' ? workState(row) !== 'done' : workState(row) === 'done')));
   const nameOf = row => { const vehicle=devices.find(v=>matchesVehicle(row,v)); return vehicle ? rentalFleetLabel(vehicle) : '이전 차량'; };
   function saved(row) {
@@ -89,16 +92,20 @@ export default function RentalFleetWork({ incident, devices, contracts, work, no
       {devices.length ? <BusinessButton primary icon="plus" onClick={() => setEdit({})}>{incident ? '사고·고장 접수' : '일정 등록'}</BusinessButton>
         : <BusinessButton icon="car" onClick={onVehicles}>차량 목록</BusinessButton>}</div>
     <div className="rfl-filters">
-      <label>차량<select value={deviceId} onChange={e => setDeviceId(e.target.value)}><option value="">전체 차량</option>{devices.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}</select></label>
+      <label>소속 지점<select aria-label="소속 지점" value={branch} onChange={e=>{setBranch(e.target.value);setDeviceId('');}}><option value="">전체 지점</option>{branchNames.map(name=><option key={name}>{name}</option>)}</select></label>
+      <label>차량<select aria-label="차량" value={deviceId} onChange={e => setDeviceId(e.target.value)}><option value="">전체 차량</option>{eligible.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}</select></label>
       <label>작업 구분<select value={kind} onChange={e => setKind(e.target.value)}><option value="">전체 구분</option>{Object.entries(repairNames).filter(([k]) => isIncident(k) === incident).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
       <label>상태<select value={status} onChange={e => setStatus(e.target.value)}><option value="open">{incident ? '처리·점검 중' : '예정·진행'}</option><option value="done">완료</option><option value="all">전체 상태</option></select></label>
+      <div className="rfl-filter-summary"><span>전체 {matching.length}건 중 {rows.length}건 조회</span><BusinessButton onClick={()=>{setBranch('');setDeviceId('');setKind('');setStatus('open');}}>조건 초기화</BusinessButton></div>
     </div>
-    <section className="rfl-card" aria-label={incident ? '사고·고장 내역' : '세차·정비 내역'}>
-      {rows.length > 0 ? <table className="rfl-table"><thead><tr><th>차량</th><th>구분</th><th>{incident ? '발생 일시' : '작업 기간'}</th><th>내용</th><th>상태</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}>
-        <td data-label="차량"><button className="rfl-link" onClick={() => setId(row.id)}>{nameOf(row)} <span aria-hidden="true">›</span></button></td>
-        <td data-label="구분">{repairNames[row.kind]}</td><td data-label="일시">{kstDateTime(row.starts_at)}{row.ends_at && <small>{kstDateTime(row.ends_at)} 종료</small>}</td>
-        <td data-label="내용">{row.note || '—'}</td><td data-label="상태"><span className="rfl-badge" data-tone={row.closed_at ? 'ready' : 'service'}>{workStageName(row)}</span></td>
-      </tr>)}</tbody></table> : <BusinessEmpty title={devices.length ? '조회된 내역이 없습니다.' : '연결된 렌트카 차량이 없습니다.'} />}
+    <section className="rfl-card rfl-list-card" aria-label={incident ? '사고·고장 내역' : '세차·정비 내역'}>
+      <div className="rfl-table-scroll" tabIndex={0} role="region" aria-label={incident?'사고·고장 목록':'세차·정비 목록'}>
+        <table className="rfl-table"><thead><tr>{(incident?['발생 일시','차량','구분','연결 계약','상태','발생 내용']:['차량','작업','시작','종료','상태','작업 내용']).map(label=><th key={label} scope="col">{label}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id}>
+          {incident&&<td>{kstDateTime(row.starts_at)}</td>}<td><button className="rfl-link" onClick={() => setId(row.id)}>{nameOf(row)} <span aria-hidden="true">›</span></button></td>
+          <td>{repairNames[row.kind]}</td>{incident?<td>{row.contract_id?'R-'+row.contract_id:'미연결'}</td>:<><td>{kstDateTime(row.starts_at)}</td><td>{row.closed_at||row.ends_at?kstDateTime(row.closed_at||row.ends_at):'—'}</td></>}
+          <td><span className="rfl-badge" data-tone={workState(row)==='done'?'ready':'service'}>{workStageName(row)}</span></td><td>{row.note || '—'}</td>
+        </tr>)}</tbody></table></div>
+      {!rows.length&&<BusinessEmpty title={devices.length ? '조회된 내역이 없습니다.' : '등록된 렌트카 차량이 없습니다.'} />}
     </section>
     {current && <BusinessDrawer title={repairNames[current.kind] + ' 상세'} subtitle={nameOf(current)} onClose={() => setId(null)}>
       <dl className="rfl-facts">

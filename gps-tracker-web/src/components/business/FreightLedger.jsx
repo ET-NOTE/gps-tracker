@@ -5,10 +5,10 @@ import { choices, choicesFrom, downloadRows, FormField, OfficeFilter } from './F
 import { costLabel, getRow, inputTime, nameOf, shipStates, stamp, timeLabel, vehicleName } from '../../lib/freightWorkflow';
 import { addPayment, confirmFinance, paymentLimit, paymentMethods, paymentNames, setAgreement, shipmentFinance } from '../../lib/freightFinance';
 
-export function PeriodFilter({period,setPeriod}) {
-  return <>{[['from','조회 시작일'],['to','조회 종료일']].map(([key,label])=><FreightField key={key} label={label}>
-    <input type="date" value={period[key]} min={key==='to'?period.from:undefined} max={key==='from'?period.to:undefined} onChange={e=>setPeriod({...period,[key]:e.target.value})}/>
-  </FreightField>)}</>;
+export function PeriodFilter({period,setPeriod,label}) {
+  const inputs=[['from','조회 시작일'],['to','조회 종료일']].map(([key,name])=><input key={key} aria-label={name} type="date" value={period[key]} min={key==='to'?period.from:undefined} max={key==='from'?period.to:undefined} onChange={e=>setPeriod({...period,[key]:e.target.value})}/>);
+  if(label)return <fieldset className="rental-stage-period"><legend>{label}</legend><div>{inputs[0]}<span>–</span>{inputs[1]}</div></fieldset>;
+  return <>{inputs.map(input=><FreightField key={input.key} label={input.props['aria-label']}>{input}</FreightField>)}</>;
 }
 export const currentPeriod=()=>({from:stamp().slice(0,7)+'-01',to:stamp().slice(0,10)});
 export function inPeriod(date,period) {
@@ -28,7 +28,8 @@ function financeRow(data,s,billing,fin) {
   const orders=(s.orderIds||[]).map(id=>getRow(data,'orders',id)).filter(Boolean);
   const parties=billing?Array.from(new Set(orders.map(o=>o.shipperId))):[s.carrierId||'own'];
   const party=billing?parties.map(id=>nameOf(data,'shippers',id)).join(', '):(s.carrierId?nameOf(data,'carriers',s.carrierId):'자사 운송');
-  return {id:s.id,s,fin,party,parties,total:billing?fin.sell:fin.buy,net:billing?fin.received:fin.paid,balance:billing?fin.receivable:fin.payable,
+  const total=billing?fin.sell:fin.buy, net=billing?fin.received:fin.paid;
+  return {id:s.id,s,fin,party,parties,total,net,excess:total==null?null:Math.max(0,net-total),balance:billing?fin.receivable:fin.payable,
     confirmed:billing?s.invoiceStatus==='issued':s.payableStatus==='confirmed'};
 }
 function matchesStatus(r,state) {
@@ -38,14 +39,14 @@ function matchesStatus(r,state) {
     case 'confirmed': return r.confirmed;
     case 'outstanding':return r.total!=null&&r.total>r.net;
     case 'settled':return r.total!=null&&r.total===r.net;
-    case 'excess':return r.total!=null&&r.net>r.total;
+    case 'excess':return r.excess>0;
     default:return true;
   }
 }
 function TransactionForm({r,billing,onClose,onSubmit,candidates,onSelect}) {
   const sideBase=billing?'receipt':'payout', [side,setSide]=useState(sideBase);
   const limit=paymentLimit(r.fin,side);
-  const excess=r.total==null?0:Math.max(0,r.net-r.total);
+  const excess=r.excess;
   return <FreightForm title={billing?'수납·환불 기록':'지급·환수 기록'} subtitle={r.s.number} onClose={onClose} onSubmit={onSubmit} submitLabel="거래 기록">
     {candidates&&<FreightField label="운송 건" wide><select value={r.id} onChange={e=>onSelect(e.target.value)}>{candidates.map(item=><option key={item.id} value={item.id}>{item.s.number} · {item.party}</option>)}</select></FreightField>}
     <FreightField label="거래 구분"><select name="side" value={side} onChange={e=>setSide(e.target.value)}>
@@ -80,15 +81,15 @@ export default function FreightLedger({kind,data,save,onPage}) {
   const awaitingProof=r&&billing&&r.s.status!=='cancelled'&&data.policies.requireProofForBilling&&r.s.proof?.status!=='approved';
   const canConfirm=r&&!r.confirmed&&r.total!=null&&(!billing||['cancelled','delivered'].includes(r.s.status))&&!awaitingProof;
   const eligible=rows.filter(item=>item.balance>0||item.net>0);
-  return <section className="fr-section">
-    <FreightStats items={[[totalLabel,sum('total')],[netLabel,sum('net')],[balanceLabel,sum('balance')],['운임 미정',rows.filter(r=>r.total==null).length+'건']]}/>
-    <FreightFilters query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색"><PeriodFilter period={period} setPeriod={setPeriod}/>
+  const unknown=rows.filter(r=>r.total==null).length;
+  return <section className="fr-section fr-ledger">
+    <FreightStats items={[[billing?'조회 청구 대상액':'조회 지급 대상액',sum('total'),'합의 운임·승인 비용 기준 · 운임 미정 '+unknown+'건'],[netLabel,sum('net')],[balanceLabel,sum('balance')],[billing?'환불 확인':'환수 확인',sum('excess')]]}/>
+    <FreightFilters query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색" onReset={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}><PeriodFilter label="운송 예정일" period={period} setPeriod={setPeriod}/>
       <OfficeFilter label="지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
       <OfficeFilter label={partyLabel} options={billing?choicesFrom(data.shippers):{own:'자사 운송',...choicesFrom(data.carriers)}} value={party} onChange={setParty}/>
       <OfficeFilter label="정산 상태" options={states} value={state} onChange={setState}/>
     </FreightFilters>
     <div className="fr-toolbar"><strong>운송 {rows.length}건</strong><div className="fr-actions">
-      <FreightButton onClick={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}>조건 초기화</FreightButton>
       <FreightButton disabled={!rows.length} onClick={()=>downloadRows(billing?'화주 청구수납':'운송비 정산지급',headings,rows.map(values))}>CSV 다운로드</FreightButton>
       <FreightButton primary disabled={!eligible.length} onClick={()=>setView({id:eligible[0].id,action:'payment',fromList:true})}>{billing?'수납 기록':'지급 기록'}</FreightButton></div></div>
     <FreightTable columns={headings} rows={rows.map(r=>{const cells=values(r),[label,tone]=describe(r,billing);
@@ -100,7 +101,7 @@ export default function FreightLedger({kind,data,save,onPage}) {
       {!r.confirmed&&<FreightButton disabled={!canConfirm} onClick={()=>open('confirm')}>{billing?'청구 확인':'지급 대상 확인'}</FreightButton>}
       <FreightButton primary disabled={!(r.balance>0||r.net>0)} onClick={()=>open('payment')}>{billing?'수납·환불 기록':'지급·환수 기록'}</FreightButton></div>}>
       <section className="fr-section"><FreightFacts items={[[partyLabel,r.party],['운송 상태',shipStates[r.s.status]],['기본 합의액',costLabel(billing?r.s.sellAmount:r.s.buyAmount)],
-        [totalLabel,costLabel(r.total)],[netLabel,costLabel(r.net)],[balanceLabel,costLabel(r.balance)],['초과 거래액',costLabel(r.total==null?null:Math.max(0,r.net-r.total))],
+        [totalLabel,costLabel(r.total)],[netLabel,costLabel(r.net)],[balanceLabel,costLabel(r.balance)],['초과 거래액',costLabel(r.excess)],
         ['회사 부담 추가 비용',costLabel(r.fin.cost)],['운송 손익',costLabel(r.fin.margin)],['확인 일시',timeLabel(billing?r.s.invoiceAt:r.s.payableAt)]]}/>
         {billing&&!r.confirmed&&!canConfirm&&<p className="fr-note">{r.total==null?'합의 운임을 입력해 주세요.':!['delivered','cancelled'].includes(r.s.status)?'하차 완료 후 청구를 확인할 수 있습니다.':'인수증 확인 후 청구할 수 있습니다.'}</p>}
         <section><h3>승인된 추가 비용</h3><FreightTable columns={['항목','반영액','발생 일시']} rows={r.fin.approved.map(x=>({id:x.id,cells:[x.kind,costLabel(billing?x.sellAmount:x.buyAmount),timeLabel(x.at)]}))} empty="승인된 추가 비용이 없습니다."/></section>

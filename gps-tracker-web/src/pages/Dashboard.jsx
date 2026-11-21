@@ -23,6 +23,7 @@ import DeviceDetail from '../components/DeviceDetail';
 import DeviceCardSummary from '../components/DeviceCardSummary';
 import { sideRailItems } from '../components/SideRail';
 import MapTopOverlay from '../components/MapTopOverlay';
+import MapControls from '../components/MapControls';
 import MapDeviceCard from '../components/portal/MapDeviceCard';
 import Modal from '../components/ui/Modal';
 import MapActions from '../components/MapActions';
@@ -206,7 +207,20 @@ export default function Dashboard({ onLogout }) {
   const isDelivery = cargoOwner || !!cargoMemberships.data?.length;
   const availableServices = Object.keys(businessServices).filter(key => ({corporate_fleet:isCorporate, rentcar:isRentcar, delivery:isDelivery})[key]);
   const servicePaths = {rentcar:rentalOwner ? '/rentcar' : '/rentcar?page=staff-desk', delivery:cargoOwner ? '/cargo' : '/cargo?page=staff-desk'};
-  const [requestedScope, setRequestedScope] = useState('personal');
+  const [scopeOverride, setRequestedScope] = useState(null);
+  const savedScope = useMemo(() => {
+    if (!me?.id) return null;
+    try { return window.localStorage.getItem('portal.scope.' + me.id); } catch { return null; }
+  }, [me?.id]);
+  const requestedScope = scopeOverride || savedScope || 'personal';
+  useEffect(() => {
+    if (me?.id && scopeOverride) {
+      try { window.localStorage.setItem('portal.scope.' + me.id, scopeOverride); } catch { /* Storage can be disabled. */ }
+    }
+  }, [me?.id, scopeOverride]);
+  useEffect(() => {
+    if ((view === 'corporate' && corporateOwner) || (view === 'rentcar' && rentalOwner) || (view === 'delivery' && cargoOwner)) setRequestedScope('company');
+  }, [view, corporateOwner, rentalOwner, cargoOwner]);
   const portalScope = requestedScope === 'company' && enabledServices.length ? 'company' : 'personal';
   const coreView = ['home','devices','profile'].includes(view);
   const scopeOptions = [{value:'personal',label:'내 단말기'}];
@@ -223,20 +237,20 @@ export default function Dashboard({ onLogout }) {
     }
     if (value === 'company') rememberFleetOwner(null);
     setRequestedScope(value);
-    setFilterDeviceId(null);
     setDetailId(null);
     setPointInfo(null);
     setUserTrackPref(false);
-    mapRef.current?.filterToDevice(null, {fit:false});
   }
   const companyMap = coreView && portalScope === 'company';
   const vehiclesForScope = useQuery({queryKey:['portal-owner-vehicles', scope], queryFn:() => api.listFleetVehicles(), enabled:companyMap && corporateOwner, staleTime:15000});
   const cargoForScope = useQuery({queryKey:['cargo-workspace', scope], queryFn:api.cargoWorkspace, enabled:companyMap && cargoOwner, staleTime:15000});
+  const loadingScopeDevices = companyMap && ((corporateOwner && vehiclesForScope.isPending) || (cargoOwner && cargoForScope.isPending));
   const portalDevices = useMemo(() => {
     const rows = classifyOwnedDevices(devices, accountTypeRaw, corporateOwner ? vehiclesForScope.data : undefined, cargoOwner ? cargoForScope.data?.data?.vehicles : undefined);
     return companyMap ? rows.filter(d => d.portalServices.some(key => ownerServices(accountTypeRaw).includes(key))) : rows;
   }, [devices, accountTypeRaw, vehiclesForScope.data, cargoForScope.data, companyMap, corporateOwner, cargoOwner]);
   const visibleIds = useMemo(() => companyMap ? new Set(portalDevices.map(d => d.id)) : null, [companyMap, portalDevices]);
+  const selectedPortalDevice = portalDevices.find(d => d.id === filterDeviceId);
   const portalProps = {view, availableServices, servicePaths, isAdmin, onLogout, scope:portalScope, scopeOptions, onScopeChange:changePortalScope};
   const cargoStaffEntry = view === 'delivery' && new URLSearchParams(location.search).get('page') === 'staff-desk';
 
@@ -245,6 +259,8 @@ export default function Dashboard({ onLogout }) {
   const [userPrefs, setUserPrefs]   = useState(null);
   const userPrefsRef                = useRef(null);
   const [mapReady, setMapReady]     = useState(false);
+  const [mapLevel, setMapLevel] = useState(null);
+  const mapAreaRef = useRef(null);
   const filterAppliedRef            = useRef(false);
   const filterSaveTimerRef          = useRef(null);
   // 사용자가 마지막으로 본 지도 view (center+level). 새로고침 후 복원에 사용.
@@ -577,7 +593,7 @@ export default function Dashboard({ onLogout }) {
   // → bounds = main marker 단일 점 → 이상한 zoom. devicesLoaded 는 Promise.all 이후 true.
   useEffect(() => {
     if (filterAppliedRef.current || readDeviceLink(location.search).present) return;
-    if (!mapReady || !userPrefs || !devicesLoaded) return;
+    if (!mapReady || !userPrefs || !devicesLoaded || loadingScopeDevices) return;
     const stored = userPrefs.filter_device_id;
     if (stored != null && (!visibleIds || visibleIds.has(stored)) && devices.some(d => d.id === stored)) {
       setFilterDeviceId(stored);
@@ -585,7 +601,7 @@ export default function Dashboard({ onLogout }) {
       mapRef.current?.filterToDevice(stored, { fit: true });
     }
     filterAppliedRef.current = true;
-  }, [mapReady, userPrefs, devicesLoaded, devices, location.search]);
+  }, [mapReady, userPrefs, devicesLoaded, devices, location.search, visibleIds, loadingScopeDevices]);
 
   // 사용자 액션으로 필터 변경 시 — 즉시 서버 저장 (race 방지).
   // 새로고침 사이에 PATCH 가 날아가지 않도록 디바운스 X.
@@ -646,6 +662,7 @@ export default function Dashboard({ onLogout }) {
   const handleMapViewChange = useCallback((view) => {
     if (view && view.level != null && lastZoomLevelRef.current !== view.level) {
       lastZoomLevelRef.current = view.level;
+      setMapLevel(view.level);
       clearTimeout(zoomRefreshTimerRef.current);
       zoomRefreshTimerRef.current = setTimeout(() => {
         refreshFnRef.current?.(true);
@@ -876,6 +893,7 @@ export default function Dashboard({ onLogout }) {
     }
   }, [mapVisible, mapReady, view, isDesktop]);
   useEffect(() => {
+    if (loadingScopeDevices) return;
     if (visibleIds && filterDeviceId != null && !visibleIds.has(filterDeviceId)) {
       setFilterDeviceId(null);
       setPointInfo(null);
@@ -883,7 +901,7 @@ export default function Dashboard({ onLogout }) {
     } else if (mapReady) {
       mapRef.current?.filterToDevice(filterDeviceId, {fit:false});
     }
-  }, [visibleIds, filterDeviceId, mapReady]);
+  }, [visibleIds, filterDeviceId, mapReady, loadingScopeDevices]);
   const scopedFences = companyMap ? fences.filter(f => f.device_id != null && visibleIds.has(f.device_id)) : fences;
 
   // 패널 콘텐츠는 desktop aside 와 mobile overlay 양쪽에서 공유
@@ -952,9 +970,9 @@ export default function Dashboard({ onLogout }) {
   };
   const panel = (
     <>
-      {view === 'devices' && <PortalDeviceList {...portalProps} devices={portalDevices} scopeLabel={scopeOptions.find(option => option.value === portalScope)?.label}
-        meta={lastMetaRef.current} selectedId={filterDeviceId} detailId={detailId} loading={deviceQuery.isPending} error={deviceQuery.isError} onRetry={deviceQuery.refetch}
-        onSelect={id => { if (!isDesktop) setView('home'); persistFilterDevice(id); }}
+      {view === 'devices' && <PortalDeviceList {...portalProps} devices={portalDevices} availableServices={enabledServices} scopeLabel={scopeOptions.find(option => option.value === portalScope)?.label}
+        meta={lastMetaRef.current} selectedId={filterDeviceId} detailId={detailId} loading={deviceQuery.isPending || loadingScopeDevices} error={deviceQuery.isError} onRetry={deviceQuery.refetch}
+        onSelect={id => { persistFilterDevice(id); if (!isDesktop) mapAreaRef.current?.scrollIntoView({block:'start'}); }}
         onDetail={id => setDetailId(detailId === id ? null : id)} renderTools={renderDeviceTools}
         onPair={() => {setDetailId(null); setPairOpen(true); setPairError('');}}>
         {pairOpen && <Modal open mobileForm title="단말기 등록" onClose={() => setPairOpen(false)}>
@@ -1085,7 +1103,7 @@ export default function Dashboard({ onLogout }) {
 
         {/* 지도 영역 — admin 이면 display:none (마운트 유지, 화면에서 제거).
             데스크톱은 항상, 모바일/태블릿은 home 일 때만 시각적 노출 */}
-        <div className="pt-live-map-area" style={{
+        <div ref={mapAreaRef} className="pt-live-map-area" style={{
           flex: 1, position: 'relative', minWidth: 0,
           display: (routeProblem || specialized || isDesktop && view === 'profile') ? 'none' : 'flex', flexDirection: 'column',
         }}>
@@ -1111,11 +1129,13 @@ export default function Dashboard({ onLogout }) {
               onUserPan={handleUserPan}
               onViewChange={handleMapViewChange} />
             {!fullToolOpen && !pointInfo && <MapTopOverlay
+              externalControls
               devices={portalDevices} selected={filterDeviceId} onSelect={persistFilterDevice}
               onPair={() => navigate('/devices/pair')}
               mapRef={mapRef} onOpenRoadview={openRoadview}
               showSpeed={view === 'home' && trackLive && filterDeviceId !== null}
               historyMode={showMiniSeeker}
+              following={trackLive && selectedPortalDevice?.last_lat != null && selectedPortalDevice?.last_lng != null}
               liveSpeed={liveSpeed} cachedSources={cachedMapSources}
             >
               {view === 'home' && deviceQuery.isSuccess && !portalDevices.length && <div className="pt-map-empty">
@@ -1129,9 +1149,9 @@ export default function Dashboard({ onLogout }) {
                   좌하단: 등록된 펜스 목록 (scrollable, 토글 ON 일 때만)
                   showFences 가 토글의 상태 — 기존 지도 펜스 원 표시 플래그와 공유.
                   알람 토글 / 이력은 홈의 운행 도구 → 지오펜스 관리에서 확인. */}
-            {view === 'home' && !fullToolOpen && !pointInfo && (() => {
+            {mapVisible && !fullToolOpen && !pointInfo && (() => {
               const stripLift = showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0;
-              const fabBottom = (isDesktop ? 24 : 16) + stripLift;
+              const fabBottom = (view === 'devices' ? (isDesktop ? 48 : 43) : isDesktop ? 24 : 16) + stripLift;
               return (
                 <HomeFenceQuick
                   devices={portalDevices}
@@ -1141,36 +1161,40 @@ export default function Dashboard({ onLogout }) {
                   filterDeviceId={filterDeviceId}
                   bottomLift={stripLift}
                   fabBottom={fabBottom}
+                  addBelow={view === 'devices'}
                   enabled={showFences}
                   onToggleEnabled={setShowFences}
                   listSide={isDesktop ? 'right' : 'left'}
-                  showList={!showMiniSeeker}
+                  showList={view === 'home' && !showMiniSeeker}
                 />
               );
             })()}
 
-            {view === 'home' && !fullToolOpen && !pointInfo && (
-              <MapActions
-                hasDevice={hasSelectedDevice} tracking={userTrackPref} paused={seekerPaused}
+            {!fullToolOpen && !pointInfo && <div className="pt-map-command-stack" style={{
+              '--pt-seeker-offset': (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0) + 'px',
+              '--pt-command-bottom': ((view === 'devices' ? (isDesktop ? 48 : 43) : isDesktop ? 24 : 16) + (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0) + (view === 'devices' ? (showFences ? 114 : 57) : (showFences ? 120 : 60))) + 'px',
+            }}>
+              <MapControls mapRef={mapRef} selected={selectedPortalDevice?.id} onOpenRoadview={openRoadview} deviceLayout={view === 'devices'} zoomLevel={mapReady ? mapRef.current?.getZoomLevel?.() ?? mapLevel : null}/>
+              {mapVisible && <MapActions simple={view === 'devices'}
+                hasDevice={Boolean(selectedPortalDevice)} tracking={userTrackPref} paused={seekerPaused}
+                canTrack={view === 'home' ? Boolean(selectedPortalDevice) : selectedPortalDevice?.last_lat != null && selectedPortalDevice?.last_lng != null}
                 onNativeTracking={nativeTracking.available ? async () => {
                   const error = await nativeTracking.open();
                   if (error) await alertDialog({ title: '진행 방향 추적', body: error });
                 } : undefined}
                 miniOpen={showMiniSeeker}
-                bottom={(isDesktop ? 24 : 16) + (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0)
-                  + (showFences ? 60 : 0) + 60}
                 onTracking={() => {
                   setUserTrackPref(p => !p);
                   if (!seekerPaused) mapRef.current?.focusDevice?.(filterDeviceId, { level: 3 });
                 }}
                 onMini={() => { setPointInfo(null); toggleMini(); }}
                 onTool={tool => { setPointInfo(null); openTool(tool); }}
-              />
-            )}
+              />}
+            </div>}
 
             {showRoutePlanner && view === 'home' && <RoutePlannerSheet mapRef={mapRef} onClose={() => closeTool()} />}
             {mapVisible && !showMiniSeeker && !fullToolOpen && !pointInfo && <div className="pt-map-card-stack">
-              <MapDeviceCard vehicles={portalDevices} device={portalDevices.find(d => d.id === filterDeviceId)} meta={lastMetaRef.current[filterDeviceId]}
+              <MapDeviceCard vehicles={portalDevices} device={selectedPortalDevice} meta={lastMetaRef.current[filterDeviceId]}
                 onDetail={id => {setDetailId(id); setView('devices');}} onList={() => setView('devices')}/>
             {view === 'home' && <PinnedDeviceWidget embedded
               device={portalDevices.find(d => d.id === pinnedId)} deviceColor={getDeviceColor(devices.find(d => d.id === pinnedId) || {})}
@@ -1204,7 +1228,7 @@ export default function Dashboard({ onLogout }) {
             {/* 마커 클릭 sheet — home 화면 위에서만 의미.
                 · 모바일: 항상 (compact 는 시커 활성 시)
                 · 데스크톱: 시커 활성 시만 (시커 OFF 일 땐 kakao InfoWindow 가 fallback). */}
-            {!fullToolOpen && (!isDesktop || showMiniSeeker) && pointInfo && view === 'home' && (
+            {!fullToolOpen && (!isDesktop || showMiniSeeker) && pointInfo && mapVisible && (
               <PointInfoSheet
                 info={pointInfo}
                 onClose={() => setPointInfo(null)}
@@ -1217,7 +1241,7 @@ export default function Dashboard({ onLogout }) {
 
             {/* 컴팩트 시커 오버레이 — home + 단말기 필터, 패널 시커/지오펜스 중복 X.
                 월/일/시간 3-phase wizard 통합 (구 HomeMapSeeker 흡수). */}
-            {showMiniSeeker && view === 'home' && filterDeviceId !== null && (
+            {showMiniSeeker && mapVisible && filterDeviceId !== null && (
               <MiniSeekerOverlay
                 key={filterDeviceId}
                 ref={miniSeekerRef}

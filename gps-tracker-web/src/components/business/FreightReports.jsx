@@ -1,12 +1,15 @@
 import {useState} from 'react';
 import {freightReport} from '../../lib/freightReports';
 import {freightPages} from '../../lib/freightMenu';
-import {stamp,costLabel} from '../../lib/freightWorkflow';
+import {stamp,costLabel,firstOrder,routeName,nameOf,vehicleName,timeLabel,shipStates} from '../../lib/freightWorkflow';
 import {csvCell} from '../../lib/businessExport';
 import {saveBlob} from '../../lib/fileDownload';
-import {FreightField,FreightOptions,FreightStats,FreightTable,FreightButton,FreightStageChart} from './FreightKit';
+import {FreightField,FreightOptions,FreightStats,FreightTable,FreightButton} from './FreightKit';
+import {FreightRecordActions} from './FreightWorkflow';
+import {Status} from './FreightDetail';
+import {ChartPanel,ReportBars} from './OperationsChart';
 
-export default function FreightReports({page,data,onPage}){
+function ReportsView({page,data,onPage,open}){
   const today=stamp().slice(0,10), defaults={start:today.slice(0,7)+'-01',end:today,branch:'',carrier:'*'};
   const [filters,set]=useState(defaults),[failure,fail]=useState('');
   const update=k=>e=>set({...filters,[k]:e.target.value}),r=freightReport(data,filters);
@@ -34,20 +37,39 @@ export default function FreightReports({page,data,onPage}){
       await saveBlob(new Blob(['\uFEFF'+lines.map(row=>row.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),freightPages.get(page)+'_'+filters.start+'_'+filters.end+'.csv');
     }catch(e){fail(e.message);}
   }
-  return <div className="fr-page"><div className="fr-filters">
+  const sourceShips=new Map(data.shipments.map(s=>[s.id,s]));
+  const report=!util&&!profit;
+  const shipLink=s=><button type="button" className="fr-link" onClick={()=>open('shipments',s.id)}>{s.number}</button>;
+  const facts=(main,detail)=><>{main}<small>{detail}</small></>;
+  return <div className="fr-page ops-report">
+    {!r.error&&<><FreightStats items={stats}/><div className="ops-tools"><p>선택한 기간과 소속을 기준으로 집계합니다.</p><FreightButton icon="download" onClick={download}>CSV 다운로드</FreightButton></div></>}
+    <div className="ops-filter-box"><div className="fr-filters">
     {[['start','상차 시작일'],['end','상차 종료일']].map(([k,l])=><FreightField label={l} key={k}><input type="date" value={filters[k]} onChange={update(k)}/></FreightField>)}
     <FreightField label="운영 지점"><select value={filters.branch} onChange={update('branch')}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
     <FreightField label="소속"><select value={filters.carrier} onChange={update('carrier')}><option value="*">전체 소속</option><option value="">자사</option><FreightOptions rows={data.carriers}/></select></FreightField>
-    <FreightButton onClick={()=>set(defaults)}>조건 초기화</FreightButton></div>
-    {r.error?<p role="alert">{r.error}</p>:<><FreightStats items={stats}/>
-      <div className={!util&&!profit?'fr-overview-grid secondary':'fr-section'}>
-        <section className="fr-dashboard-card"><header><h2>{util?'차량별 배차일 비율':profit?'운송별 운임 차익':'화주별 운송 실적'}</h2><FreightButton icon="download" onClick={download}>CSV 다운로드</FreightButton></header>
-          <FreightTable columns={columns} rows={rows.map(row=>({...row,cells:row.cells.map((v,i)=>amounts.includes(i)?costLabel(v):v)}))}/></section>
-        {!util&&!profit&&<section className="fr-dashboard-card"><header><h2>진행 상태</h2></header><FreightStageChart ships={r.shipments}/></section>}
-        {profit&&<section className="fr-dashboard-card"><header><h2>별도 차량 관리비</h2><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 내역</FreightButton></header>
-          <div className="fr-live-detail">조회 기간 완료 정비·보험 비용 <strong>{costLabel(r.utilization.reduce((n,v)=>n+v.cost,0))}</strong></div></section>}
-      </div>
-      <p className="fr-note">{util?'배차일은 차량별로 운송 일정이 잡힌 날짜를 한 번씩 집계합니다.':'상차 예정일 기준으로 승인된 추가 비용을 포함합니다. 양쪽 운임이 확정된 '+r.totals.known+'건의 차익을 집계했습니다.'}</p></>}
+    </div><div className="ops-filter-actions"><span>{!r.error&&'조회 운송 '+r.shipments.length+'건'}</span><button type="button" onClick={()=>set(defaults)}>조회 조건 초기화</button></div></div>
+    {r.error?<p role="alert">{r.error}</p>:<>
+      {report&&<div className="ops-report-grid">
+        <ChartPanel title="화주별 운송 실적"><ReportBars values={r.groups.map(g=>({label:g.name,value:g.count}))} unit="건"/></ChartPanel>
+        <ChartPanel title="진행 상태"><ReportBars values={Object.entries(shipStates).filter(([key])=>key!=='cancelled').map(([key,label])=>({label,value:r.shipments.filter(s=>s.status===key).length}))} unit="건"/></ChartPanel>
+      </div>}
+      {util&&<ChartPanel title="차량별 배차일 비율" subtitle={r.dayCount+'일 조회'}><ReportBars values={r.utilization.map(v=>({label:v.plate,value:v.ratio}))} unit="%" height={220}/></ChartPanel>}
+      {report&&<section className="ops-table-panel" aria-label="운송별 실적"><FreightTable columns={['운송 / 화주','차량 / 기사','경로 / 일정','상태']} rows={r.shipments.map(s=>{
+        const original=sourceShips.get(s.id);return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[facts(shipLink(s),s.shipper),facts(vehicleName(data,original.vehicleId),nameOf(data,'drivers',original.driverId)),
+          facts(routeName(data,firstOrder(data,original)),timeLabel(original.start)),<Status value={s.status} labels={shipStates}/>]};
+      })}/></section>}
+      <section className="ops-table-panel" aria-label={util?'차량별 운영 내역':profit?'운송별 운임 차익':'화주별 합계'}>
+        {report&&<header className="ops-table-head"><h2>화주별 합계</h2></header>}
+        <FreightTable columns={columns} rows={rows.map(row=>({...row,onOpen:profit?()=>open('shipments',row.id):undefined,
+          cells:row.cells.map((v,i)=>profit&&i===0?shipLink({id:row.id,number:v}):amounts.includes(i)?costLabel(v):v)}))}/></section>
+      <p className="ops-note">{util?'배차일은 차량별로 운송 일정이 잡힌 날짜를 한 번씩 집계합니다.':'상차 예정일 기준으로 승인된 추가 비용을 포함합니다. 양쪽 운임이 확정된 '+r.totals.known+'건의 차익을 집계했습니다.'}</p>
+      {profit&&<section className="fr-dashboard-card"><header><h2>별도 차량 관리비</h2><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 내역</FreightButton></header>
+        <div className="fr-live-detail">조회 기간 완료 정비·보험 비용 <strong>{costLabel(r.utilization.reduce((n,v)=>n+v.cost,0))}</strong></div></section>}
+      </>}
     {failure&&<p role="alert">{failure}</p>}
   </div>;
+}
+
+export default function FreightReports(props){
+  return <FreightRecordActions {...props}>{({open})=><ReportsView {...props} open={open}/>}</FreightRecordActions>;
 }

@@ -1,5 +1,6 @@
 import {useEffect,useRef} from 'react';
 import {won} from '../../lib/rentalOffice';
+import {ChartPanel,ReportBars} from './OperationsChart';
 
 function RevenueLine({figures,period}) {
   const ref=useRef(null);
@@ -38,15 +39,11 @@ function RevenueLine({figures,period}) {
     const observer=new ResizeObserver(paint);observer.observe(canvas);paint();
     return ()=>observer.disconnect();
   },[figures,period]);
-  return <section className="ro-chart"><h3>기간별 대여료 수납</h3>
-    {figures.some(r=>r.payment||r.refund)?<canvas ref={ref} role="img" aria-label={'일별 순수납 추이. 조회 기간 합계 '+won(figures.reduce((s,r)=>s+r.payment-r.refund,0))+'. 일별 수치는 아래 표에서 확인할 수 있습니다.'}/>:
-      <p className="ro-empty">조회 기간에 이용료 수납·환불 기록이 없습니다.</p>}</section>;
+  return <ChartPanel title="기간별 대여료 수납" subtitle="결제 기록에서 환불을 차감한 금액">
+    {figures.some(r=>r.payment||r.refund)?<canvas ref={ref} style={{height:175}} role="img" aria-label={'일별 순수납 추이. 조회 기간 합계 '+won(figures.reduce((s,r)=>s+r.payment-r.refund,0))+'. 일별 수치는 아래 표에서 확인할 수 있습니다.'}/>:
+      <p className="ops-chart-empty" style={{height:175}}>조회 기간에 이용료 수납·환불 기록이 없습니다.</p>}</ChartPanel>;
 }
-export default function RentalOfficeCharts({figures,contracts,period,modelOf}) {
-  const counts=new Map();
-  for(const c of contracts){const name=modelOf(c);counts.set(name,(counts.get(name)||0)+1);}
-  const groups=[...counts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'ko'));
-  return <div className="ro-charts"><RevenueLine figures={figures} period={period}/>
-    <section className="ro-chart"><h3>차종별 계약 건수</h3>{groups.length?<ul>{groups.map(([name,count])=><li key={name}><span>{name}</span><b>{count}건</b>
-      <meter min={0} max={groups[0][1]} value={count} aria-label={name+' 계약 건수'}/></li>)}</ul>:<p className="ro-empty">조회 기간에 대여 계약이 없습니다.</p>}</section></div>;
+export default function RentalOfficeCharts({figures,groups,period}) {
+  return <div className="ops-report-grid"><RevenueLine figures={figures} period={period}/>
+    <ChartPanel title="차종별 계약 건수"><ReportBars values={groups.map(g=>({label:g.id,value:g.contracts.length}))} unit="건" height={175}/></ChartPanel></div>;
 }

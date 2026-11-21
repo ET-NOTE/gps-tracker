@@ -28,6 +28,13 @@ export function suggestedRecordAmount(c,kind) {
   if (kind==='refund' && c && c.paid_krw>c.billed_krw) return Math.min(limit,c.paid_krw-c.billed_krw);
   return limit;
 }
+export function outstandingReturns(contracts) {
+  return contracts.flatMap(contract => {
+    const excess = Math.max(0, contract.paid_krw - contract.billed_krw);
+    const deposit = ['returned', 'cancelled'].includes(contract.status) ? Math.max(0, contract.held_krw) : 0;
+    return excess || deposit ? [{id: contract.id, contract, excess, deposit}] : [];
+  });
+}
 const normalizedPhone = phone => (phone || '').replace(/\D/g,'');
 export function matchOfficeCustomer(c, catalog) {
   if (c.customer_id != null) return catalog.customers?.find(v => v.id === c.customer_id);
@@ -53,22 +60,50 @@ function unionDuration(intervals) {
   }
   return total;
 }
-export function vehicleUsage(book, devices, period, now = Date.now()) {
+export function returnReadingsRange(contracts, period) {
+  const from=Date.parse(period.from+'T00:00:00+09:00');
+  const to=Date.parse(period.to+'T00:00:00+09:00')+86400000;
+  const returned=contracts.filter(c=>c.status==='returned' && Date.parse(c.returned_at)>=from && Date.parse(c.returned_at)<to);
+  if (!returned.length) return null;
+  // The contracts endpoint filters the scheduled window, including for late returns.
+  const first=returned.reduce((min,c)=>Math.min(min,Date.parse(c.starts_at)||min),from);
+  return {from:new Date(first).toISOString(),to:new Date(to).toISOString(),status:'returned'};
+}
+
+export function vehicleUsage(book, devices, period, now = Date.now(), {readings=[],work=[]}={}) {
   const start = Date.parse(period.from+'T00:00:00+09:00');
-  const end = Math.min(now,Date.parse(period.to+'T00:00:00+09:00')+86400000);
+  const periodEnd = Date.parse(period.to+'T00:00:00+09:00')+86400000;
+  const end = Math.min(now,periodEnd);
   const rows = new Map();
   const ensure = (id,name) => {
     const key = id ?? 'old:'+name;
-    if (!rows.has(key)) rows.set(key,{ id:key, name:name || '차량 미배정', intervals:[], cost:0, revenue:0 });
+    if (!rows.has(key)) rows.set(key,{ id:key, name:name || '차량 미배정', intervals:[], completed:[], scheduled:[], cost:0, revenue:0, distance:0, measured:0, missing:0 });
     return rows.get(key);
   };
   devices.forEach(d => ensure(d.id,d.license_plate || d.display_name || '차량 '+d.id));
   const rowId = r => r.vehicle_id ?? devices.find(d=>matchesVehicle(r,d))?.id ?? (r.device_id==null ? null : 'device:'+r.device_id);
+  const odometers=new Map(readings.map(c=>[String(c.id),c]));
   book.contracts.filter(c => rowId(c)!=null && ['active','overdue','returned'].includes(c.status)).forEach(c => {
     const from = Math.max(start,Date.parse(c.starts_at));
     const to = Math.min(end,c.status === 'returned' ? Date.parse(c.returned_at || c.ends_at) : now);
     if (to>from) ensure(rowId(c),c.vehicle_name).intervals.push([from,to]);
+    const returned=Date.parse(c.returned_at);
+    if(c.status==='returned'&&returned>=start&&returned<periodEnd) {
+      const row=ensure(rowId(c),c.vehicle_name),record=odometers.get(String(c.id));
+      if(Number.isFinite(record?.pickup_odometer_km)&&Number.isFinite(record?.return_odometer_km)&&record.return_odometer_km>=record.pickup_odometer_km){
+        row.distance+=record.return_odometer_km-record.pickup_odometer_km;
+        row.measured++;
+      }else row.missing++;
+    }
   });
+  for(const job of work){
+    if (!['maintenance','inspection','cleaning'].includes(job.kind))continue;
+    const id=rowId(job),from=Math.max(start,Date.parse(job.starts_at));
+    const to=Math.min(job.closed_at?end:periodEnd,Date.parse(job.closed_at||job.ends_at));
+    if(id==null||!(to>from))continue;
+    const row=ensure(id,devices.find(d=>String(d.id)===String(id))?.license_plate||('차량 '+id));
+    (job.closed_at?row.completed:row.scheduled).push([from,to]);
+  }
   book.costs.forEach(k => { ensure(rowId(k),k.vehicle_name).cost += k.amount_krw; });
   book.entries.filter(e => ['payment','refund'].includes(e.kind)).forEach(e => {
     const c = book.contracts.find(c => c.id === e.contract_id);
@@ -77,7 +112,8 @@ export function vehicleUsage(book, devices, period, now = Date.now()) {
   });
   return [...rows.values()].map(r => {
     const time = unionDuration(r.intervals);
-    return { ...r, hours:time/3600000, utilization:end>start ? time*100/(end-start) : 0 };
+    return { ...r, hours:time/3600000, utilization:end>start ? time*100/(end-start) : 0,
+      completedHours:unionDuration(r.completed)/3600000,scheduledHours:unionDuration(r.scheduled)/3600000 };
   }).sort((a,b)=>b.hours-a.hours || a.name.localeCompare(b.name,'ko'));
 }
 export function dailyFigures(book) {

@@ -11,6 +11,14 @@ export const workStageName = item => ({ open: isIncident(item.kind) ? '처리 �
 export const rentalFleetLabel = device => device.car_plate || device.license_plate || vehicleName(device);
 export const sameId = (one, two) => one != null && two != null && String(one) === String(two);
 
+export function fleetWorkOnDay(item, day) {
+  if (item.status === 'cancelled' || item.cancelled_at) return false;
+  const start = Date.parse(item.starts_at);
+  const end = isIncident(item.kind) ? item.inspection_released_at : item.closed_at || item.ends_at;
+  const midnight = Date.parse(day+'T00:00:00+09:00');
+  return start < midnight + 86400000 && (!end || Date.parse(end) > midnight);
+}
+
 export function vehicleReadiness(device, work, summary, now) {
   const pending = work.filter(item => matchesVehicle(item,device) && workState(item) !== 'done');
   const incident = pending.find(item => isIncident(item.kind) && !item.closed_at);

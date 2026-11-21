@@ -74,6 +74,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const [from,setFrom] = useState(initialPeriod?.from||today.slice(0,7)+'-01'), [to,setTo] = useState(initialPeriod?.to||today);
   const [vehicle,setVehicle] = useState(''), [status,setStatus] = useState('approved');
   const [dimension,setDimension] = useState(''), [group,setGroup] = useState(trips?'vehicle':'category');
+  const [department,setDepartment] = useState('');
   const [metric,setMetric] = useState('amount'), [exporting,setExporting] = useState(false), [exportMessage,setExportMessage] = useState('');
   const live = useRef(true), exportRequest = useRef(null);
   useEffect(()=>{live.current=true; return ()=>{live.current=false;exportRequest.current?.abort();};},[]);
@@ -91,8 +92,10 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   });
   const allRows = result.data?.rows || [];
   const filterBy = trips?'driver':'category';
-  const options = groupAnalytics(allRows,filterBy).sort((a,b)=>a.label.localeCompare(b.label,'ko'));
-  const filterRows = source=>source.filter(row=>row.date>=from && row.date<=to && (!dimension || row[filterBy]===dimension));
+  const departments = groupAnalytics(allRows,'department').sort((a,b)=>a.label.localeCompare(b.label,'ko'));
+  const inDepartment = row=>!department || department===row.department;
+  const options = groupAnalytics(allRows.filter(inDepartment),filterBy).sort((a,b)=>a.label.localeCompare(b.label,'ko'));
+  const filterRows = source=>source.filter(row=>row.date>=from && row.date<=to && inDepartment(row) && (!dimension || row[filterBy]===dimension));
   const rows = filterRows(allRows);
   const sum = rows.reduce((total,row)=>total+row.amount,0);
   const vehicles = new Set(rows.map(r=>r.vehicle).filter(id=>id!=='general')).size;
@@ -119,6 +122,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       }));
       const range = [from+' ~ '+to, trips?'확정 운행':expenseStatus[status]||'전체 지출 상태', groupName+'별'];
       if (dimension) range.push(options.find(o=>o.id===dimension)?.label || dimension);
+      if (department) range.push(departments.find(o=>o.id===department)?.label || department);
       const report = subjectReport({title,filename:`${title}_${from}_${to}`,csvPreamble:[range],columns,rows:csvRows},fresh.scoped);
       const saved = await downloadReport(report,'csv');
       if (live.current) setExportMessage(saved?.status==='cancelled'?'다운로드를 취소했습니다.':'CSV 파일을 만들었습니다.');
@@ -143,18 +147,22 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
     </div><BusinessButton icon="download" disabled={!ready||Boolean(result.data?.failed)||exporting||!rows.length} onClick={exportCsv}>{exporting?'생성 중…':'리포트 CSV'}</BusinessButton></div>
     {exportMessage&&<p role="status" className="fleet-analytics-note">{exportMessage}</p>}
     <section className="fleet-analytics-filters" aria-label="통계 조회 조건">
-      <label>시작일<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setDimension('');}}/></label>
-      <label>종료일<input type="date" value={to} onChange={e=>{setTo(e.target.value);setDimension('');}}/></label>
-      <Filter label="차량" value={vehicle} onChange={e=>{setVehicle(e.target.value);setDimension('');}}>
+      <label>시작일<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setDepartment('');setDimension('');}}/></label>
+      <label>종료일<input type="date" value={to} onChange={e=>{setTo(e.target.value);setDepartment('');setDimension('');}}/></label>
+      <Filter label={trips?'차량 부서':'지출 부서'} value={department} disabled={!ready} onChange={e=>{setDepartment(e.target.value);setDimension('');}}>
+        <option value="">전체 부서</option>{departments.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}
+      </Filter>
+      <Filter label="차량" value={vehicle} onChange={e=>{setVehicle(e.target.value);setDepartment('');setDimension('');}}>
         <option value="">전체 차량{!trips?'·일반 지출':''}</option>
         {devices.map(d=><option key={d.id} value={String(d.id)}>{d.asset?fleetAssetLabel(d.asset):d.vehicle_name||d.license_plate||`차량 ${d.id}`}</option>)}
       </Filter>
-      {!trips&&<Filter label="지출 상태" value={status} onChange={e=>{setStatus(e.target.value);setDimension('');}}>
+      {!trips&&<Filter label="지출 상태" value={status} onChange={e=>{setStatus(e.target.value);setDepartment('');setDimension('');}}>
         <option value="">전체 상태</option>{Object.entries(expenseStatus).map(([id,label])=><option key={id} value={id}>{label}</option>)}
       </Filter>}
       <Filter label={trips?'운전자':'지출 항목'} value={dimension} disabled={!ready} onChange={e=>setDimension(e.target.value)}>
         <option value="">전체 {trips?'운전자':'항목'}</option>{options.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}
       </Filter>
+      <BusinessButton onClick={()=>{setFrom(initialPeriod?.from||today.slice(0,7)+'-01');setTo(initialPeriod?.to||today);setVehicle('');setStatus('approved');setDepartment('');setDimension('');}}>초기화</BusinessButton>
     </section>
     {periodError?<BusinessError>{periodError}</BusinessError>:result.error?<BusinessError onRetry={result.refetch}>{result.error.message||'통계를 불러오지 못했습니다.'}</BusinessError>:result.isPending?<p role="status" className="fleet-analytics-note">통계를 불러오는 중…</p>:<>
       {(result.data.failed>0)&&<BusinessError onRetry={result.refetch}>차량 {selected.length}대 중 {result.data.failed}대를 조회하지 못했습니다. 아래는 조회된 차량의 부분 합계입니다.</BusinessError>}
@@ -170,9 +178,10 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
         })}</ul>:<BusinessEmpty compact title="집계할 항목이 없습니다."/>}
       </BusinessSection></div>
       <BusinessSection title={`${groupName}별 ${trips?'운행':'지출'} 현황`}>
-        {groups.length?<div className="fleet-analytics-table" role="region" aria-label="통계 집계표" tabIndex={0}><table><thead><tr>{columns.map(c=><th key={c.key} scope="col">{c.label}</th>)}</tr></thead>
+        <div className="fleet-analytics-table" role="region" aria-label="통계 집계표" tabIndex={0}><table><thead><tr>{columns.map(c=><th key={c.key} scope="col">{c.label}</th>)}</tr></thead>
         <tbody>{groups.map(g=><tr key={g.id}><th scope="row">{trips&&group==='vehicle'&&onReport?<button type="button" onClick={()=>onReport(devices.find(d=>String(d.id)===g.id),{from,to})}>{g.label}</button>:g.label}</th>
-          <td>{number(g.count)}</td><td>{amount(g.amount)}</td>{trips&&<td>{duration(g.minutes)}</td>}<td>{amount(g.amount/g.count)}</td><td>{sum?number(100*g.amount/sum,1):'—'}</td></tr>)}</tbody></table></div>:<BusinessEmpty compact title="표시할 집계 결과가 없습니다."/>}
+          <td>{number(g.count)}</td><td>{amount(g.amount)}</td>{trips&&<td>{duration(g.minutes)}</td>}<td>{amount(g.amount/g.count)}</td><td>{sum?number(100*g.amount/sum,1):'—'}</td></tr>)}
+          {!groups.length&&<tr><td colSpan={columns.length}><BusinessEmpty compact title="표시할 집계 결과가 없습니다."/></td></tr>}</tbody></table></div>
       </BusinessSection>
     </>}
   </div>;

@@ -82,8 +82,8 @@ export default function Auth({ onLogin, loginNext }) {
 
   return <LoginLayout register={register}>
     <form className="entry-fields" onSubmit={submit} onChange={() => { if (error) setError(''); }}>
-      <AuthField label="이메일" name="email" type="email" autoComplete="username" placeholder="이메일 주소" required value={email} disabled={busy} onChange={e => setEmail(e.target.value)}/>
-      <PasswordField key={register ? 'new' : 'current'} name="password" autoComplete={register ? 'new-password' : 'current-password'} placeholder={register ? '8자 이상' : '비밀번호 입력'} minLength={8} required value={password} disabled={busy} onChange={e => setPassword(e.target.value)}/>
+      <AuthField label="이메일" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus={window.matchMedia('(pointer:fine)').matches} placeholder="이메일을 입력해 주세요" required value={email} disabled={busy} onChange={e => setEmail(e.target.value)}/>
+      <PasswordField key={register ? 'new' : 'current'} name="password" autoComplete={register ? 'new-password' : 'current-password'} placeholder={register ? '8자 이상' : '비밀번호를 입력해 주세요'} minLength={8} required value={password} disabled={busy} onChange={e => setPassword(e.target.value)}/>
       {register ? <>
         <PasswordField label="비밀번호 확인" name="password_confirm" autoComplete="new-password" placeholder="비밀번호 다시 입력" required value={confirm} disabled={busy} onChange={e => setConfirm(e.target.value)}/>
         <AuthField label="이름" name="display_name" autoComplete="name" maxLength={20} required value={name} disabled={busy} onChange={e => setName(e.target.value)}/>
@@ -93,8 +93,8 @@ export default function Auth({ onLogin, loginNext }) {
         </div>
         {otp.challenge && <OtpField otp={otp}/>}
       </> : <div className="entry-options">
-        <label><input type="checkbox" checked={rememberEmail} onChange={e => {setRememberEmail(e.target.checked); if (!e.target.checked) saveEmail('');}}/>이메일 기억하기</label>
-        <label title="최대 30일"><input type="checkbox" checked={rememberLogin} onChange={e => setRememberLogin(e.target.checked)}/>로그인 상태 유지</label>
+        <label><input type="checkbox" aria-label="이메일 기억하기" checked={rememberEmail} onChange={e => {setRememberEmail(e.target.checked); if (!e.target.checked) saveEmail('');}}/><span>이메일 기억<span className="entry-option-long">하기</span></span></label>
+        <label title="최대 30일"><input type="checkbox" aria-label="로그인 상태 유지" checked={rememberLogin} onChange={e => setRememberLogin(e.target.checked)}/><span>로그인 <span className="entry-option-long">상태 </span>유지</span></label>
         <button type="button" className="entry-text-button" disabled={busy} onClick={() => setRecovery('password')}>비밀번호 찾기</button>
       </div>}
       {notice && <p className="entry-notice" role="status">{notice}</p>}
@@ -104,10 +104,13 @@ export default function Auth({ onLogin, loginNext }) {
     {!register && <>
       <div className="entry-demo-divider">계정 없이 둘러보기</div>
       <Link className="entry-demo-link" to="/demo" state={{loginNext}}>데모 체험하기</Link>
-      <details className="entry-demo-help">
-        <summary>체험 데이터 안내</summary>
-        <p>예시 차량과 예약을 직접 등록하고 수정할 수 있습니다. 체험 종료를 누르면 이 탭에서 바꾼 내용이 초기화됩니다.</p>
-      </details>
+      <div className="entry-demo-info">
+        <details className="entry-demo-help">
+          <summary>체험 데이터 안내</summary>
+          <p>차량과 예약을 추가하거나 수정할 수 있습니다. 변경 내용은 이 브라우저 탭에서만 보입니다.</p>
+        </details>
+        <p>체험을 종료하면 예시 데이터가 초기화됩니다.</p>
+      </div>
     </>}
     <div className="entry-links">
       {register ? <button type="button" disabled={busy} onClick={() => switchForm(false)}>로그인으로 돌아가기</button> : <>

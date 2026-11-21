@@ -26,8 +26,8 @@ function ActivityList({items}) {
     : <p className="fr-empty">처리 이력이 없습니다.</p>;
 }
 
-function DashboardCard({title,onMore,children}) {
-  return <section className="fr-dashboard-card"><header><h2>{title}</h2><button type="button" className="fr-more" aria-label={title+' 더보기'} onClick={onMore}>더보기 <span aria-hidden="true">›</span></button></header>{children}</section>;
+function DashboardCard({title,description,onMore,children}) {
+  return <section className="fr-dashboard-card"><header><div><h2>{title}</h2>{description&&<p className="rnt-section-caption">{description}</p>}</div><button type="button" className="fr-more" aria-label={title+' 더보기'} onClick={onMore}>더보기 <span aria-hidden="true">›</span></button></header>{children}</section>;
 }
 
 function DashboardView({data,devices,onPage,actions}) {
@@ -77,12 +77,12 @@ function DashboardView({data,devices,onPage,actions}) {
       <span>{label}<small>더보기 ›</small></span><strong>{value}<em>건</em></strong>
       <span className="fr-metric-note">{note}</span>
     </button>)}</div>
-    <div className="fr-toolbar fr-dashboard-tools"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
-      <div className="fr-actions"><FreightButton onClick={()=>onPage('cargo-live')} icon="map">실시간 관제</FreightButton><FreightButton primary icon="plus" onClick={()=>actions.form('new','orders')}>주문 등록</FreightButton></div>
+    <div className="fr-toolbar fr-dashboard-tools"><FreightButton onClick={()=>onPage('cargo-live')} icon="map">실시간 관제</FreightButton><div className="fr-actions"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
+      <FreightButton primary icon="plus" onClick={()=>actions.form('new','orders')}>주문 등록</FreightButton></div>
     </div>
     {actions.feedback&&<p role="status" className="fr-note">{actions.feedback}</p>}
     <div className="fr-overview-grid">
-      <DashboardCard title="오늘 운송 일정" onMore={()=>setView('schedule')}><OverviewTable kind="shipments" data={data} rows={schedule.slice(0,5)} open={open}/></DashboardCard>
+      <DashboardCard title="오늘 운송 일정" description={schedule.length+"건 · 상·하차 예정"} onMore={()=>setView('schedule')}><OverviewTable kind="shipments" data={data} rows={schedule.slice(0,5)} open={open}/></DashboardCard>
       <DashboardCard title="확인할 업무" onMore={()=>setView('attention')}>{taskButtons}</DashboardCard>
     </div>
     <div className="fr-overview-grid secondary">

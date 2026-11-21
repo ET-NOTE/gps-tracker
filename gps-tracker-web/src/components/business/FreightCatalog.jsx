@@ -53,14 +53,13 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage}) {
     if(view.action==='delete')close();else toDetail(row.id);
   }
   const related=row?relatedRows(data,kind,row.id):[];
-  return <section className="fr-section">
+  return <section className="fr-section fr-catalog">
     {['shippers','carriers'].includes(kind)&&<FreightStats items={[[kind==='shippers'?'조회 화주':'조회 협력 운송사',rows.length+'곳'],['사용 중',rows.filter(r=>r.active!==false).length+'곳'],['월합산 정산',rows.filter(r=>(r.billing||r.settlement)==='월합산').length+'곳']]}/>}
     <div className="fr-toolbar"><strong>{title} {rows.length.toLocaleString('ko-KR')}건</strong><div className="fr-actions">
       <FreightButton onClick={()=>downloadRows(title,headings,rows.map(row=>columns.map(([,cell])=>cell(row))))} disabled={!rows.length}>CSV 다운로드</FreightButton>
       <FreightButton primary onClick={()=>setView({action:'form'})} disabled={!!missing}>{title} 등록</FreightButton></div></div>
-    {missing&&<div className="fr-card fr-toolbar"><span>{missing}</span><FreightButton onClick={()=>onPage(!readyBranch?'organization':'cargo-vehicles')}>{!readyBranch?'지점 관리':'차량 목록'}</FreightButton></div>}
-    <FreightFilters query={query} onQuery={setQuery} placeholder={title+' 검색'}>{filters.map(f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>)}
-      <FreightButton onClick={()=>{setFilter({});setQuery('');}}>조건 초기화</FreightButton></FreightFilters>
+    <FreightFilters query={query} onQuery={setQuery} placeholder={title+' 검색'} onReset={()=>{setFilter({});setQuery('');}}>{filters.map(f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>)}
+      {missing&&<div className="fr-setup-hint"><span>{missing}</span><FreightButton onClick={()=>onPage(!readyBranch?'organization':'cargo-vehicles')}>{!readyBranch?'지점 관리':'차량 목록'}</FreightButton></div>}</FreightFilters>
     <FreightTable columns={headings} rows={rows.map(row=>({id:row.id,onOpen:()=>toDetail(row.id),cells:columns.map(([,cell],i)=>i===0?<button type="button" className="fr-link" onClick={()=>toDetail(row.id)}>{cell(row)}</button>:cell(row))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
     {view?.action==='detail'&&row&&<FreightDrawer title={title+' 상세'} subtitle={row.plate||row.name||row.type} onClose={close}
       footer={<div className="fr-actions"><FreightButton onClick={close}>닫기</FreightButton>

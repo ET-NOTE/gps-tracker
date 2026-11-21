@@ -1,14 +1,15 @@
 import Switch from './ui/Switch';
+import Icon from './Icon';
 // 알림 설정 — STATUS 분류와 1:1 매핑.
 //   통신 상태:    signal_loss / offline / online (복구)
 //   배터리:       low_batt
 //   GPS·전원:    device_health (gps_anomaly + brownout)
 //   절전 사이클: sleep_enter / wake / lost (24h+)
 //   기타:         motion / geofence
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { api } from '../api';
 
-export default function NotificationSettings() {
+export default function NotificationSettings({portal = false}) {
   const [s, setS]       = useState(null);
   const [busy, setBusy] = useState(false);
   // (2026-07-01) 저장 결과 UI — auto-save 가 조용히 실패하던 케이스 진단용.
@@ -41,16 +42,25 @@ export default function NotificationSettings() {
     {loadError ? <>알림 설정을 불러오지 못했습니다. <button onClick={load}>다시 시도</button></> : '알림 설정을 불러오는 중…'}
   </div>;
 
+  const MoreSettings = portal ? 'details' : Fragment;
   return (
     <fieldset disabled={busy} aria-busy={busy} style={{ display: 'flex', flexDirection: 'column', gap: 14, border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-      <p style={{ color: 'var(--text-3)', margin: 0, fontSize: 12 }}>변경 사항은 자동 저장됩니다.</p>
+      {portal && <div className="pt-notif-choices">{[
+        ['signal_loss_alert', 'wifi', '새 정보 수신 지연', `단말기에서 ${s.signal_loss_minutes}분 이상 새 정보를 받지 못했을 때`, s.signal_loss_alert],
+        ['device_health_alert', 'mapPin', '위치·전원 이상', 'GPS 위치 확인이 지연되거나 전압 저하로 단말기가 재시작될 때', s.device_health_alert ?? true],
+        ['geofence_alert', 'target', '설정한 구역 출입', '설정한 펜스에 들어가거나 벗어날 때', s.geofence_alert],
+      ].map(([key,icon,title,description,active])=><div className="pt-notif-choice" key={key}><span className="pt-notif-icon"><Icon name={icon} size={20}/></span>
+        <div><h3>{title}</h3><p>{description}</p></div><span className="pt-toggle"><Switch label={title} checked={active} onChange={v=>patch({[key]:v})}/><span>{active?'켜짐':'꺼짐'}</span></span></div>)}</div>}
+      <p className={portal ? 'pt-notif-note' : undefined} style={portal ? undefined : { color: 'var(--text-3)', margin: 0, fontSize: 12 }}>{portal && <Icon name="info" size={15}/>}변경 사항은 자동 저장됩니다.</p>
+      <MoreSettings {...(portal ? {className:'pt-notif-details'} : {})}>
+      {portal && <summary>세부 알림 설정</summary>}
 
       {/* ─── 통신 상태 ─────────────────────────── */}
       <Group title="통신 상태" desc="장치 정보의 수신이 지연되거나 연결이 복구될 때">
-        <Toggle label="새 정보 수신 지연"
+        {!portal && <Toggle label="새 정보 수신 지연"
           sub={`${s.signal_loss_minutes}분 미수신 시 한 번 안내`}
           value={s.signal_loss_alert}
-          onChange={v => patch({ signal_loss_alert: v })} />
+          onChange={v => patch({ signal_loss_alert: v })} />}
         <Toggle label="연결 확인 필요"
           sub={`${formatDelay(s.offline_minutes)} 미수신 시 한 번 안내. 다시 수신될 때까지 반복하지 않습니다.`}
           value={s.offline_alert}
@@ -108,10 +118,10 @@ export default function NotificationSettings() {
           sub={`배터리 전압이 설정한 기준보다 낮을 때`}
           value={s.low_batt_alert}
           onChange={v => patch({ low_batt_alert: v })} />
-        <Toggle label="위치·전원 이상"
+        {!portal && <Toggle label="위치·전원 이상"
           sub="GPS 위치 확인이 반복해서 지연되거나 전압 저하에 따른 재시작 기록이 확인될 때"
           value={s.device_health_alert ?? true}
-          onChange={v => patch({ device_health_alert: v })} />
+          onChange={v => patch({ device_health_alert: v })} />}
         <details style={{ color: 'var(--text-2)', fontSize: 12 }}>
           <summary style={{ cursor: 'pointer', padding: '8px 0' }}>배터리 알림 기준 조정</summary>
           <p>전압은 표준 단말기의 방전 실측으로 보정하며, 잔량은 전압 기반 추정치입니다. 알림도 화면과 같은 보정 전압을 기준으로 합니다. 화면 상태는 정상(3.30V 이상), 저전압(2.90~3.30V 미만), 전압 매우 부족(2.90V 미만)으로 표시합니다. 아래 알림 기준을 높이면 정상 범위에서도 미리 안내받을 수 있습니다.</p>
@@ -128,9 +138,9 @@ export default function NotificationSettings() {
           sub="움직임 센서로 장치가 깨어났을 때. 차량 이동을 확정하는 알림은 아닙니다."
           value={s.motion_alert}
           onChange={v => patch({ motion_alert: v })} />
-        <Toggle label="설정한 구역 출입"
+        {!portal && <Toggle label="설정한 구역 출입"
           value={s.geofence_alert}
-          onChange={v => patch({ geofence_alert: v })} />
+          onChange={v => patch({ geofence_alert: v })} />}
       </Group>
 
       <Group title="차량 예약·반납 일정" desc="등록한 일정이 있는 차량 소유자에게 안내합니다. 예약 취소·반납 완료 시 발송하지 않습니다.">
@@ -140,6 +150,7 @@ export default function NotificationSettings() {
           value={s.rental_alert ?? true} onChange={v => patch({ rental_alert: v })} />
       </Group>
 
+      </MoreSettings>
       <div role="status" aria-live="polite" style={{ fontSize: 12, color: saveMsg?.ok === false ? 'var(--danger)' : 'var(--text-2)' }}>
         {busy ? '저장 중…' : saveMsg?.text}
       </div>

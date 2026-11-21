@@ -5,8 +5,9 @@ import { vehicleName } from '../../lib/business';
 import { useBusinessVehicle } from './BusinessWorkspace';
 import BusinessDrawer from './BusinessDrawer';
 import './rental-workspace.css';
+import './fleet-workspace-layout.css';
 
-import { rentalMenu, rentalPageHeadings } from '../../lib/rentalMenu';
+import { rentalMenu, rentalPageHeadings, rentalPageDescriptions } from '../../lib/rentalMenu';
 import { freightPageHeadings } from '../../lib/freightMenu';
 export { rentalMenu, rentalPages } from '../../lib/rentalMenu';
 
@@ -48,15 +49,15 @@ function WorkspaceSearch({devices, onTab, onClose, menu, onDevice}) {
   </div></Modal>;
 }
 
-export default function RentalWorkspace({page,onTab,onNavigate,destinations,devices,onNew,children,menu=rentalMenu,serviceLabel='렌트카',heading='렌트카 운영',widthKey='rental.area.width',onSearchDevice,headerAction}) {
+export default function RentalWorkspace({page,onTab,onNavigate,destinations,devices,children,menu=rentalMenu,serviceLabel='렌트카',heading='렌트카 운영',widthKey='rental.area.width',onSearchDevice,headerAction}) {
   const landing=menu[0].pages[0][0];
   const group = menu.find(g => g.pages.some(([id])=>id===page)) || menu[0];
   const pageLabel = group.pages.find(([id]) => id === page)?.[1];
   const title = (menu === rentalMenu ? rentalPageHeadings[page] : freightPageHeadings[page]?.title) || pageLabel;
   const description = menu === rentalMenu
-    ? (page === landing ? '오늘 인도·반납과 준비할 업무를 확인하세요.' : '')
+    ? rentalPageDescriptions[page]
     : freightPageHeadings[page]?.description;
-  const today = new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'});
+  const today = new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'long'});
   const [dialog,setDialog] = useState(null);
   const [wide,setWide] = useState(()=>{try{return localStorage.getItem(widthKey)==='wide';}catch{return false;}});
   const content = useRef(null);
@@ -71,7 +72,7 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
   const nav = <WorkspaceNav menu={menu} label={serviceLabel} group={group} page={page} onTab={choose}/>;
   const accountLinks = (destinations || [{id:'home',label:'전체 지도',icon:'map'},{id:'devices',label:'내 단말기',icon:'antenna'},{id:'profile',label:'내 정보',icon:'user'}]).map(item=>
     <button className="rnt-group" key={item.id} onClick={()=>{setDialog(null);onNavigate?.(item.id);}}><Icon name={item.icon}/>{item.id==='home'?'전체 지도':item.label}</button>);
-  return <section className="gps-user-panel gps-business-panel rnt-shell" data-workspace={widthKey} data-wide={wide}>
+  return <section className="gps-user-panel gps-business-panel rnt-shell" data-workspace={widthKey} data-page={page} data-wide={wide}>
     <aside className="rnt-sidebar no-print"><button className="rnt-brand" onClick={()=>choose(landing)}><i><Icon name="car"/></i><span>{heading}</span></button>
       <small className="rnt-service-name">시리얼링크 · 업무 공간</small>
       {nav}
@@ -84,7 +85,7 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
       <button className="rnt-search" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
       {headerAction}<button className="rnt-icon" aria-label="계정 메뉴 열기" onClick={()=>setDialog('account')}><Icon name="user"/></button>
     </header><div className="rnt-scroller" ref={content}><div className="rnt-content">
-      <div className="rnt-title"><div><h1>{title}</h1>{description && <p>{description}</p>}</div><div className="rnt-title-actions">{page===landing && <time><Icon name="calendar" size={14}/>{today}</time>}{onNew&&page==='schedule'&&<button className="business-button is-primary no-print" onClick={onNew}><Icon name="plus" size={16}/>예약 등록</button>}</div></div>
+      <div className="rnt-title"><div><h1>{title}</h1>{description && <p>{description}</p>}</div><div className="rnt-title-actions"><time>{today}</time></div></div>
       {children}
     </div></div></div>
     {dialog==='nav'&&<BusinessDrawer navigation title={heading} onClose={()=>setDialog(null)}>{nav}</BusinessDrawer>}

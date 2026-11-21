@@ -22,7 +22,6 @@ import BusinessMap from './BusinessMap';
 import {DirectoryLayout,DirectoryGroups} from './DirectoryLayout';
 import useCorporatePhone from '../../useCorporatePhone';
 import {useVehicleGroups,VehicleGroupForm} from './FleetVehicleGroups';
-import MobileFleetDirectory from './MobileFleetDirectory';
 import Icon from '../Icon';
 import './fleet-assets-cartax.css';
 import './fleet-reference-vehicles.css';
@@ -90,8 +89,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   }
   const createInGroup=()=>setEdit({group_id:groups.data?.find(g=>String(g.id)===group)?.id || null});
   const groupButton=access.manage_vehicles&&<button type="button" className="business-button fleet-add-group" aria-label="차량 그룹 추가" title="차량 그룹 추가" onClick={()=>setAddGroup(true)}><Icon name="plus" size={15}/><span>그룹 추가</span></button>;
-  const directoryFilters=<><label className="fleet-assets-state-select">운영 상태<select aria-label="등록 차량 운영 상태" value={availability} onChange={e=>setAvailability(e.target.value)}><option value="">전체 상태 ({stateScope.length})</option><option value="enabled">사용 가능 ({stateScope.filter(v=>v.enabled).length})</option><option value="disabled">사용 정지 ({stateScope.filter(v=>!v.enabled).length})</option></select></label>
-    <label className="fleet-assets-state-select">부서<select aria-label="등록 차량 부서" value={department} onChange={e=>setDepartment(e.target.value)}><option value="">전체 부서</option>{departments.map(d=><option key={d.id} value={d.id}>{d.label} ({departmentCounts.get(d.id)||0})</option>)}<option value="unassigned">부서 미지정 ({departmentCounts.get('unassigned')||0})</option></select></label></>;
+  const statusSelect=<select aria-label="등록 차량 운영 상태" value={availability} onChange={e=>setAvailability(e.target.value)}><option value="">전체 상태</option><option value="enabled">사용 가능 ({stateScope.filter(v=>v.enabled).length})</option><option value="disabled">사용 정지 ({stateScope.filter(v=>!v.enabled).length})</option></select>;
   const projected=useMemo(()=>projectFleetAssets(assets,devices),[assets,devices]);
   const byVehicle=useMemo(()=>new Map(projected.map(d=>[d.id,d])),[projected]);
   const stats=useAssetStats(projected);
@@ -111,20 +109,32 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const sortOptions=<><option value="name">차량 이름순</option><option value="created">최근 등록순</option><option value="distanceAsc">계기판 거리 낮은순</option><option value="distanceDesc">계기판 거리 높은순</option></>;
   const empty=!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>;
   return <div className="fleet-assets-list">
-    {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={setScheduleAsset} refreshAssets={onChanged}/>:mobile?<MobileFleetDirectory label="차량 목록" filterLabel="그룹" filterActive={Boolean(advancedActive||group!=='all'||department||availability||sort!=='name')}
-      searchLabel="등록 차량 검색" placeholder="차량·단말기 검색" query={query} onQuery={setQuery}
-      count={countLabel} createLabel="차량 등록" onCreate={access.manage_vehicles?createInGroup:null}
-      filters={<>
-        <label>차량 그룹<select value={group} onChange={e=>setGroup(e.target.value)}>
-          {groupItems.map(i=><option key={i.id} value={i.id}>{i.label} ({i.count})</option>)}
-        </select></label>{groupButton}{directoryFilters}
+    {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={setScheduleAsset} refreshAssets={onChanged}/>:<>
+    <div className="fleet-record-toolbar" aria-label="차량 목록 조회">
+      <div className="fleet-record-query">
+        <label className="fleet-inline-search"><Icon name="search" size={15}/><input type="search" aria-label="등록 차량 검색" placeholder="차량번호, 모델, 담당자 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+        {statusSelect}
+      </div>
+      <div className="fleet-record-actions">{exportButton}{access.manage_vehicles&&<button className="business-button is-primary" type="button" onClick={createInGroup}><Icon name="plus" size={15}/>차량 등록</button>}</div>
+    </div>
+    <section className="fleet-record-filterbox" aria-label="차량 필터 조건">
+      <div className="fleet-record-fields">
+        <label>차량 소속 부서<select aria-label="등록 차량 부서" value={department} onChange={e=>setDepartment(e.target.value)}><option value="">전체 부서</option>{departments.map(d=><option key={d.id} value={d.id}>{d.label} ({departmentCounts.get(d.id)||0})</option>)}<option value="unassigned">부서 미지정 ({departmentCounts.get('unassigned')||0})</option></select></label>
         <label>정렬<select aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}>{sortOptions}</select></label>
-        <button className="business-button" type="button" onClick={openFilters}>상세 필터</button>
-        {exportButton}
-        {(filtered||sort!=='name')&&<button className="business-button" type="button" onClick={reset}>필터 초기화</button>}
+        <label>계기판 거리<select aria-label="차량 목록 계기판 거리" value={filters.distance} onChange={e=>setFilters(f=>({...f,distance:e.target.value,...(e.target.value==='missing'?{minKm:'',maxKm:''}:{})}))}><option value="all">전체 차량</option><option value="recorded">거리 등록</option><option value="missing">거리 미등록</option></select></label>
+      </div>
+      <div className="fleet-record-filterfoot"><span>전체 {assets.length}대 중 {rows.length}대 조회</span><div>
         {access.manage_vehicles&&<FleetBatchBindings assets={assets} devices={devices} onChanged={onChanged}/>}
-      </>}>
-      <ul className="mobile-fleet-rows">{rows.map(v=>{
+        <button className="business-button" type="button" aria-expanded={filterOpen} onClick={openFilters}><Icon name="filter" size={14}/>필터</button>
+        {(filtered||sort!=='name')&&<button className="business-button" type="button" onClick={reset}>필터 초기화</button>}
+      </div></div>
+    </section>
+    <DirectoryLayout sidebar={<DirectoryGroups title="차량 그룹" aria-label="차량 그룹 조회" items={groupItems} value={group} onChange={setGroup} action={groupButton}/>}>
+    <div className="fleet-assets-content">
+    <section className="fleet-assets-ledger" aria-label="차량 목록">
+      <header className="fleet-assets-table-heading"><h2>{groupItems.find(item=>item.id===group)?.label||'차량 목록'}</h2><span>{rows.length}대</span></header>
+      {mobile?<>
+      <div className="fleet-mobile-table-scroll" role="region" aria-label="차량 목록 · 좌우 스크롤" tabIndex={0}><div className="fleet-mobile-vehicle-columns" aria-hidden="true"><span>차량</span><span>운영 상태</span><span>단말기</span><span>계기판 거리</span></div><ul className="mobile-fleet-rows">{rows.map(v=>{
         const distance=assetOdometer(v),manager=staff.find(s=>s.id===v.manager_staff_id)?.name;
         const [title,...description]=mobileVehicleLabels(v,manager);
         const device=byVehicle.get(v.id);
@@ -134,38 +144,25 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
         return <li key={v.id}>
           <button type="button" className="mobile-fleet-row mobile-vehicle-row"
             aria-label={`${fleetAssetLabel(v)} 상세`} onClick={()=>openDetail(v.id)}>
+            <span className="fleet-mobile-vehicle-photo" aria-hidden="true"><CarImage vehicleId={v.id} version={v.profile?.car_image_url} fallback={<Icon name="car" size={21}/>}/></span>
             <span className="mobile-fleet-row-main">
               <span className="mobile-vehicle-title">
-                <span className={`mobile-fleet-pill ${v.enabled?'is-primary':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span>
                 <strong className="mobile-fleet-row-title">{title}</strong>
               </span>
               {description.length>0&&<span className="mobile-fleet-row-copy">{description.join(' · ')}</span>}
-              <span className="mobile-vehicle-terminal">단말 {terminalNames.join(' · ')||'미연결'}{terminalStatus}</span>
-              <span className="mobile-vehicle-distance">계기판 거리 {distance==null?'미등록':`${distance.toLocaleString()} km`}</span>
             </span>
-            {v.profile?.car_image_url&&<CarImage vehicleId={v.id} version={v.profile.car_image_url}/>}
-            <span className="mobile-fleet-row-chevron" aria-hidden="true"><Icon name="chevron-right" size={19}/></span>
+            <span className={`mobile-fleet-pill ${v.enabled?'is-primary':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span>
+            <span className="mobile-vehicle-terminal">단말 {terminalNames.join(' · ')||'미연결'}{terminalStatus}</span>
+              <span className="mobile-vehicle-distance">계기판 거리 {distance==null?'미등록':`${distance.toLocaleString()} km`}</span>
+
           </button>
           {filters.missingSchedulesOnly&&<div className="mobile-vehicle-schedule">
             <span>{missingScheduleFields(v.profile).map(([,label])=>label).join(' · ')} 미등록</span>
             {access.manage_vehicles&&<button className="business-button" type="button" aria-label={`${fleetAssetLabel(v)} 점검 일정 등록`} onClick={()=>setScheduleAsset(v)}>일정 등록</button>}
           </div>}
         </li>;
-      })}</ul>{empty}
-    </MobileFleetDirectory>:
-    <>
-    <section className="fleet-assets-controls" aria-label="차량 목록 조회">
-      <div className="fleet-assets-control-row"><div className="fleet-assets-query">{directoryFilters}
-        <label className="fleet-assets-search"><Icon name="search" size={15}/><input type="search" aria-label="등록 차량 검색" placeholder="차량·단말기·부서·담당자 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-        <button className="business-button" type="button" aria-expanded={filterOpen} onClick={openFilters}><Icon name="filter" size={15}/>필터{advancedActive&&<span className="fleet-assets-filter-dot" aria-label="적용 중"/>}</button>
-        {(filtered||sort!=='name')&&<button className="business-button" type="button" onClick={reset}>필터 초기화</button>}
-        {access.manage_vehicles&&<FleetBatchBindings assets={assets} devices={devices} onChanged={onChanged}/>}
-      </div><div className="fleet-assets-table-actions">{exportButton}{access.manage_vehicles&&<button className="business-button is-primary" type="button" onClick={createInGroup}><Icon name="plus" size={15}/>차량 등록</button>}</div></div>
-    </section>
-    <DirectoryLayout sidebar={<DirectoryGroups title="차량 그룹" aria-label="차량 그룹 조회" items={groupItems} value={group} onChange={setGroup} action={groupButton}/> }>
-    <div className="fleet-assets-content">
-    <section className="fleet-assets-ledger" aria-label="차량 목록">
-      <header className="fleet-assets-table-heading"><h2>{groupItems.find(item=>item.id===group)?.label||'차량 목록'}</h2><span>{rows.length}대</span></header>
+      })}</ul></div>{empty}
+      </>:<>
       <div className="fleet-asset-table-wrap" role="region" aria-label="차량 목록 표" tabIndex={0}><table className="fleet-asset-table fleet-assets-cartax-table"><thead><tr>{['차량','부서·담당자','단말기·수신','이번 달 운행거리','계기판 거리','등록일',...(filters.missingSchedulesOnly?['미등록 일정']:[]),'운영 상태','관리'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{rows.map(v=><tr key={v.id} tabIndex={0} aria-label={`${fleetAssetLabel(v)} 상세 열기`} onClick={e=>{if(!e.target.closest('button,a,input,select,textarea,label'))openDetail(v.id);}} onKeyDown={e=>{if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openDetail(v.id);}}}>
         <td><div className="fleet-assets-identity"><span className="fleet-assets-thumbnail" aria-hidden="true"><CarImage vehicleId={v.id} version={v.profile?.car_image_url} fallback={<Icon name="car" size={24}/>}/></span><div><button type="button" className="business-link" aria-label={`${fleetAssetLabel(v)} 상세`} onClick={()=>openDetail(v.id)}>{v.license_plate||v.name||'차량 정보 미등록'}</button><small>{[...new Set([v.car_model,v.name].filter(x=>x&&x!==(v.license_plate||v.name)))].join(' · ')||''}</small></div></div></td>
         <td>{v.department||'—'}<small>{staff.find(s=>s.id===v.manager_staff_id)?.name||'담당자 미지정'}</small></td>
@@ -176,7 +173,8 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
         <td><span className={`business-badge ${v.enabled?'good':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span></td>
         <td>{access.manage_vehicles?<div className="fleet-assets-row-actions"><button type="button" className="fleet-assets-connect-button" aria-label={`${fleetAssetLabel(v)} 단말 연결`} onClick={()=>openDetail(v.id,'connections')}>단말 연결</button><button type="button" className="fleet-assets-edit-button" aria-label={`${fleetAssetLabel(v)} 수정`} title="차량 정보 수정" onClick={()=>setEdit(v)}><Icon name="edit" size={16}/></button></div>:<span className="fleet-assets-row-arrow" aria-hidden="true"><Icon name="chevron-right" size={16}/></span>}</td>
       </tr>)}</tbody></table></div>{empty}
-      <footer className="fleet-assets-footer"><span role="status">{countLabel}</span><select aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}>{sortOptions}</select></footer>
+      </>}
+      <footer className="fleet-assets-footer"><span role="status">{countLabel}</span></footer>
     </section>
     </div>
     </DirectoryLayout></>}

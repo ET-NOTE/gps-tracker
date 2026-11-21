@@ -3,6 +3,7 @@
 // 새 아이콘 추가하려면 PATHS 에 path d만 넣으면 됨 (24x24 viewBox).
 
 const PATHS = {
+  grid: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
   bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9M10 20a2 2 0 0 0 4 0',
   menu: 'M3 5h18M3 12h18M3 19h18',
   calendar: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM16 3v4M8 3v4M3 11h18M8 15h2M14 15h2',

@@ -15,8 +15,8 @@ export function mapCacheNotice(sources, selected) {
   return null;
 }
 
-export default function MapTopOverlay({ devices, selected, onSelect, onPair, mapRef, onOpenRoadview,
-  showSpeed, liveSpeed, now, historyMode = false, cachedSources = {}, children }) {
+export default function MapTopOverlay({ devices, selected, onSelect, onPair, mapRef, onOpenRoadview, externalControls = false,
+  showSpeed, liveSpeed, now, historyMode = false, following = false, cachedSources = {}, children }) {
   const clock = useVisibleNow(now == null && showSpeed && selected != null);
   now = now ?? clock;
   const device = devices.find(d => d.id === selected);
@@ -43,12 +43,12 @@ export default function MapTopOverlay({ devices, selected, onSelect, onPair, map
             <span className="map-live-state" data-moving={motion.moving}>{motion.label}</span>
             <span className="map-live-age">{ageText ? `위치 ${ageText}` : '위치 수신 전'}</span>
           </div>
-        </div> : device && <div className="map-view-mode">{historyMode ? '이동 기록 보기' : '지도 탐색 중 · 자동 추적 꺼짐'}</div>}
-        {device?.license_plate && <div className="map-live-plate">{device.license_plate}</div>}
+        </div> : device && <div className="map-view-mode">{historyMode ? '이동 기록 보기' : following ? '단말기 위치를 따라갑니다.' : '지도 탐색 중 · 자동 추적 꺼짐'}{externalControls && device.license_plate && <span> · {device.license_plate}</span>}</div>}
+        {device?.license_plate && (!externalControls || showSpeed) && <div className="map-live-plate">{device.license_plate}</div>}
       </div>}
       {notice && <div className="map-cache-notice" role="status">{notice}</div>}
       {children}
     </div>
-    <MapControls mapRef={mapRef} selected={selected} onOpenRoadview={onOpenRoadview} />
+    {!externalControls && <MapControls mapRef={mapRef} selected={selected} onOpenRoadview={onOpenRoadview}/>}
   </div>;
 }

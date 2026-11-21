@@ -2,9 +2,15 @@ import { businessServices } from '../../lib/platformNavigation.js';
 export { ownerServices } from '../../lib/platformNavigation.js';
 
 export const SERVICES = [
-  { key: 'corporate_fleet', view: 'corporate', path: businessServices.corporate_fleet, label: '법인운행', icon: 'car', description: '업무용 차량의 예약, 운행기록부와 지출을 관리합니다.', features: ['차량·사용자 관리', '차량 예약', '운행기록부·지출'] },
-  { key: 'rentcar', view: 'rentcar', path: businessServices.rentcar, label: '렌트카 운영', icon: 'calendar', description: '예약과 배차부터 차량 출고, 반납, 정산까지 관리합니다.', features: ['예약·배차', '대여·반납', '고객·요금 관리'] },
-  { key: 'delivery', view: 'delivery', path: businessServices.delivery, label: '화물배차', icon: 'truck', description: '화물 오더, 차량 배차와 운송 진행 상황을 확인합니다.', features: ['오더·배차', '운송 관제', '거래처·정산'] },
+  { key: 'corporate_fleet', view: 'corporate', path: businessServices.corporate_fleet, label: '법인운행', icon: 'car',
+    description: '회사 차량의 예약과 운행, 비용을 함께 관리하세요.', tags: ['차량 예약','운행일지','지출 관리'],
+    features: ['운영현황과 실시간 관제', '차량·운전자와 단말기 연결', '차량 예약과 운행 목적', '운행일지와 지출 승인', '회사 구성원·조직·권한 관리'] },
+  { key: 'rentcar', view: 'rentcar', path: businessServices.rentcar, label: '렌트카 운영', icon: 'calendar',
+    description: '예약부터 계약, 출고와 반납까지 한곳에서 확인하세요.', tags: ['대여 계약','출고·반납','대여 정산'],
+    features: ['예약과 차량 가용 현황', '대여 계약과 고객 정보', '차량 출고·반납 점검', '대여 요금과 정산', '차량 위치와 정비 관리'] },
+  { key: 'delivery', view: 'delivery', path: businessServices.delivery, label: '화물배차', icon: 'truck',
+    description: '화물 주문과 배차, 운송 진행 상황을 확인하세요.', tags: ['주문·배차','실시간 관제','운임 정산'],
+    features: ['화물 주문과 배차 계획', '기사·차량과 운송사 관리', '실시간 운송 관제', '상·하차와 인수증 확인', '운임·운송료 정산'] },
 ];
 
 export const CORE_LINKS = [

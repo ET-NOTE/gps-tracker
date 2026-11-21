@@ -18,9 +18,12 @@ export default function MapDeviceCard({vehicles, device, meta, onDetail, onList}
   }
   const status = classifyDevice(device, meta, now);
   const battery = deviceBattery(device, meta);
+  const positioned = device.last_fix_at && device.last_lat != null && device.last_lng != null;
+  const kind = device.license_plate || device.car_plate || device.device_uid;
   return <section className="pt-position-card" aria-label="선택한 단말기">
-    <header><Icon name="antenna" size={18}/><strong>{terminalName(device)}</strong><span className="pt-state" style={{color:status.color, background:status.background}}>{status.label}</span></header>
-    <dl><div><dt>최근 위치</dt><dd><DeviceReadingTime value={device.last_fix_at}/></dd></div><div><dt>최근 통신</dt><dd><DeviceReadingTime value={device.last_seen_at}/></dd></div><div><dt>배터리</dt><dd>{battery.percent == null ? '미수신' : '약 ' + battery.percent + '%'}</dd></div></dl>
-    <button type="button" onClick={() => onDetail(device.id)}>상세 보기<Icon name="chevron-right" size={14}/></button>
+    <header><span className="pt-position-icon"><Icon name={device.license_plate ? 'car' : 'antenna'} size={19}/></span><div className="pt-position-name"><button type="button" onClick={() => onDetail(device.id)}>{terminalName(device)}</button>{kind && kind !== terminalName(device) && <small>{kind}</small>}</div><span className="pt-state" style={{color:status.color, background:status.background}}>{status.label}</span></header>
+    <p className="pt-position-line"><Icon name="mapPin" size={15}/>{positioned ? '마지막 수신 위치' : '위치 수신 대기'}</p>
+    <dl><div><dt>최근 위치</dt><dd><DeviceReadingTime shortFor={now} value={positioned ? device.last_fix_at : null}/></dd></div><div><dt>최근 통신</dt><dd><DeviceReadingTime shortFor={now} value={device.last_seen_at}/></dd></div><div><dt>배터리</dt><dd>{battery.percent == null ? '미수신' : '약 ' + battery.percent + '%'}</dd></div></dl>
+    <footer><span>{positioned ? '마지막 수신 위치 기준' : '첫 위치 수신 대기'}</span><button type="button" onClick={() => onDetail(device.id)}>상세 보기</button></footer>
   </section>;
 }

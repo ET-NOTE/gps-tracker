@@ -53,7 +53,8 @@ export default function FreightOrderForm({data,row,recurring=false,onClose,commi
       }
     });
   }
-  return <FreightForm title={(recurring?'정기 주문':'운송 주문')+(row?' 수정':' 등록')} onClose={onClose} onSubmit={submit}>
+  return <FreightForm title={(recurring?'정기 주문':'운송 주문')+(row?' 수정':' 등록')} size={720}
+    subtitle="상하차 일정, 화물 조건과 합의 운임을 입력합니다." onClose={onClose} onSubmit={submit}>
     {!!prerequisites.length&&<div className="fr-note">주문에 필요한 항목을 먼저 등록해 주세요. <div className="fr-actions">{prerequisites.map(([,label,page])=><FreightButton key={page} onClick={()=>onPage(page)}>{label} 관리</FreightButton>)}</div></div>}
     {recurring?<FreightField label="정기 주문명" wide><input required maxLength={100} {...bind('name')}/></FreightField>:<FreightField label="화주 주문번호" wide><input maxLength={80} placeholder="선택 입력" {...bind('externalRef')}/></FreightField>}
     <FreightField label="화주"><select required {...bind('shipperId')}><FreightOptions rows={data.shippers.filter(s=>s.active!==false)} blank="화주 선택"/></select></FreightField>

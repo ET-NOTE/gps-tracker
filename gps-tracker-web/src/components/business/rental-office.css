@@ -20,6 +20,19 @@
 .ro-toolbar{padding:14px 18px;justify-content:space-between}
 .ro-toolbar>div{display:flex;gap:8px;align-items:center}
 .ro-toolbar>strong{font-size:15px}
+.ro-section-heading,.ro-refund-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.ro-section-heading{padding:18px 20px}
+.ro-section-heading h2{margin:0;font:inherit;font-size:16px;font-weight:600;color:var(--text,#253347)}
+.ro-section-heading p,.ro-section-heading>span,.ro-refund-actions>span{margin:3px 0 0;color:var(--text-2,#526278);font-size:12px}
+.ro-section-heading>span{white-space:nowrap}
+.ro-refund-actions,.ro-refund-actions>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ro-contract-link{display:grid;gap:2px;padding:0;background:none;border:0;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.ro-contract-link:hover strong,.ro-contract-link:focus-visible strong{color:var(--primary,#2476c7);text-decoration:underline}
+.ro-contract-link span{color:var(--text-2,#526278);font-size:12px}
+.ro-cost-details{display:grid;margin:0}
+.ro-cost-details>div{display:grid;grid-template-columns:minmax(80px,28%) 1fr;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border,#dfe4ec)}
+.ro-cost-details dt{color:var(--text-2,#526278)}
+.ro-cost-details dd{margin:0;overflow-wrap:anywhere}
 .ro-table-box{max-width:100%;overflow:auto;border-radius:0 0 12px 12px}
 .ro-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto}
 .ro-table th,.ro-table td{padding:12px 14px;text-align:left;line-height:1.6;border-top:1px solid var(--border,#e4e8ef);overflow-wrap:anywhere}

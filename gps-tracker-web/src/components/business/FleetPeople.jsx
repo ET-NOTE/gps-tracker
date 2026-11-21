@@ -1,5 +1,6 @@
 import React,{useState} from 'react';
 import FleetStaffImport from './FleetStaffImport';
+import {DirectoryGroups} from './DirectoryLayout';
 import FleetPermissionGroups from './FleetPermissionGroups';
 import {fleetAssetLabel} from '../../lib/fleetAssets';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -12,9 +13,7 @@ import {useFleetAccess,useFleetOrganization,fleetRoles} from './FleetAccess';
 import {useFleetAssets} from './FleetAssets';
 import {kstDateTime} from '../../lib/businessExport';
 import Icon from '../Icon';
-import {DirectoryLayout,DirectoryGroups} from './DirectoryLayout';
 import useCorporatePhone from '../../useCorporatePhone';
-import MobileFleetDirectory from './MobileFleetDirectory';
 import './fleet-people-cartax.css';
 import './fleet-administration.css';
 
@@ -48,32 +47,31 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
  return <div className="fleet-team fleet-people-cartax">
   {!hideNavigation&&<div className="business-switch"><button className="business-switch-item" aria-pressed={tab==='users'} onClick={()=>setTab('users')}>사용자 목록</button><button className="business-switch-item" aria-pressed={tab==='organization'} onClick={()=>setTab('organization')}>부서·직책</button><button className="business-switch-item" aria-pressed={tab==='permissions'} onClick={()=>setTab('permissions')}>권한 관리</button>{access.manage_team&&<button className="business-switch-item" aria-pressed={tab==='audit'} onClick={()=>setTab('audit')}>변경 이력</button>}</div>}
   {error&&<BusinessError>{error}</BusinessError>}
-  {tab==='users'&&mobile&&<MobileFleetDirectory label="사용자 목록" filterLabel="필터" filterActive={Boolean(department||roleFilter)||status!=='all'}
-    searchLabel="사용자 검색" placeholder="이름, 부서, 연락처 검색" query={query} onQuery={setQuery}
-    count={ready?`총 ${rows.length}명`:staff.error?'사용자 수 확인 불가':'사용자 조회 중'} createLabel="사용자 등록" onCreate={access.manage_team?()=>setEdit({}):null}
-    filters={<>
-      <label>부서<select value={department} onChange={e=>setDepartment(e.target.value)}>
-        {departmentItems.map(i=><option key={i.id} value={i.id}>{i.label} ({i.count??'—'})</option>)}
-      </select></label>
-      <label>사용자 상태<select value={status} onChange={e=>setStatus(e.target.value)}>
-        {[['all','전체'],['active','활성'],['inactive','비활성']].map(([key,label])=><option key={key} value={key}>{label} ({ready?matches.filter(s=>key==='all'||Boolean(s.active)===(key==='active')).length:'—'})</option>)}
-      </select></label>
-      <label>권한{roleSelect}</label>
-      {org.error&&<BusinessError onRetry={org.refetch}>부서 목록을 불러오지 못했습니다.</BusinessError>}
-      {access.manage_team&&<>
-        <button className="business-button" type="button" onClick={()=>setTab('organization')}>부서·직책 관리</button>
-        <button className="business-button" type="button" onClick={()=>setImporting(true)}>CSV 일괄 등록</button>
-      </>}
-    </>}>
+  {tab==='users'&&<>
+   <div className="fleet-record-toolbar fleet-people-filters" aria-label="사용자 조회 조건">
+    <div className="fleet-record-query">
+     <label className="fleet-inline-search"><Icon name="search" size={15}/><input type="search" aria-label="사용자 검색" placeholder="이름, 이메일 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+     <select aria-label="사용자 부서" value={department} onChange={e=>setDepartment(e.target.value)}>{departmentItems.map(i=><option key={i.id} value={i.id}>{i.id?i.label:'전체 부서'}</option>)}</select>
+     <select aria-label="사용자 상태" value={status} onChange={e=>setStatus(e.target.value)}>{[['all','전체 상태'],['active','활성'],['inactive','비활성']].map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>{roleSelect}
+    </div>
+    {access.manage_team&&<div className="fleet-record-actions"><button type="button" className="business-button" onClick={()=>setImporting(true)}>CSV 일괄 등록</button><button type="button" className="business-button is-primary" onClick={()=>setEdit({})}><Icon name="plus" size={15}/>사용자 등록</button></div>}
+   </div>
+
+   <section className="fleet-people-ledger" aria-label="사용자 목록">
+    <header className="fleet-member-recordhead"><h2>사용자 <small>{ready?rows.length:'—'}명</small></h2>{access.manage_team&&<button type="button" className="business-button" aria-label="부서·직책 관리" onClick={()=>setTab('organization')}>부서·직책 관리</button>}</header>
+    {mobile?<>
     {staff.error?<BusinessError onRetry={staff.refetch}/>:staff.isPending?<p className="fleet-team-empty">사용자를 불러오는 중…</p>:rows.length?
-      <ul className="mobile-fleet-rows">{rows.map(s=><li key={s.id}><details className="mobile-person">
+      <div className="fleet-mobile-people-scroll" role="region" aria-label="사용자 목록 · 좌우 스크롤" tabIndex={0}>
+       <div className="fleet-people-columns" aria-hidden="true"><span>사용자</span><span>부서 · 직책</span><span>권한</span><span>상태</span></div>
+       <ul className="mobile-fleet-rows">{rows.map(s=><li key={s.id}><details className="mobile-person">
         <summary className="mobile-fleet-row" aria-label={`${s.name} 상세`}>
           <span className="mobile-fleet-row-main">
             <strong className="mobile-fleet-row-title">{s.name}</strong>
-            <span className="mobile-fleet-row-copy">{[s.department,s.position].filter(Boolean).join(' / ')||'부서·직책 미지정'}</span>
+            {s.account_email&&<span className="mobile-fleet-row-copy">{s.account_email}</span>}
           </span>
-          {!s.active?<span className="mobile-fleet-pill">비활성</span>:s.access_role&&s.access_role!=='member'&&<span className="mobile-fleet-pill is-primary">{fleetRoles[s.access_role]||'일반 사용자'}</span>}
-          <span className="mobile-fleet-row-chevron" aria-hidden="true"><Icon name="chevron-right" size={19}/></span>
+          <span>{[s.department,s.position].filter(Boolean).join(' / ')||'미지정'}</span>
+          <span>{fleetRoles[s.access_role]||'일반 사용자'}</span>
+          <span className={`mobile-fleet-pill ${s.active?'is-primary':''}`}>{s.active?'활성':'비활성'}</span>
         </summary>
         <div className="mobile-person-details">
           <dl>
@@ -87,20 +85,18 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
           </dl>
           {editable(s)&&personActions(s)}
         </div>
-      </details></li>)}</ul>:<p className="fleet-team-empty">{staff.data?.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}
-    {invitePanel}
-  </MobileFleetDirectory>}
-  {tab==='users'&&!mobile&&<DirectoryLayout filterLabel={'부서 · '+(departmentItems.find(d=>d.id===department)?.label||'전체 보기')} sidebar={<DirectoryGroups title="부서" aria-label="사용자 부서" items={departmentItems} value={status==='inactive'&&!department?'__inactive':department} onChange={value=>{setDepartment(String(value));if(!value)setStatus('all');}} action={access.manage_team&&<button type="button" className="business-button" aria-label="부서·직책 관리" onClick={()=>setTab('organization')}>관리</button>} footer={<>{org.error?<BusinessError onRetry={org.refetch}>부서 목록을 불러오지 못했습니다.</BusinessError>:org.isPending&&<p role="status">부서 불러오는 중…</p>}<button type="button" className="fleet-directory-footer-action" aria-pressed={status==='inactive'&&!department} onClick={()=>{setDepartment('');setStatus('inactive');}}><span>비활성 사용자</span><span className="fleet-directory-group-count">{ready?searched.filter(s=>!s.active).length:'—'}</span></button></>}/>}>
-   <section className="fleet-people-controls" aria-label="사용자 조회 조건">
-    <div className="fleet-people-control-row"><div className="fleet-people-query"><label className="fleet-people-search"><Icon name="search" size={15}/><input type="search" aria-label="사용자 검색" placeholder="이름, 부서, 연락처 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>{roleSelect}</div>{access.manage_team&&<div className="fleet-people-toolbar-actions"><button className="business-button" onClick={()=>setImporting(true)}>CSV 일괄 등록</button><button className="business-button is-primary" onClick={()=>setEdit({})}>+ 사용자 등록</button></div>}</div>
-    <div className="fleet-people-control-row"><div className="fleet-people-status-tabs" aria-label="사용자 상태">{[['all','전체'],['active','활성'],['inactive','비활성']].map(([key,label])=><button type="button" className="fleet-people-status-tab" key={key} aria-pressed={status===key} onClick={()=>setStatus(key)}>{label} ({ready?matches.filter(s=>key==='all'||Boolean(s.active)===(key==='active')).length:'—'})</button>)}</div><span className="fleet-people-result-count">{ready?`${rows.length}명`:'—'}</span></div>
-   </section>
-   <section className="fleet-people-ledger" aria-label="사용자 목록">
+      </details></li>)}</ul></div>:<p className="fleet-team-empty">{staff.data?.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}
+    </>:<>
    {staff.error?<BusinessError onRetry={staff.refetch}/>:staff.isPending?<p className="fleet-team-empty">사용자를 불러오는 중…</p>:<div className="fleet-asset-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="fleet-asset-table fleet-people-table"><thead><tr>{['이름','부서·직책','연락처','권한','운행 가능 차량','계정 연결','등록일','상태','관리'].map(v=><th scope="col" key={v}>{v}</th>)}</tr></thead><tbody>{rows.map(s=><tr key={s.id}><td>{editable(s)?<button type="button" className="fleet-people-name" disabled={busy} onClick={()=>setEdit(s)}>{s.name}</button>:<strong>{s.name}</strong>}{s.role&&<small>{s.role}</small>}</td><td>{s.department||'—'}<small>{s.position||'—'}</small></td><td>{s.phone||'—'}</td><td>{fleetRoles[s.access_role]||'일반 사용자'}{s.permission_group_id!=null&&<small>맞춤 그룹 적용</small>}</td><td><PersonVehicles person={s} vehicles={vehicles}/></td><td>{s.account_id?<><span className="business-badge good">연결됨</span>{s.account_email&&<small className="fleet-people-account-email" title={s.account_email}>{s.account_email}</small>}</>:<span className="business-note">미연결</span>}</td><td>{kstDateTime(s.created_at).slice(0,10)}</td><td><span className={`business-badge ${s.active?'good':''}`}>{s.active?'활성':'비활성'}</span></td><td>{editable(s)&&<details className="fleet-people-row-menu"><summary aria-label={`${s.name} 관리`}>관리</summary>{personActions(s)}</details>}</td></tr>)}</tbody></table>{!rows.length&&<p className="fleet-team-empty">{staff.data?.length?'조건에 맞는 사용자가 없습니다.':'등록된 사용자가 없습니다.'}</p>}</div>}
-   {ready&&<footer className="fleet-people-footer">총 {rows.length}명</footer>}
+    </>}
    </section>
+   <details className="fleet-people-invites fleet-people-scopes">
+    <summary>부서별 사용자 현황</summary>
+    <div className="fleet-people-status-tabs" aria-label="사용자 상태">{[['all','전체'],['active','활성'],['inactive','비활성']].map(([key,label])=><button type="button" className="fleet-people-status-tab" key={key} aria-pressed={status===key} onClick={()=>setStatus(key)}>{label} ({ready?matches.filter(s=>key==='all'||Boolean(s.active)===(key==='active')).length:'—'})</button>)}</div>
+    <DirectoryGroups title="부서" aria-label="사용자 부서" items={departmentItems} value={status==='inactive'&&!department?'__inactive':department} onChange={value=>{setDepartment(String(value));if(!value)setStatus('all');}} footer={<>{org.error?<BusinessError onRetry={org.refetch}>부서 목록을 불러오지 못했습니다.</BusinessError>:org.isPending&&<p role="status">부서 불러오는 중…</p>}<button type="button" className="fleet-directory-footer-action" aria-pressed={status==='inactive'&&!department} onClick={()=>{setDepartment('');setStatus('inactive');}}><span>비활성 사용자</span><span className="fleet-directory-group-count">{ready?searched.filter(s=>!s.active).length:'—'}</span></button></>}/>
+   </details>
    {invitePanel}
-  </DirectoryLayout>}
+  </>}
   {tab==='organization'&&(org.error?<BusinessError onRetry={org.refetch}/>:org.isPending?<p className="fleet-team-empty">부서·직책을 불러오는 중…</p>:<div className="fleet-org-grid">{[['department','부서'],['position','직책']].map(([kind,label])=>{const items=(org.data||[]).filter(i=>i.kind===kind);return <section className="fleet-org-section" key={kind} aria-label={label+' 관리'}><header><h3>{label}<span>{items.length}</span></h3>{access.manage_team&&<button type="button" className="business-button" aria-label={label+' 추가'} onClick={()=>setItem({kind,name:'',active:true})}>+ 추가</button>}</header><table className="fleet-org-table" aria-label={label+' 목록'}><thead><tr><th scope="col">{label}명</th><th scope="col">상태</th>{access.manage_team&&<th scope="col">관리</th>}</tr></thead><tbody>{items.map(i=><tr key={i.id}><td>{i.name}</td><td><span className={'business-badge '+(i.active?'good':'')}>{i.active?'사용 중':'사용 중지'}</span></td>{access.manage_team&&<td><button type="button" className="business-button" aria-label={i.name+' '+label+' 수정'} onClick={()=>setItem(i)}>수정</button></td>}</tr>)}</tbody></table>{!items.length&&<p className="fleet-team-empty">등록된 {label}{kind==='position'?'이':'가'} 없습니다.</p>}</section>;})}</div>)}
   {tab==='permissions'&&<>
     <RoleAccess access={access} onMembers={role=>{setRoleFilter(role);setDepartment('');setStatus('all');setQuery('');setTab('users');}}/>

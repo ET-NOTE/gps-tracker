@@ -29,7 +29,7 @@ export function FreightForm({title,subtitle,onClose,onSubmit,submitLabel='저장
   </Modal>;
 }
 export function FreightStats({items}){
-  return <dl className="fr-stats">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
+  return <dl className="fr-stats">{items.map(([label,value,note])=><div key={label}><dt>{label}</dt><dd>{value}{note&&<small className="fr-metric-note">{note}</small>}</dd></div>)}</dl>;
 }
 export function FreightBadge({children,tone='neutral'}) {
   return <span className={'fr-badge is-'+tone}>{children}</span>;
@@ -43,16 +43,16 @@ export function FreightDrawer({title,subtitle,onClose,footer,children}) {
   </BusinessDrawer>;
 }
 export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.'}){
-  return <div className="fr-list"><table className="fr-table"><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead>
+  return <div className="fr-list" role="region" aria-label={columns[0]+'별 목록'} tabIndex={0}><table className="fr-table"><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead>
     <tbody>{rows.map(({id,cells,onOpen})=><tr key={id} className={onOpen?'fr-open-row':undefined} onClick={onOpen?event=>{
       if(!event.target.closest('button,a,input,select,textarea,label')&&!window.getSelection()?.toString())onOpen();
     }:undefined}>{cells.map((cell,i)=><td data-label={columns[i]} key={columns[i]}>{cell}</td>)}</tr>)}</tbody></table>
     {!rows.length&&<p className="fr-empty">{empty}</p>}
   </div>;
 }
-export function FreightFilters({query,onQuery,placeholder,children}){
+export function FreightFilters({query,onQuery,placeholder,children,onReset}){
   return <div className="fr-filters">{children}<FreightField label="검색" wide>
-    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField></div>;
+    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton onClick={onReset}>조회 조건 초기화</FreightButton>}</div>;
 }
 export function FreightOptions({rows,blank,label='name'}){
   return <>{blank!==undefined&&<option value="">{blank}</option>}{rows.map(r=><option key={r.id} value={r.id}>{r[label]||r.id}</option>)}</>;

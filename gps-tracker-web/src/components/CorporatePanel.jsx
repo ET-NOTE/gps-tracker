@@ -53,6 +53,7 @@ import './business/corporate-trips-cartax.css';
 import './business/directory-layout.css';
 import './business/fleet-design-shell.css';
 import './business/fleet-member.css';
+import './business/fleet-reference-records.css';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -913,7 +914,7 @@ function bookingPurpose(row) {
 }
 function ReservationsTab({ devices, request,requestsOnly=false }) {
   const access=useFleetAccess(),canWrite=access.write_reservations!==false;
-  const [statusFilter, setStatusFilter] = useState(requestsOnly?'pending':'active');
+  const [statusFilter, setStatusFilter] = useState(requestsOnly?'pending':'all');
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(null);   // null | 'new' | {id, ...} | {new: 'YYYY-MM-DD'}
   useEffect(() => { if (request?.new&&canWrite) setEditing({new:true,vehicleId:request.vehicleId}); else if (request?.reservation) setEditing(request.reservation); }, [request,canWrite]);
@@ -924,10 +925,11 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const [calYm, setCalYm] = useState(() => businessDate().slice(0, 7));
   const [week,setWeek] = useState(()=>bookingWeekStart(reservationDay));
   const [dates,setDates] = useState(()=>({from:shiftBookingDay(reservationDay,-7),to:shiftBookingDay(reservationDay,60)}));
-  const compactFilters=useCorporatePhone('navigation');
-  const [filtersOpen,setFiltersOpen] = useState(()=>!compactFilters);
+  const [filtersOpen,setFiltersOpen] = useState(true);
   const [vehicleFilter,setVehicleFilter] = useState('');
   const [driverFilter,setDriverFilter] = useState('');
+  const [driverDepartment,setDriverDepartment]=useState('');
+  const [purposeFilter,setPurposeFilter]=useState('');
   const rangeDays=(Date.parse(dates.to)-Date.parse(dates.from))/86400_000;
   const invalidPeriod=viewMode==='list'&&(!Number.isFinite(rangeDays)||rangeDays<0||rangeDays>=366);
 
@@ -966,7 +968,11 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
     return { from, to };
   }, [viewMode, calYm, week, dates, invalidPeriod]);
   const { data: allReservations, isLoading: loading, error: qError, refetch } = useReservations(resvParams, {enabled:!invalidPeriod,refetchInterval: 60_000});
+  const driverDepartments=useMemo(()=>new Map((staffAll||[]).map(person=>[person.id,person.department||''])),[staffAll]);
+  const departmentOptions=[...new Set(driverDepartments.values())].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
+  const purposeOptions=[...new Set((allReservations||[]).map(bookingPurpose))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
   const searched = allReservations?.filter(r => (!requestsOnly||(r.approval_required&&r.can_review))&&(!vehicleFilter||String(r.vehicle_id)===vehicleFilter) &&
+    (!driverDepartment||driverDepartments.get(r.driver_staff_id)===driverDepartment) && (!purposeFilter||bookingPurpose(r)===purposeFilter) &&
     (!driverFilter||(driverFilter==='unassigned'?r.driver_staff_id==null:String(r.driver_staff_id)===driverFilter)) &&
     [r.vehicle_name,r.device_name,r.license_plate,r.driver_name,bookingPurpose(r),r.note].join(' ').toLocaleLowerCase('ko-KR').includes(query.trim().toLocaleLowerCase('ko-KR')));
   const list = searched?.filter(r => viewMode !== 'list' || statusFilter === 'all' || (statusFilter === 'active' ? ['planned', 'in_progress'].includes(r.status) : r.status === statusFilter));
@@ -991,38 +997,39 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
         {name:'오늘 이용',value:shown&&bookingsOn(shown,reservationDay).filter(r=>['planned','in_progress','completed'].includes(r.status)).length,unit:'건',tone:'blue'},
         {name:'이용 완료',value:shown?.filter(r=>r.status==='completed').length,unit:'건',tone:'green'},
       ]}/>
-      <div className="corporate-reservation-tools">
-        <div className="corporate-reservation-tool-row">
+      <div className="fleet-booking-query">
+        <div className="fleet-record-toolbar">
           {!requestsOnly&&<div className="corporate-view-switch" role="group" aria-label="예약 보기 방식">
             <button type="button" className="corporate-view-option" aria-pressed={viewMode==='list'} onClick={()=>setViewPersist('list')}><Icon name="list" size={16}/>예약 목록</button>
             <button type="button" className="corporate-view-option" aria-pressed={viewMode==='week'} onClick={()=>setViewPersist('week')}>주간 일정</button>
             <button type="button" className="corporate-view-option" aria-pressed={viewMode==='calendar'} onClick={()=>setViewPersist('calendar')}><Icon name="clock" size={16}/>캘린더</button>
           </div>}
-          <label className="corporate-reservation-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량·운전자·목적 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-          <BusinessButton icon="filter" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>필터{(vehicleFilter||driverFilter)&&' · 적용 중'}</BusinessButton>
-          {viewMode==='calendar' && <input className="corporate-reservation-month" type="month" aria-label="예약 조회 월" value={calYm} onChange={e=>setCalYm(e.target.value||calYm)}/>}
+          <div className="fleet-record-actions">{viewMode==='calendar' && <input className="corporate-reservation-month" type="month" aria-label="예약 조회 월" value={calYm} onChange={e=>setCalYm(e.target.value||calYm)}/>}
           <ExportButtons csvOnly report={report} disabled={!shown?.length}/>
-          {canWrite&&!requestsOnly&&<BusinessButton primary icon="plus" onClick={()=>setEditing('new')}>새 예약</BusinessButton>}
+          {canWrite&&!requestsOnly&&<BusinessButton primary icon="plus" onClick={()=>setEditing('new')}>새 예약</BusinessButton>}</div>
         </div>
-        <div className="corporate-reservation-tool-row">
-          {viewMode==='list' ? <div className="corporate-reservation-status" role="group" aria-label="예약 상태 필터">
-            {[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active','예정·진행',activeCount],['completed','완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled','취소',cancelledCount]].map(([value,label,count])=><button type="button" className="corporate-status-option" key={value} aria-pressed={statusFilter===value} onClick={()=>setStatusFilter(value)}>{label} <span>({known?count:'—'})</span></button>)}
-          </div> : null}
-          {viewMode==='list'&&<span className="corporate-reservation-hint">{dates.from} ~ {dates.to}</span>}
-        </div>
-        {filtersOpen&&<div className="fleet-booking-filters">
-          {viewMode==='list'&&<><label>시작일<input type="date" value={dates.from} max={dates.to} onChange={e=>setDates({...dates,from:e.target.value})}/></label><label>종료일<input type="date" value={dates.to} min={dates.from} onChange={e=>setDates({...dates,to:e.target.value})}/></label></>}
+        {filtersOpen&&<div className="fleet-record-fields fleet-booking-query-fields">
+          {viewMode==='list'&&<div className="fleet-date-field"><span>이용 기간</span><div>
+            <label className="fleet-date-endpoint"><span>시작일</span><input type="date" aria-label="예약 조회 시작일" value={dates.from} max={dates.to} onChange={e=>setDates({...dates,from:e.target.value})}/></label><span aria-hidden="true">~</span>
+            <label className="fleet-date-endpoint"><span>종료일</span><input type="date" aria-label="예약 조회 종료일" value={dates.to} min={dates.from} onChange={e=>setDates({...dates,to:e.target.value})}/></label>
+          </div></div>}
+          {viewMode==='list'&&<label>예약 상태<select aria-label="예약 상태 필터" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active','예정·진행',activeCount],['completed','완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled','취소',cancelledCount]].map(([value,label,count])=><option key={value} value={value}>{label} ({known?count:'—'})</option>)}</select></label>}
           <label>차량<select value={vehicleFilter} onChange={e=>setVehicleFilter(e.target.value)}><option value="">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{reportVehicleLabel(d)}</option>)}</select></label>
           <label>운전자<select value={driverFilter} onChange={e=>setDriverFilter(e.target.value)}><option value="">전체 운전자</option><option value="unassigned">미지정</option>{staffAll?.map(s=><option value={s.id} key={s.id}>{s.name}{s.active===false?' (비활성)':''}</option>)}</select></label>
-          <BusinessButton onClick={()=>{setVehicleFilter('');setDriverFilter('');setQuery('');if(viewMode==='list')setDates({from:shiftBookingDay(reservationDay,-7),to:shiftBookingDay(reservationDay,60)});}}>필터 초기화</BusinessButton>
+          <label>운전자 부서<select value={driverDepartment} onChange={e=>setDriverDepartment(e.target.value)}><option value="">전체 부서</option>{departmentOptions.map(name=><option key={name}>{name}</option>)}</select></label>
+          <label>운행목적<select value={purposeFilter} onChange={e=>setPurposeFilter(e.target.value)}><option value="">전체 운행목적</option>{purposeOptions.includes(purposeFilter)||!purposeFilter?null:<option>{purposeFilter}</option>}{purposeOptions.map(name=><option key={name}>{name}</option>)}</select></label>
         </div>}
+        <div className="fleet-record-filterfoot"><label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량·운전자·목적 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label><div>
+          <BusinessButton icon="filter" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>필터</BusinessButton>
+          <BusinessButton onClick={()=>{setVehicleFilter('');setDriverFilter('');setDriverDepartment('');setPurposeFilter('');setQuery('');setStatusFilter(requestsOnly?'pending':'all');if(viewMode==='list')setDates({from:shiftBookingDay(reservationDay,-7),to:shiftBookingDay(reservationDay,60)});}}>필터 초기화</BusinessButton>
+        </div></div>
       </div>
       {error && <BusinessError onRetry={refetch}>예약 정보를 불러오지 못했습니다.</BusinessError>}
       {loading && !list && !invalidPeriod && <SkeletonList count={3} itemHeight={64}/>}
       {invalidPeriod&&<BusinessError>시작일과 종료일을 1년 이내로 선택해 주세요.</BusinessError>}
       {!error && !invalidPeriod && viewMode==='list' && list && <section className="corporate-reservation-ledger">
         <div className="corporate-reservation-scroll" role="region" aria-label="차량 예약 목록 · 좌우 스크롤" tabIndex={0}>
-          <table className="corporate-reservation-table"><thead><tr><th scope="col">상태</th><th scope="col">차량</th><th scope="col">사용자</th><th scope="col">시작 일시</th><th scope="col">종료 일시</th><th scope="col">목적·메모</th><th scope="col">관리</th></tr></thead>
+          <table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">목적·메모</th><th scope="col">상태</th><th scope="col">관리</th></tr></thead>
             <tbody>{list.map(r=><ReservationRow key={r.id} r={r} readOnly={!canWrite||r.can_edit===false} onEdit={()=>setEditing(r)} onDelete={()=>cancelBooking(r)}/>)}</tbody>
           </table>
           {!list.length&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
@@ -1066,10 +1073,10 @@ function ReservationRow({r,onEdit,onDelete,readOnly=false}) {
   const imminent=r.status==='planned'&&untilStart>=0&&untilStart<=60;
   const returning=r.status==='in_progress'&&untilEnd>=0&&untilEnd<=60;
   return <tr>
-    <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
     <td data-label="차량"><strong>{r.vehicle_name||r.device_name||'차량'}</strong>{r.license_plate&&<small>{r.license_plate}</small>}</td>
-    <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="시작">{kstDateTime(r.starts_at)}</td><td data-label="종료">{kstDateTime(r.ends_at)}</td>
+    <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></td>
     <td data-label="목적·메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
+    <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
     <td><div className="corporate-reservation-row-actions"><BusinessButton onClick={onEdit} aria-label={`예약 ${r.id} ${detailsOnly?'상세':'상세·수정'}`}>{detailsOnly?'상세':'상세·수정'}</BusinessButton>{!readOnly&&!['cancelled','rejected'].includes(r.status)&&<BusinessButton onClick={onDelete} aria-label={`예약 ${r.id} 취소`}>취소</BusinessButton>}</div></td>
   </tr>;
 }

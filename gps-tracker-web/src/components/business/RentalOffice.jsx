@@ -25,5 +25,5 @@ export default function RentalOffice({page,devices=[]}) {
   const issue=!periodOk(period)?<p className="ro-error" role="alert">조회 시작일과 종료일을 1년 이내로 선택해 주세요.</p>:
       book.isError?fail(book):kind==='payments'&&catalog.isError?fail(catalog):!book.data||(kind==='payments'&&!catalog.data)?loading:null;
   return <div className="rental-office" aria-busy={book.isFetching}>{issue?<><div className="ro-filters">{dates}</div>{issue}</>:
-    <RentalOfficeBook key={kind} kind={kind} period={period} dates={dates} pending={book.isPlaceholderData} book={book.data} devices={devices} catalog={catalog.data||{accounts:[],customers:[]}}/>}</div>;
+    <RentalOfficeBook key={kind} kind={kind} period={period} dates={dates} onResetPeriod={()=>setPeriod(initialPeriod())} pending={book.isPlaceholderData} book={book.data} devices={devices} catalog={catalog.data||{accounts:[],customers:[]}}/>}</div>;
 }

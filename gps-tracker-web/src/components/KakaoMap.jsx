@@ -1426,9 +1426,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
     drawGeofence(geofenceId, lat, lng, radius, name = '', inside = false) {
       if (!mapRef.current) return;
-      // 진입 시 빨강(경고), 바깥일 때 초록(정상). 진입 시엔 fill 진하게 강조.
-      const color = inside ? '#EF4444' : '#10B981';
-      const fillOpacity = inside ? 0.28 : 0.14;
+      // Keep the inside warning on the boundary without obscuring street labels under a large fence.
+      const color = inside ? '#c36c69' : '#739bab';
+      const fillOpacity = inside ? 0.09 : 0.07;
       const center = new window.kakao.maps.LatLng(lat, lng);
       const existing = fenceRef.current[geofenceId];
       if (existing) {

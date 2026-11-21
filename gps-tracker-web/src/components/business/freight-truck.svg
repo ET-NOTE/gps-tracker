@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="cargo-truck small" viewBox="0 0 240 112" role="img" aria-label="실버 화물차">
+<defs>
+<linearGradient id="cargo-truck-1-box" x2="0" y2="1">
+<stop stop-color="#f2f4f6">
+</stop>
+<stop offset=".4" stop-color="#cbd1d8">
+</stop>
+<stop offset="1" stop-color="#aab3bf">
+</stop>
+</linearGradient>
+<linearGradient id="cargo-truck-1-cab" x2=".6" y2="1">
+<stop stop-color="#e9edf2">
+</stop>
+<stop offset="1" stop-color="#abb6c4">
+</stop>
+</linearGradient>
+</defs>
+<ellipse cx="121" cy="99" rx="108" ry="5" fill="#c3cbd7" opacity=".35">
+</ellipse>
+<path d="M23 29h141v54H23z" fill="url(#cargo-truck-1-box)" stroke="#a2adba">
+</path>
+<path d="M26 32h135v4H26z" fill="#fafbfc" opacity=".65">
+</path>
+<path d="M28 42h130M28 51h130M28 60h130M28 69h130" stroke="#aeb7c4" opacity=".55">
+</path>
+<path d="M163 47h33l23 26v16h-57z" fill="url(#cargo-truck-1-cab)" stroke="#9ea9b7">
+</path>
+<path d="M171 51h22l15 18h-37z" fill="#7e92a7">
+</path>
+<path d="m173 53 19 1 11 13h-30z" fill="#a1b3c5">
+</path>
+<path d="M164 78h52" stroke="#ccd3db">
+</path>
+<path d="M27 84h189v8H27z" fill="#657285">
+</path>
+<path d="M201 81h16v5h-16z" fill="#edf3f8">
+</path>
+<path d="M167 52v34" stroke="#8e9ba9">
+</path>
+<rect x="173" y="73" width="8" height="3" rx="1.5" fill="#758394">
+</rect>
+<path d="M17 83h9v9h-9z" fill="#bec8d5">
+</path>
+<path d="M22 79h6v4h-6z" fill="#d3a36a">
+</path>
+<circle cx="48" cy="91" r="13" fill="#465261">
+</circle>
+<circle cx="48" cy="91" r="8" fill="#c5ced9">
+</circle>
+<circle cx="48" cy="91" r="4" fill="#8d9aac">
+</circle>
+<circle cx="77" cy="91" r="13" fill="#465261">
+</circle>
+<circle cx="77" cy="91" r="8" fill="#c5ced9">
+</circle>
+<circle cx="77" cy="91" r="4" fill="#8d9aac">
+</circle>
+<circle cx="190" cy="91" r="13" fill="#465261">
+</circle>
+<circle cx="190" cy="91" r="8" fill="#c5ced9">
+</circle>
+<circle cx="190" cy="91" r="4" fill="#8d9aac">
+</circle>
+<path d="M166 91h9a15 15 0 0 1 30 0h13" fill="none" stroke="#7f8c9c" stroke-width="2">
+</path>
+<path d="M30 77h127" stroke="#7d9fc7" stroke-width="2" opacity=".5">
+</path>
+</svg>

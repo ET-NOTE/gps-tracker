@@ -88,7 +88,8 @@ export default function RentalBookingForm({ init, devices = [], vehicles: suppli
   function location(label, value, change) {
     return <FormField label={label}>{branches.length?<Select value={value} onChange={change}><option value="">지점 선택</option>{[...new Set([...branches,...(value?[value]:[])])].map(v=><option key={v}>{v}</option>)}</Select>:<Input value={value} maxLength={100} onChange={change} />}</FormField>;
   }
-  return <Modal open title={extend?'대여 기간 연장':init?'예약·배차 변경':'렌트카 예약 등록'} size="lg" onClose={busy?undefined:onClose}
+  return <Modal open mobileForm title={extend?'대여 기간 연장':init?'예약·배차 변경':'렌트카 예약 등록'} size={extend?'md':720}
+    subtitle={!extend&&!init?'고객과 실운전자, 이용 기간 및 약정 요금을 확인합니다.':undefined} onClose={busy?undefined:onClose}
     footer={<><Button onClick={onClose} disabled={busy}>닫기</Button><Button variant="primary" onClick={save} busy={busy} disabled={assets.isLoading || !!assets.error}>{extend?'기간 연장':init?'변경 저장':'예약 확정'}</Button></>}>
     {error && <p role="alert" className="business-error">{error}</p>}
     {assets.error && <p role="alert">차량 배차 정보를 가져오지 못했습니다. <button onClick={()=>assets.refetch()}>다시 조회</button></p>}
