@@ -44,14 +44,14 @@ function bookQuery(period) {
 
 function ContractLedger({contract,onClose}) {
   const day=businessDate(contract.starts_at);
-  const query=useQuery(bookQuery({from:day,to:day}));
-  const bookRow=query.data?.contracts.find(c=>c.id===contract.id);
+  const query=useQuery({...bookQuery({from:day,to:day}),refetchOnMount:'always',refetchOnWindowFocus:false});
+  const bookRow=query.isFetchedAfterMount && !query.error && query.data?.contracts.find(c=>c.id===contract.id);
   if (bookRow) {
     const finalized=bookRow.settlement_finalized || Boolean(agreedPrice(contract) && contract.settled_at);
     const current={...bookRow,settlement_finalized:finalized};
     return <LedgerEditor key={String(finalized)} book={{contracts:[current]}} initial={{contract:current}} close={onClose}/>;
   }
-  return <Modal open title="결제·보증금 기록" onClose={onClose}>{query.isLoading?<p role="status">결제 내역을 불러오는 중…</p>:
+  return <Modal open title="결제·보증금 기록" onClose={onClose}>{query.isFetching?<p role="status">결제 내역을 불러오는 중…</p>:
     <BusinessError onRetry={query.refetch}>이 계약의 청구액과 수납 내역을 확인하지 못했습니다.</BusinessError>}</Modal>;
 }
 
