@@ -21,14 +21,36 @@
 .rnt-shell[data-workspace="rental.area.width"] :is(.ro-metrics dd,.rental-stage-metrics strong,.rfl-summary strong) {font-size:24px;font-weight:400;line-height:1.25}
 .rfl-summary .rfl-metric-link {display:inline-flex;align-items:center;gap:2px;margin-left:auto;font-size:11px;color:var(--primary);white-space:nowrap}
 .rfl-summary .rfl-metric-note {font-size:12px;font-weight:400;color:var(--text-2)}
-.rental-line-chart {padding:8px 18px 18px;margin:0}
-.rental-line-chart svg {width:100%;height:90px;display:block;overflow:visible}
-.rental-line-chart line {stroke:var(--border);vector-effect:non-scaling-stroke}
-.rental-line-chart polyline,.rental-line-chart circle {fill:none;stroke:var(--primary);stroke-width:2;vector-effect:non-scaling-stroke}
-.rental-line-chart circle {fill:var(--surface)}
-.rental-line-chart ol {padding:0;margin:0;list-style:none;display:flex;justify-content:space-between;color:var(--text-2);text-align:center}
-.rental-line-chart li {display:grid;gap:1px;font-size:12px}
-.rental-line-chart small {font-size:inherit}
+.rental-chart-pad {padding:0 17px 14px}
+.rental-chart-pad .ops-bars {grid-template-rows:repeat(3,minmax(30px,1fr));gap:11px}
+.rental-chart-pad .ops-track {height:7px;min-height:7px}
+.rental-chart-pad .ops-track i {opacity:.84}
+.rfl-dashboard-bottom summary {cursor:pointer}
+.rental-task-copy {display:grid;gap:2px}
+.rental-task-copy small {font:400 11px/1.5 var(--fleet-font);color:var(--fleet-caption,var(--text-2))}
+@media(min-width:761px) {
+  .pt-member-shell .rnt-shell .rfl-dashboard .rfl-tasks .rfl-task {padding-block:8px}
+}
+.rfl-timeline tbody tr:has(button) {cursor:pointer}
+.rfl-timeline tbody tr:has(button):hover {background:var(--surface-2)}
+.rental-line-chart {position:relative;height:150px;margin:0;font-size:12px;color:var(--text-2)}
+.rental-axis-unit {position:absolute;right:14px;top:-5px;color:var(--fleet-caption,var(--text-2))}
+.rental-trend-plot {position:absolute;inset:18px 15px 32px 72px}
+.rental-trend-plot svg {width:100%;height:100%;display:block;overflow:visible}
+.rental-trend-plot line {stroke:var(--border);vector-effect:non-scaling-stroke}
+.rental-trend-plot polyline {fill:none;stroke:var(--primary);stroke-width:2.25;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.rental-axis-value {position:absolute;right:calc(100% + 15px);transform:translateY(-50%);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rental-trend-day {position:absolute;top:0;bottom:0}
+.rental-axis-date {position:absolute;top:calc(100% + 11px);white-space:nowrap;transform:translateX(-50%)}
+.rental-trend-day[data-edge=first] .rental-axis-date {transform:none}
+.rental-trend-day[data-edge=last] .rental-axis-date {transform:translateX(-100%)}
+.rental-trend-point {position:absolute;display:block;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--primary);background:var(--surface);outline-offset:4px}
+.rental-trend-point::before {content:"";position:absolute;inset:-8px;border-radius:50%}
+.rental-trend-tooltip {position:absolute;display:none;bottom:14px;left:50%;transform:translateX(-50%);padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);box-shadow:0 5px 20px #23334514;white-space:nowrap}
+.rental-trend-point:is(:hover,:focus) {z-index:1}
+.rental-trend-point:is(:hover,:focus) .rental-trend-tooltip {display:block}
+.rental-trend-day[data-edge=first] .rental-trend-tooltip {left:-4px;transform:none}
+.rental-trend-day[data-edge=last] .rental-trend-tooltip {left:auto;right:-4px;transform:none}
 .rental-board-scope,.rental-board-unassigned {display:flex;gap:10px;align-items:end;flex-wrap:wrap}
 .rental-board-scope label {display:grid;gap:5px;font-size:13px;color:var(--text-2);flex:0 1 175px;min-width:0}
 .rental-board-scope select {border:1px solid var(--border);background:var(--surface);border-radius:8px;color:var(--text);padding:8px;max-width:100%;min-height:40px;font:inherit}
@@ -100,8 +122,10 @@
   .rfl-table-scroll .rfl-table tr {display:table-row}
   .rfl-table-scroll .rfl-table td {display:table-cell;border-bottom:1px solid var(--border);padding:10px}
   .rfl-table-scroll .rfl-table td::before {display:none}
-  .rental-line-chart {padding:6px 10px 14px}
-  .rental-line-chart li {font-size:10px}
+  .rental-chart-pad {padding-inline:14px}
+  .rental-trend-plot {left:58px;right:12px}
+  .pt-member-shell .rnt-shell .rfl-dashboard .rfl-inline {gap:10px}
+  .pt-member-shell .rnt-shell .rfl-dashboard .rfl-branch select {width:140px;max-width:100%}
   .rental-office .ro-table-box {overflow-x:auto;overscroll-behavior-x:contain}
   .rental-office .ro-table {display:table;width:100%;min-width:620px}
   .rental-office .ro-table tbody {display:table-row-group}
@@ -118,14 +142,40 @@
   align-items:start;
   gap:16px;
 }
-.rnt-shell[data-page="checkout"] .rental-workflow {container:rental-checkout / inline-size}
-@container rental-checkout (min-width:980px) {
-  .rnt-shell[data-page="checkout"] .rental-workflow .rental-workflow-filters {
-    display:grid;
-    grid-template-columns:minmax(240px,1.6fr) repeat(4,minmax(82px,.65fr)) minmax(150px,1fr) auto;
-    gap:10px;
-  }
-  .rnt-shell[data-page="checkout"] .rental-workflow .rental-workflow-filters>label {max-width:none;min-width:0}
+.rental-extra-actions {display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-left:auto}
+.pt-member-shell .rnt-shell .rental-extra-actions button {padding:5px 9px;height:29px;min-height:29px;background:none;color:var(--text-2);border:0;border-radius:6px;font:400 11px/1.5 var(--fleet-font);white-space:nowrap}
+.pt-member-shell .rnt-shell .rental-extra-actions button[aria-expanded=true] {background:var(--surface-2);color:var(--primary)}
+.rental-extra-filters:not([hidden]) {display:flex;flex-wrap:wrap;align-items:end;gap:12px;flex-basis:100%;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--border)}
+.rental-extra-filters>label {display:grid;gap:6px;min-width:0;flex:0 1 165px;color:var(--fleet-caption,var(--text-2));font-size:11px}
+.rental-extra-filters>label select {width:100%}
+.pt-member-shell .rnt-shell .rental-directory .ro-filters {gap:12px;padding:15px 16px;border-radius:11px}
+.pt-member-shell .rnt-shell .rental-directory .ro-filters>.ro-field {flex:0 1 128px;gap:6px}
+.pt-member-shell .rnt-shell .rental-directory .ro-filters>.ro-field:has(input[type=search]) {flex:1 1 195px;max-width:310px}
+.pt-member-shell .rnt-shell .rental-directory .ro-field>span:first-child {font:400 11px/17px var(--fleet-font);color:var(--fleet-caption,var(--text-2))}
+.pt-member-shell .rnt-shell .rental-directory .ro-filters :is(select,input[type=search]) {font-size:12px;height:38px;min-height:38px}
+.pt-member-shell .rnt-shell .rental-directory .ro-toolbar {padding:0}
+.pt-member-shell .rnt-shell .rental-directory .ro-toolbar>strong {font:400 12px/1.5 var(--fleet-font);color:var(--text-2)}
+.pt-member-shell .rnt-shell .rental-directory .ro-toolbar button {height:36px;min-height:36px;padding:7px 13px;font:400 12px/1.5 var(--fleet-font)}
+@media(min-width:761px) {
+  .rnt-shell:is([data-page=checkout],[data-page=active]) .rental-workflow-toolbar {margin-block:3px}
+  .rental-directory>.ro-toolbar {margin-bottom:2px}
+}
+@media(max-width:767px) {
+  .rnt-shell[data-workspace="rental.area.width"] .rnt-title-actions:has(>time:only-child) {display:none}
+}
+@media(max-width:760px) {
+  .pt-member-shell .rnt-shell:is([data-page=checkout],[data-page=active]) .rental-workflow-toolbar>div:last-child {flex-basis:100%}
+  .rental-workflow-filters[data-compact] .rental-extra-actions {grid-column:1/-1}
+  .rnt-shell[data-page=active] .rental-workflow-filters[data-compact]>label:first-child {grid-column:1/-1}
+  .rental-extra-filters .rental-stage-period {flex-basis:100%}
+  .rental-extra-filters>label {flex:1 1 85px}
+  .pt-member-shell .rnt-shell .rental-directory {gap:16px}
+  .pt-member-shell .rnt-shell .rental-directory .ro-filters {padding:12px;gap:10px}
+  .pt-member-shell .rnt-shell .rental-directory .ro-filters>.ro-field {flex:1 1 100%;max-width:none}
+  .pt-member-shell .rnt-shell .rental-directory .ro-filters>.ro-field select {max-width:240px}
+  .pt-member-shell .rnt-shell .rental-directory .ro-filters>.ro-field:has(input[type=search]) {flex-basis:100%;max-width:none}
+  .pt-member-shell .rnt-shell .rental-directory .ro-toolbar>strong {flex-basis:100%}
+  .pt-member-shell .rnt-shell .rental-directory .ro-toolbar>div {margin-left:auto}
 }
 @media(min-width:768px) {
   .rnt-shell[data-page="rent-costs"] .ro-finance-filters .ro-period {flex-basis:100%}

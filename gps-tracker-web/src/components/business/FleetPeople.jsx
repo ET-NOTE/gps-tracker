@@ -1,5 +1,6 @@
 import React,{useEffect,useId,useRef,useState} from 'react';
 import FleetStaffImport from './FleetStaffImport';
+import FleetOrganizationDirectory from './FleetOrganizationDirectory';
 import {DirectoryGroups} from './DirectoryLayout';
 import FleetPermissionGroups from './FleetPermissionGroups';
 import FleetGroupAssignment,{canAssignFleetMember,maxGroupMembers} from './FleetGroupAssignment';
@@ -23,7 +24,7 @@ import './fleet-people-cartax.css';
 import './fleet-administration.css';
 import './corporate-record-dialogs.css';
 
-export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
+export default function FleetPeople({activeTab,onTab,onSites,hideNavigation=false}={}){
  const access=useFleetAccess(),qc=useQueryClient(),staff=useStaff(),org=useFleetOrganization(),vehicles=useFleetAssets();
  const mobile=useCorporatePhone();
  const [importing,setImporting]=useState(false),[internalTab,setInternalTab]=useState('users'),[edit,setEdit]=useState(null),[item,setItem]=useState(null),[invite,setInvite]=useState(null),[query,setQuery]=useState(''),[department,setDepartment]=useState(''),[status,setStatus]=useState('all'),[error,setError]=useState(''),[busy,setBusy]=useState(false);
@@ -147,7 +148,7 @@ export default function FleetPeople({activeTab,onTab,hideNavigation=false}={}){
    {canAssign&&assignment&&<FleetGroupAssignment selectedRows={assignment} groups={groups} staff={staff} onClose={()=>setAssignment(null)}
      onApplied={({count,confirmed})=>{setCheckedIds([]);setNotice(confirmed+'명 확인 · '+count+'명의 권한 그룹을 변경했습니다.');}}/>}
   </>}
-  {tab==='organization'&&(org.error?<BusinessError onRetry={org.refetch}/>:org.isPending?<p className="fleet-team-empty">부서·직책을 불러오는 중…</p>:<div className="fleet-org-grid">{[['department','부서'],['position','직책']].map(([kind,label])=>{const items=(org.data||[]).filter(i=>i.kind===kind);return <section className="fleet-org-section" key={kind} aria-label={label+' 관리'}><header><h3>{label}<span>{items.length}</span></h3>{access.manage_team&&<button type="button" className="business-button" aria-label={label+' 추가'} onClick={()=>setItem({kind,name:'',active:true})}>+ 추가</button>}</header><table className="fleet-org-table" aria-label={label+' 목록'}><thead><tr><th scope="col">{label}명</th>{kind==='department'&&<th scope="col">소속 사용자</th>}<th scope="col">상태</th>{access.manage_team&&<th scope="col">관리</th>}</tr></thead><tbody>{items.map(i=><tr key={i.id}><td>{i.name}</td>{kind==='department'&&<td>{ready?roster.filter(person=>inDepartment(person,i.id)).length+'명':'—'}</td>}<td><span className={'business-badge '+(i.active?'good':'')}>{i.active?'사용 중':'사용 중지'}</span></td>{access.manage_team&&<td><button type="button" className="business-button" aria-label={i.name+' '+label+' 수정'} onClick={()=>setItem(i)}>수정</button></td>}</tr>)}</tbody></table>{!items.length&&<p className="fleet-team-empty">등록된 {label}{kind==='position'?'이':'가'} 없습니다.</p>}</section>;})}</div>)}
+  {tab==='organization'&&(org.error?<BusinessError onRetry={org.refetch}/>:org.isPending?<p className="fleet-team-empty">부서·직책을 불러오는 중…</p>:<FleetOrganizationDirectory items={org.data||[]} roster={roster} ready={ready} onEdit={access.manage_team?setItem:undefined} onSites={onSites}/>)}
   {tab==='permissions'&&<>
     <RoleAccess access={access} onMembers={role=>{setRoleFilter(role);setDepartment('');setStatus('all');setQuery('');setTab('users');}}/>
     {access.role==='owner'&&access.billing&&<FleetPermissionGroups/>}

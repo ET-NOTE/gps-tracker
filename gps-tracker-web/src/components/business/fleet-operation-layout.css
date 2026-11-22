@@ -1,0 +1,85 @@
+/* Terminal and maintenance workspaces share the corporate record filters. */
+.business-workspace--corporate .fleet-operations {gap:18px}
+.business-workspace--corporate .fleet-operations .fleet-operations-toolbar {align-items:center;gap:10px 16px}
+.business-workspace--corporate .fleet-operations .fleet-operations-status {gap:2px;padding:3px;background:var(--surface-2)}
+.business-workspace--corporate .fleet-operations[data-mode=maintenance] .fleet-operations-status {padding-block:2px}
+.business-workspace--corporate .fleet-operations .fleet-operations-status button {
+  min-height:28px;padding:4px 10px;font:400 12px/1.55 var(--fleet-font);color:var(--text-2);white-space:nowrap
+}
+.business-workspace--corporate .fleet-operations[data-mode=devices] .fleet-operations-status {
+  padding:0;gap:20px;border:0;background:transparent;border-radius:0
+}
+.business-workspace--corporate .fleet-operations[data-mode=devices] .fleet-operations-status button {
+  min-height:36px;padding:0 0 9px;border:0;border-bottom:2px solid transparent;border-radius:0;
+  font-size:13px;background:transparent
+}
+.business-workspace--corporate .fleet-operations[data-mode=devices] .fleet-operations-status button[aria-pressed=true] {color:var(--primary);border-color:var(--primary)}
+.business-workspace--corporate .fleet-operations .fleet-maintenance-actions .business-button {
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:7px 12px;
+  font:400 12px/1.5 var(--fleet-font);border-radius:8px
+}
+.business-workspace--corporate .fleet-operations .fleet-operations-query {margin:0;padding:14px 17px 10px}
+.business-workspace--corporate .fleet-operations .fleet-record-fields {display:flex;align-items:end;flex-wrap:wrap;gap:12px}
+.business-workspace--corporate .fleet-operations .fleet-record-fields>label {flex:1 1 150px;min-width:0;gap:6px;font-size:11px}
+.business-workspace--corporate .fleet-operations .fleet-record-fields>.fleet-operation-search {flex:1.5 1 220px}
+.business-workspace--corporate .fleet-operations .fleet-operation-search>span {
+  display:flex;align-items:center;gap:8px;box-sizing:border-box;height:38px;min-height:38px;padding:0 10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-3)
+}
+.business-workspace--corporate .fleet-operations .fleet-operation-search>span:focus-within {outline:2px solid var(--primary);outline-offset:1px}
+.business-workspace--corporate .business-content .fleet-operations .fleet-operation-search input[type=search] {
+  flex:1;width:100%;min-width:0;height:35px;min-height:0;margin:0;padding:0;border:0;outline:0;box-shadow:none;background:transparent
+}
+.business-workspace--corporate .fleet-operations .fleet-record-filterfoot {margin-top:11px;font-size:11px;gap:6px}
+.business-workspace--corporate .fleet-operations .fleet-record-filterfoot b {color:var(--primary);font-weight:400}
+.business-workspace--corporate .business-content .fleet-operations .fleet-record-filterfoot .business-button {min-height:17px;padding:0 3px;border:0;font-size:11px;line-height:17px}
+.fleet-operations .fleet-operations-callout {
+  display:flex;align-items:center;gap:9px;padding:12px 15px;border-radius:9px;font-size:11px;
+  background:color-mix(in srgb,#d99a32 11%,var(--surface));color:color-mix(in srgb,#a67b3b 86%,var(--text))
+}
+.fleet-operations-callout svg {flex:none}
+.fleet-operations .fleet-operations-cards,.fleet-operations .fleet-care-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.fleet-operations .fleet-operations-card {
+  position:relative;display:flex;flex-direction:column;align-items:stretch;min-width:0;padding:21px;border-radius:15px
+}
+.fleet-operations .fleet-terminal-open {
+  position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;background:transparent;border-radius:inherit;cursor:pointer
+}
+.fleet-operations .fleet-terminal-open:focus-visible {outline:2px solid var(--primary);outline-offset:-2px}
+.fleet-operations .fleet-operations-card:hover {border-color:var(--primary)}
+.fleet-operations .fleet-operations-card header {margin:0 0 20px}
+.fleet-operations .fleet-operations-card header i,.fleet-terminal-detail header i {
+  display:grid;place-items:center;width:37px;height:42px;border:1px solid var(--border);border-radius:8px;
+  color:var(--text-2);background:var(--surface-2)
+}
+.fleet-operations .fleet-operations-card h3,.fleet-operations .fleet-care-card h3 {margin:0;font:400 15px/1.55 var(--fleet-font)}
+.fleet-operations .fleet-operations-card p {margin:4px 0 0;font-size:11px;color:var(--text-3)}
+.fleet-operations .fleet-operations-card dl {padding:0;margin:15px 0 0;border:0}
+.fleet-operations .fleet-operations-card dl>div {margin:0;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px}
+.fleet-operations .fleet-operations-card dl>div:last-child {border:0}
+.fleet-operations .fleet-operations-card dt,.fleet-operations .fleet-operations-card footer small {color:var(--text-3)}
+.fleet-operations .fleet-operations-card dd {text-align:right;color:var(--text)}
+.fleet-operations .fleet-operations-card footer {justify-content:space-between;margin-top:14px;padding:14px 0 0;border-top:1px solid var(--border)}
+.fleet-operations .fleet-operations-card footer small {font-size:11px}
+.business-workspace--corporate .business-content .fleet-operations-card footer button {position:relative;min-height:30px;padding:5px 9px;font:400 11px/1.5 var(--fleet-font)}
+.fleet-terminal-detail header {display:flex;align-items:center;justify-content:space-between}
+.fleet-operations .fleet-care-card {border-radius:15px}
+.fleet-operations .fleet-care-card header {min-height:30px}
+.business-workspace--corporate .business-content .fleet-operations .fleet-care-card header .business-badge {padding:3px 7px;min-height:0;line-height:1.5}
+.fleet-operations .fleet-care-vehicle {margin:0 0 13px;min-height:37px}
+.fleet-operations .fleet-care-card footer {margin-top:34px}
+@media(max-width:1060px) {
+  .fleet-operations .fleet-operations-cards,.fleet-operations .fleet-care-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px) {
+  .business-workspace--corporate .fleet-operations .fleet-operations-toolbar {align-items:flex-start;flex-direction:column}
+  .business-workspace--corporate .fleet-operations .fleet-operations-status {max-width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+  .business-workspace--corporate .fleet-operations[data-mode=devices] .fleet-operations-status {gap:14px}
+  .business-workspace--corporate .fleet-operations .fleet-maintenance-actions {flex-wrap:wrap}
+  .business-workspace--corporate .fleet-operations .fleet-operations-query {padding:12px}
+  .business-workspace--corporate .fleet-operations .fleet-record-fields {gap:10px}
+  .business-workspace--corporate .fleet-operations .fleet-record-fields>label {flex:1 1 125px}
+  .business-workspace--corporate .fleet-operations .fleet-record-fields>.fleet-operation-search {flex-basis:100%}
+  .fleet-operations .fleet-operations-cards,.fleet-operations .fleet-care-grid {grid-template-columns:minmax(0,1fr)}
+  .fleet-operations .fleet-care-card {padding:20px}
+}

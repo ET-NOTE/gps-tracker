@@ -6,6 +6,11 @@ export const maintenanceScheduleFields = [
   ['inspection_expiry', '검사 만료일'],
 ];
 export const missingScheduleFields = profile => maintenanceScheduleFields.filter(([key]) => !profile?.[key]);
+export function vehicleDepartmentKey(asset) {
+  if (asset?.department_id != null) return `department:${asset.department_id}`;
+  const name = asset?.department?.trim();
+  return name ? `department-name:${name}` : 'unassigned';
+}
 export function assetOdometer(asset) {
   const value = asset.profile?.odometer_km;
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;

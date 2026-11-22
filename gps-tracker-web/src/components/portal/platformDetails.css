@@ -226,6 +226,8 @@
   & .pt-account-inner {color:#485464}
   & .pt-account-person h2 {color:#465365}
   & .pt-services-heading h2 {color:#516071}
+  & .pt-notif-choice h3 {color:#60718a}
+  & .pt-device-sidebar, & .pt-device-pane {color:#576474;background:#fafbfd}
   & .pt-device-identity strong {color:#596a81}
   & .pt-device-filters select {color:#576474}
   & .pt-device-card .battery-status {background:#fdfefe;border-color:#e9edf3}
@@ -305,12 +307,14 @@
   .pt-device-sidebar .pt-device-pane {height:auto;max-height:none;overflow:visible;gap:0}
   .pt-device-pane .pt-device-heading {padding:18px 15px 12px}
   .pt-device-pane .pt-device-filters {display:flex;flex-wrap:wrap;padding:0 15px;gap:8px}
-  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {display:grid;grid-template-columns:minmax(0,1fr) 86px 86px;align-items:center}
+  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {display:grid;grid-template-columns:minmax(0,1.8fr) repeat(2,minmax(70px,1fr));align-items:center}
   .pt-device-pane .pt-device-filters .pt-search-field {flex:1.2 1 98px}
   .pt-device-pane .pt-device-filters .pt-filter {flex:1 1 76px;height:36px;max-width:100%}
   .pt-device-filters .pt-filter select {min-height:34px}
   .pt-device-sidebar .pt-device-list {flex:none;align-items:stretch;padding:0 12px 10px;scroll-padding-inline:12px;overflow-x:auto;overflow-y:hidden}
-  .pt-device-sidebar .pt-device-card {flex:0 0 min(260px,100%);display:flex;flex-direction:column}
+  .pt-device-sidebar .pt-device-card {flex:0 0 min(260px,100%);display:flex;flex-direction:column;min-height:250px;padding-block:12px}
+  .pt-device-card .battery-status {margin-block:9px;min-height:72px}
+  .pt-device-card .pt-device-times {margin-block:0 8px}
   .pt-device-sidebar .pt-device-buttons {margin-top:auto}
   .pt-device-sidebar .pt-device-buttons .pt-button {min-height:38px;font-size:11px}
   .pt-device-pane .pt-device-note {padding:9px 15px}
@@ -334,8 +338,6 @@
   .pt-account .pt-account-heading p {font-size:12px}
 }
 @media(max-width:480px) {
-  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {grid-template-columns:repeat(2,minmax(0,1fr))}
-  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) .pt-search-field {grid-column:1/-1}
   .pt-account .pt-account-summary {min-height:77px;padding:17px 15px;gap:10px}
   .pt-account-summary .pt-summary-avatar {width:39px;height:39px;border-radius:12px;font-size:17px}
   .pt-account .pt-account-person h2 {font-size:15px}
@@ -364,6 +366,11 @@
   .pt-work-alerts {flex-direction:column;align-items:flex-start}
 }
 @media(max-width:359px) {
+  .pt-member-shell .pt-header {padding-inline:8px}
+  .pt-member-shell .pt-header-actions {gap:3px}
+  .pt-member-shell .pt-header .pt-scope select {padding-inline:2px}
+  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) .pt-search-field {grid-column:1/-1}
   .pt-account .pt-account-summary {min-height:93px}
   .pt-account .pt-services-heading {align-items:flex-start}
   .pt-account .pt-services-heading > div {min-width:0}

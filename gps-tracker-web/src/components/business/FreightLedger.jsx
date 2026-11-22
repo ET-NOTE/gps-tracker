@@ -74,18 +74,21 @@ export default function FreightLedger({kind,data,save,onOpenShipment}) {
   const eligible=rows.filter(item=>item.balance>0||item.net>0);
   const unknown=rows.filter(r=>r.total==null).length;
   return <section className="fr-section fr-ledger">
-    <FreightStats items={[[billing?'조회 청구 대상액':'조회 지급 대상액',sum('total'),'합의 운임·승인 비용 기준 · 운임 미정 '+unknown+'건'],[netLabel,sum('net')],[balanceLabel,sum('balance')],[billing?'환불 확인':'환수 확인',sum('excess')]]}/>
+    <FreightStats items={[[billing?'조회 청구 대상액':'조회 지급 대상액',sum('total'),unknown?'운임 미정 '+unknown+'건 별도':'합의 운임과 승인 비용 기준'],[netLabel,sum('net')],[balanceLabel,sum('balance')],[billing?'환불 확인':'환수 확인',sum('excess')]]}/>
     <FreightFilters query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색" onReset={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}><PeriodFilter label="운송 예정일" period={period} setPeriod={setPeriod}/>
       <OfficeFilter label="지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
       <OfficeFilter label={partyLabel} options={billing?choicesFrom(data.shippers):{own:'자사 운송',...choicesFrom(data.carriers)}} value={party} onChange={setParty}/>
       <OfficeFilter label="정산 상태" options={states} value={state} onChange={setState}/>
     </FreightFilters>
-    <div className="fr-toolbar"><strong>운송 {rows.length}건</strong><div className="fr-actions">
-      <FreightButton disabled={!rows.length} onClick={()=>downloadRows(billing?'화주 청구수납':'운송비 정산지급',headings,rows.map(values))}>CSV 다운로드</FreightButton>
-      <FreightButton primary disabled={!eligible.length} onClick={()=>setView({id:eligible[0].id,action:'payment',fromList:true})}>{billing?'수납 기록':'지급 기록'}</FreightButton></div></div>
-    <FreightTable columns={headings} rows={rows.map(r=>{const cells=values(r),[label,tone]=describe(r,billing);
-      cells[0]=<button className="fr-link" onClick={()=>setView({id:r.id,action:'detail'})}>{r.s.number}</button>;
-      cells[cells.length-1]=<FreightBadge tone={tone}>{label}</FreightBadge>; return {id:r.id,onOpen:()=>setView({id:r.id,action:'detail'}),cells};
+    <div className="fr-toolbar"><span className="fr-toolbar-caption">조회 {rows.length}건 · 운임 합계는 미정 금액을 제외합니다. 수납·지급 내역을 기록합니다.</span><div className="fr-actions">
+      <FreightButton icon="download" disabled={!rows.length} onClick={()=>downloadRows(billing?'화주 청구수납':'운송비 정산지급',headings,rows.map(values))}>CSV 다운로드</FreightButton>
+      <FreightButton primary icon="plus" disabled={!eligible.length} onClick={()=>setView({id:eligible[0].id,action:'payment',fromList:true})}>{billing?'수납 기록':'지급 기록'}</FreightButton></div></div>
+    <FreightTable columns={['운송 / '+partyLabel,'운송 예정 / 지점',...headings.slice(3)]} rows={rows.map(r=>{
+      const [label,tone]=describe(r,billing);
+      return {id:r.id,onOpen:()=>setView({id:r.id,action:'detail'}),cells:[
+        <><button className="fr-link" onClick={()=>setView({id:r.id,action:'detail'})}>{r.s.number}</button><small>{r.party}</small></>,
+        <>{timeLabel(r.s.start)}<small>{nameOf(data,'branches',r.s.branchId)}</small></>,
+        <Status value={r.s.status} labels={shipStates}/>,costLabel(r.total),costLabel(r.net),costLabel(r.balance),<FreightBadge tone={tone}>{label}</FreightBadge>]};
     })} empty="조회 조건에 해당하는 운송 건이 없습니다."/>
     {r&&<FreightLedgerDialogs {...{billing,data,save,onOpenShipment,view,setView,eligible,r}}/>}
   </section>;

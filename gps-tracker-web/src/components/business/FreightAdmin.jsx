@@ -6,7 +6,7 @@ import { authScope } from '../../authSession';
 import { newId, record } from '../../lib/freightWorkflow';
 import { FreightTable,FreightFacts,FreightForm,FreightField,FreightButton,FreightFilters } from './FreightKit';
 
-const codes=[['vehicleTypes','차량 형태'],['units','화물 단위'],['chargeTypes','추가 비용 항목']];
+const codes=[['vehicleTypes','차량 형태'],['units','화물 수량 단위'],['chargeTypes','추가 비용 항목']];
 const companyFields=[['name','회사명',80],['representative','대표자',80],['business_number','사업자등록번호',80],['phone','대표 전화',80],['address','주소',300]];
 
 function usage(data,key,value) {
@@ -55,11 +55,11 @@ export default function FreightAdmin({page,data,save,onPage}){
       }
       record(next,null,title+' 변경');await save(next);setEditor(null);
     }};
-  return <div className="fr-page">
+  return <div className={'fr-page'+(branch?'':' fr-codes')}>
     {branch?<><div className="fr-toolbar"><strong>운영 지점 {data.branches.length}개</strong><FreightButton primary icon="plus" onClick={()=>setEditor({})}>지점 등록</FreightButton></div>
       <FreightTable columns={['지점명','등록 차량','운송 주문','관리']} rows={data.branches.map(b=>({id:b.id,cells:[b.name,data.vehicles.filter(v=>v.branchId===b.id).length+'대',data.orders.filter(v=>v.branchId===b.id).length+'건',<FreightButton onClick={()=>setEditor(b)}>수정</FreightButton>]}))} empty="등록된 지점이 없습니다."/></>:
-      <><div className="fr-toolbar"><div className="fr-tabs">{codes.map(([k,label])=><button type="button" className="fr-tab" key={k} aria-pressed={k===tab} onClick={()=>{setTab(k);search('');}}>{label}</button>)}</div><FreightButton primary onClick={()=>setEditor({key:tab,label:codes.find(([k])=>k===tab)[1]})}>항목 추가</FreightButton></div>
-      <FreightFilters query={query} onQuery={search} placeholder="기준정보 이름"/><FreightTable columns={['이름','사용 중인 기록','관리']} rows={data.codes[tab].filter(v=>v.includes(query)).map(v=>{const n=usage(data,tab,v),row={key:tab,original:v,label:codes.find(([k])=>k===tab)[1]};return {id:v,cells:[v,n+'건',<div className="fr-actions"><FreightButton disabled={!!n} onClick={()=>setEditor(row)}>수정</FreightButton><FreightButton disabled={!!n||data.codes[tab].length<=1} onClick={()=>setEditor({...row,remove:true})}>삭제</FreightButton></div>]};})}/></>}
+      <><div className="fr-toolbar"><div className="fr-tabs">{codes.map(([k,label])=><button type="button" className="fr-tab" key={k} aria-pressed={k===tab} onClick={()=>{setTab(k);search('');}}>{label}</button>)}</div><FreightButton primary icon="plus" onClick={()=>setEditor({key:tab,label:codes.find(([k])=>k===tab)[1]})}>항목 추가</FreightButton></div>
+      <FreightFilters query={query} onQuery={search} placeholder="기준정보 이름" onReset={()=>search('')}/><FreightTable columns={[codes.find(([k])=>k===tab)[1],'사용 중인 기록','관리']} rows={data.codes[tab].filter(v=>v.includes(query)).map(v=>{const n=usage(data,tab,v),row={key:tab,original:v,label:codes.find(([k])=>k===tab)[1]};return {id:v,cells:[v,n+'건',<div className="fr-actions"><FreightButton disabled={!!n} onClick={()=>setEditor(row)}>수정</FreightButton><FreightButton disabled={!!n||data.codes[tab].length<=1} onClick={()=>setEditor({...row,remove:true})}>삭제</FreightButton></div>]};})}/></>}
     {editor&&<FreightForm {...props}>
       {branch?<FreightField label="지점명" wide><input required name="name" maxLength={80} defaultValue={editor.name}/></FreightField>:
         editor.remove?<p className="fr-note">‘{editor.original}’ 항목을 삭제할까요?</p>:<FreightField label={editor.label} wide><input required name="value" defaultValue={editor.original} maxLength={40}/></FreightField>}

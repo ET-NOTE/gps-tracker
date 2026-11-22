@@ -55,6 +55,10 @@ async function mount(name,{access={manage_team:true,role:'owner'},phone=false,pr
  const assignmentModule=new vm.SourceTextModule((await transform(assignmentSource,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await assignmentModule.link(spec=>moduleOf(real[spec]||common));await assignmentModule.evaluate();
  real['./FleetGroupAssignment']=assignmentModule.namespace;
+ const organizationSource=await readFile(new URL('../src/components/business/FleetOrganizationDirectory.jsx',import.meta.url),'utf8');
+ const organizationModule=new vm.SourceTextModule((await transform(organizationSource,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
+ await organizationModule.link(spec=>moduleOf(real[spec]||common));await organizationModule.evaluate();
+ real['./FleetOrganizationDirectory']=organizationModule.namespace;
  const directorySource=await readFile(new URL('../src/components/business/DirectoryLayout.jsx',import.meta.url),'utf8');
  const directoryCode=(await transform(directorySource,{loader:'jsx',jsx:'automatic',format:'esm'})).code;
  const directoryModule=new vm.SourceTextModule(directoryCode,{context});
@@ -225,7 +229,9 @@ test('external directory tabs replace internal navigation and preserve site-to-v
  try{
   assert.equal(button(roster.r,'사용자 목록'),undefined);assert.equal(tableRows(roster.r).length,3);
   await roster.update({activeTab:'organization',hideNavigation:true});
-  assert.deepEqual(roster.r.root.findAllByType('table').map(t=>t.props['aria-label']),['부서 목록','직책 목록']);assert.match(text(roster.r.toJSON()),/영업팀/);
+  assert.equal(roster.r.root.findByType('table').props['aria-label'],'부서 목록');assert.match(text(roster.r.toJSON()),/영업팀/);
+  await act(async()=>button(roster.r,'직책0').props.onClick());
+  assert.match(text(roster.r.toJSON()),/등록된 직책이 없습니다/);
  }finally{await roster.close();}
  const selectedTabs=[],onTab=value=>selectedTabs.push(value);
  const directory=await mount('FleetSites',{props:{activeTab:'sites',hideNavigation:true,onTab}});
@@ -326,14 +332,18 @@ test('organization tables keep inactive items visible and hide editing from memb
  for(const manage_team of [true,false]){
   const directory=await mount('FleetPeople',{props:{activeTab:'organization'},organization,access:{manage_team,role:manage_team?'owner':'member'}});
   try{
-   const tables=directory.r.root.findAllByType('table');
-   assert.deepEqual(tables.map(t=>t.props['aria-label']),['부서 목록','직책 목록']);
-   assert.match(text(tables[1].children),/이전 직책사용 중지/);
-   assert.equal(tables[1].findAllByType('th').length,manage_team?3:2);
-   assert.equal(tables[1].findAllByType('button').length,manage_team?1:0);
-   assert.ok(tables.every(t=>t.findAllByType('th').every(th=>th.props.scope==='col')));
+   assert.equal(directory.r.root.findByType('table').props['aria-label'],'부서 목록');
+   await act(async()=>button(directory.r,'직책1').props.onClick());
+   const table=directory.r.root.findByType('table');
+   assert.equal(table.props['aria-label'],'직책 목록');
+   assert.match(text(table.children),/이전 직책0명사용 중지/);
+   assert.equal(table.findAllByType('th').length,manage_team?4:3);
+   assert.ok(table.findAllByType('th').every(th=>th.props.scope==='col'));
+   const edits=table.findAllByProps({'aria-label':'이전 직책 직책 수정'});
+   assert.equal(edits.length,manage_team?1:0);
+   assert.equal(Boolean(button(directory.r,'직책 추가')),manage_team);
    if(manage_team){
-    await act(async()=>tables[1].findByType('button').props.onClick());
+    await act(async()=>edits[0].props.onClick({stopPropagation(){}}));
     assert.equal(directory.r.root.findByProps({role:'dialog'}).props['aria-label'],'직책 수정');
     assert.equal(directory.r.root.findAll(n=>n.type==='input'&&n.props.type==='checkbox')[0].props.checked,false);
    }

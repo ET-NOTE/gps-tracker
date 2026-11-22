@@ -76,6 +76,7 @@ function ContractPerson({contract,driver,onClose}) {
 export default function RentalWorkflow({ stage='reservations', devices=[], vehicles=[], branches: configuredBranches=[], request, onContracts, onWork }) {
   const now=useBusinessClock(), qc=useQueryClient();
   const [filters,setFilters]=useState(baseFilters), [detail,setDetail]=useState(null), [dialog,setDialog]=useState(null);
+  const [extraOpen,setExtraOpen]=useState(false);
   const [reconfirmId,setReconfirmId]=useState(null);
   const invalid=filters.from && filters.to && filters.from>filters.to;
   const period=filters.from && filters.to && !invalid ? {from:filters.from+'T00:00:00+09:00',to:new Date(Date.parse(filters.to+'T00:00:00+09:00')+86400000).toISOString()}:null;
@@ -96,7 +97,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
   useEffect(()=>{
     const initial={...baseFilters,device:request?.deviceId || '',vehicle:request?.vehicleId || ''};
     initial.status=({overdue:'반납 지연',returned:'반납 완료',active:'대여 중',draft:'예약 접수'})[request?.status] || '';
-    setFilters(initial);setDialog(null);setDetail(null);setReconfirmId(null);
+    setFilters(initial);setDialog(null);setDetail(null);setReconfirmId(null);setExtraOpen(false);
     if(request?.new)setDialog({kind:'edit',deviceId:request.deviceId,vehicleId:request.vehicleId,date:request.day});
     else if(request?.returning)setDialog({kind:'return',contract:request.returning});
     else if(request?.contract)setDetail(request.contract);
@@ -143,22 +144,31 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
     <BusinessButton onClick={()=>open('ledger',focused)}>결제·보증금 기록</BusinessButton>
   </>;
   const assignedVehicle=focused&&vehicles.find(v=>matchesVehicle(focused,v));
+  const compactFilters=stage==='active' || stage==='checkout';
+  const extraCount=[filters.from || filters.to,filters.model,filters.status].filter(Boolean).length;
+  const periodField=<fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>;
+  const modelAndStatus=<>
+    <label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>
+    <label>진행 상태<select aria-label="진행 상태" value={filters.status} onChange={e=>change("status",e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>
+  </>;
   return <div className="rental-workflow">
     <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
     <div className="rental-workflow-toolbar">
       {stageTabs[stage] ? <div className="rental-stage-tabs" aria-label="업무 범위">{stageTabs[stage].map(([key,label])=><button type="button" key={key} aria-pressed={filters.subset===key} onClick={()=>change("subset",key)}>{label}</button>)}</div> : <span>{shown.length.toLocaleString()}건 조회</span>}
       <div><ExportButtons grouped report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
         {["reservations","dispatch","contracts"].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open("edit",null)}>예약 등록</BusinessButton>}</div></div>
-    <div className="rental-workflow-filters">
-      <fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>
+    <div className="rental-workflow-filters" data-compact={compactFilters || undefined}>
+      {!compactFilters && periodField}
       <label>인수 지점<select value={filters.branch} onChange={e=>change("branch",e.target.value)}><option value="">전체 지점</option>{branches.map(x=><option key={x}>{x}</option>)}</select></label>
-      <label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>
-      <label>진행 상태<select aria-label="진행 상태" value={filters.status} onChange={e=>change("status",e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>
+      {!compactFilters && modelAndStatus}
       {stage==='contracts' && <label>계약 확인<select aria-label="계약 확인" value={filters.review} onChange={e=>change('review',e.target.value)}><option value="">전체</option><option value="yes">확인 완료</option><option value="no">확인 전</option></select></label>}
       {stage==='checkout' && <label>출고 요건<select aria-label="출고 요건" value={filters.readiness} onChange={e=>change('readiness',e.target.value)}><option value="">전체</option><option value="ready">모두 완료</option><option value="missing">확인 필요</option></select></label>}
       {stage==="reservations" && <label>예약 경로<select value={filters.channel} onChange={e=>change("channel",e.target.value)}><option value="">전체 경로</option>{[...new Set(stageRows.map(c=>c.rental_terms?.channel).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>}
       <label className="rental-stage-search">검색<input type="search" value={filters.query} onChange={e=>change("query",e.target.value)} placeholder="고객, 운전자, 차량, 예약번호"/></label>
-      <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>
+      {compactFilters && <div className="rental-extra-actions"><BusinessButton aria-expanded={extraOpen} aria-controls="rental-extra-filters" onClick={()=>setExtraOpen(open=>!open)}>추가 조건{extraCount ? ' ('+extraCount+')' : ''}</BusinessButton>
+        <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton></div>}
+      {!compactFilters && <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>}
+      {compactFilters && <div id="rental-extra-filters" className="rental-extra-filters" hidden={!extraOpen}>{periodField}{modelAndStatus}</div>}
     </div>
     <section className="rental-workflow-box">
       {invalid?<p className="business-error" role="alert">조회 종료일이 시작일보다 빠릅니다.</p>:result.error?<BusinessError onRetry={result.refetch}>대여 내역을 불러오지 못했습니다.</BusinessError>:readinessError?<BusinessError onRetry={()=>{if(policy.error)policy.refetch();if(book.error)book.refetch();}}>출고 요건을 불러오지 못했습니다.</BusinessError>:result.isLoading?<p role="status">대여 내역을 불러오는 중…</p>:

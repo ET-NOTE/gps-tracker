@@ -1,0 +1,29 @@
+.fleet-org-directory {min-width:0}
+.business-workspace--corporate .fleet-org-toolbar {
+  display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;margin-bottom:18px
+}
+.fleet-org-tabs {display:flex;gap:22px;max-width:100%;border-bottom:1px solid var(--border)}
+.fleet-org-tabs button {
+  display:flex;align-items:center;gap:6px;min-height:34px;padding:0 0 9px;border:0;border-bottom:2px solid transparent;
+  white-space:nowrap;background:transparent;color:var(--text-2);font:400 13px/1.55 var(--fleet-font);cursor:pointer
+}
+.fleet-org-tabs button[aria-pressed=true] {color:var(--primary);border-color:var(--primary)}
+.fleet-org-tabs small {font-size:11px;color:var(--text-3)}
+.business-workspace--corporate .business-content .fleet-org-toolbar>.business-button {display:flex;align-items:center;gap:6px;min-height:36px;padding:7px 12px;border-radius:8px;font:400 12px/1.5 var(--fleet-font)}
+.business-workspace--corporate .fleet-org-directory .fleet-org-section {border-radius:15px}
+.business-workspace--corporate .fleet-org-directory .fleet-org-section>header {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;padding:18px 20px;border:0}
+.business-workspace--corporate .fleet-org-directory .fleet-org-section h3 {margin:0;color:var(--text);font:400 15px/1.55 var(--fleet-font)}
+.fleet-org-directory .fleet-org-section>header>span {font-size:11px;color:var(--text-3)}
+.fleet-org-scroll {overflow:auto;min-width:0}
+.business-workspace--corporate .fleet-org-directory .fleet-org-table {width:100%;min-width:340px;border-collapse:collapse;table-layout:auto}
+.business-workspace--corporate .fleet-org-directory .fleet-org-table :is(th,td) {height:auto;width:auto;text-align:left;border:0;border-bottom:1px solid var(--border);padding:12px 15px;font:400 13px/1.55 var(--fleet-font);white-space:nowrap}
+.business-workspace--corporate .fleet-org-directory .fleet-org-table th {padding:10px 15px;background:var(--surface-2);font-size:12px;color:var(--text-3)}
+.fleet-org-directory .fleet-org-table tr {cursor:pointer}
+.fleet-org-directory .fleet-org-table tbody tr:last-child td {border-bottom:0}
+.fleet-org-directory .fleet-org-name,.fleet-org-directory .fleet-org-edit {display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--text);padding:3px 0;font:inherit;cursor:pointer}
+.fleet-org-directory .fleet-org-name svg {color:var(--text-3)}
+.fleet-org-directory .fleet-org-edit {color:var(--primary);font-size:12px}
+@media(max-width:760px){
+  .business-workspace--corporate .fleet-org-toolbar {align-items:flex-start;flex-direction:column;gap:8px}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-section>header {align-items:flex-start;flex-direction:column;padding-block:17px}
+}

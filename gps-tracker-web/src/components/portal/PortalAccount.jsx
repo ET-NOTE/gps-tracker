@@ -43,7 +43,7 @@ function ServicesPanel({ settings, availableServices, servicePaths, update, busy
   const [detail, setDetail] = useState(null);
   const own = ownerServices(settings);
   return <>
-    <div className="pt-section-head pt-services-heading"><div><h2>이용 서비스</h2><p>사용 설정을 켜면 왼쪽 메뉴에 해당 서비스가 나타납니다.</p></div><span>{availableServices.length}개 이용 중</span></div>
+    <div className="pt-section-head pt-services-heading"><div><h2>사용할 업무 서비스를 선택하세요.</h2><p>사용 설정을 켜면 왼쪽 메뉴에 해당 서비스가 나타납니다.</p></div><span>{availableServices.length}개 이용 중</span></div>
     <section className="pt-base-service">
       <span className="pt-service-icon"><Icon name="mapPin" size={22}/></span>
       <div><h3>기본 위치관리 <span className="pt-tag">기본 제공</span></h3><p>단말기 위치와 이동 기록, 통신 상태를 확인합니다.</p></div>

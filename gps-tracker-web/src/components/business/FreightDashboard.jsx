@@ -27,7 +27,7 @@ function ActivityList({items}) {
 }
 
 function DashboardCard({title,description,onMore,children}) {
-  return <section className="fr-dashboard-card"><header><div><h2>{title}</h2>{description&&<p className="rnt-section-caption">{description}</p>}</div><button type="button" className="fr-more" aria-label={title+' 더보기'} onClick={onMore}>더보기 <span aria-hidden="true">›</span></button></header>{children}</section>;
+  return <section className="fr-dashboard-card"><header><div><h2>{title}</h2>{description&&<p className="rnt-section-caption">{description}</p>}</div><button type="button" className="fr-more" aria-label={title+' 더보기'} onClick={onMore}>더보기</button></header>{children}</section>;
 }
 
 function DashboardView({data,devices,onPage,actions}) {
@@ -52,11 +52,11 @@ function DashboardView({data,devices,onPage,actions}) {
     return !Number.isFinite(seen)|| now-seen>data.policies.offlineMinutes*60000;
   });
   const tasks=[
-    ['pending','협력사·기사 수락 대기',pending,'cargo-dispatch','clock'],
-    ['late','예정 시간이 지난 운송',late,'cargo-shipments','route'],
-    ['proofs','인수증 확인 필요',proofs,'cargo-proofs','file'],
-    ['incidents','처리 중인 지연·사고',incidents,'cargo-incidents','warn'],
-    ['devices','단말 수신 확인',delayed,'cargo-devices','antenna'],
+    ['pending','협력사·기사 수락 대기',pending,'cargo-dispatch','users','배차 요청에 대한 응답을 확인하세요.'],
+    ['late','예정 시간이 지난 운송',late,'cargo-shipments','clock','진행 상황과 변경 일정을 확인하세요.'],
+    ['proofs','인수증 확인 필요',proofs,'cargo-proofs','file','미제출·검토 대기·보완 건을 확인하세요.'],
+    ['incidents','처리 중인 지연·사고',incidents,'cargo-incidents','warn','현장 상황과 후속 조치를 기록하세요.'],
+    ['devices','단말 수신 확인',delayed,'cargo-devices','wifi','마지막 위치와 수신 시각을 확인하세요.'],
   ];
   const count=tasks.reduce((sum,[,,items])=>sum+items.length,0);
   const metrics=[
@@ -65,8 +65,10 @@ function DashboardView({data,devices,onPage,actions}) {
     ['moving','상차·운송 중',moving.length,'현재 진행 중인 운송'],
     ['attention','확인할 업무',count,'수락·증빙·지연·수신'],
   ];
-  const taskButtons=<div className="fr-dashboard-tasks">{tasks.map(([id,label,items,,icon])=><button type="button" className="fr-task" key={id} onClick={()=>setView(id)}>
-    <i><Icon name={icon} size={16}/></i><span>{label}</span><FreightBadge tone={items.length?'amber':'neutral'}>{items.length}건</FreightBadge>
+  const taskButtons=<div className="fr-dashboard-tasks">{tasks.map(([id,label,items,,icon,description])=><button type="button" className="fr-task" key={id} onClick={()=>setView(id)}>
+    <i><Icon name={icon} size={16}/></i>
+    <span className="fr-task-copy"><span>{label}</span><small>{description}</small></span>
+    <FreightBadge tone={items.length?'amber':'neutral'}>{items.length}건</FreightBadge>
   </button>)}</div>;
   const selectedTask=tasks.find(([id])=>id===view);
   const title=selectedTask?.[1]||{today:'오늘 상차 예정 주문',unassigned:'미배차 주문',moving:'상차·운송 중',schedule:'오늘 운송 일정',attention:'확인할 업무',activity:'최근 처리 이력'}[view];
@@ -77,12 +79,12 @@ function DashboardView({data,devices,onPage,actions}) {
       <span>{label}<small>더보기 ›</small></span><strong>{value}<em>건</em></strong>
       <span className="fr-metric-note">{note}</span>
     </button>)}</div>
-    <div className="fr-toolbar fr-dashboard-tools"><FreightButton onClick={()=>onPage('cargo-live')} icon="map">실시간 관제</FreightButton><div className="fr-actions"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
+    <div className="fr-toolbar fr-dashboard-tools"><button type="button" className="fr-monitor-link" onClick={()=>onPage('cargo-live')}><Icon name="map" size={14}/>실시간 관제</button><div className="fr-actions"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
       <FreightButton primary icon="plus" onClick={()=>actions.form('new','orders')}>주문 등록</FreightButton></div>
     </div>
     {actions.feedback&&<p role="status" className="fr-note">{actions.feedback}</p>}
     <div className="fr-overview-grid">
-      <DashboardCard title="오늘 운송 일정" description={schedule.length+"건 · 상·하차 예정"} onMore={()=>setView('schedule')}><OverviewTable kind="shipments" data={data} rows={schedule.slice(0,5)} open={open}/></DashboardCard>
+      <DashboardCard title="오늘 운송 일정" description={schedule.length+"건 · 행을 누르면 운송 상세가 열립니다."} onMore={()=>setView('schedule')}><OverviewTable kind="shipments" data={data} rows={schedule.slice(0,5)} open={open}/></DashboardCard>
       <DashboardCard title="확인할 업무" onMore={()=>setView('attention')}>{taskButtons}</DashboardCard>
     </div>
     <div className="fr-overview-grid secondary">

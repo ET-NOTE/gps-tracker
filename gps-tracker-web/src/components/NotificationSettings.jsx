@@ -47,7 +47,7 @@ export default function NotificationSettings({portal = false}) {
     <fieldset disabled={busy} aria-busy={busy} style={{ display: 'flex', flexDirection: 'column', gap: 14, border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       {portal && <div className="pt-notif-choices">{[
         ['signal_loss_alert', 'wifi', '새 정보 수신 지연', `단말기에서 ${s.signal_loss_minutes}분 이상 새 정보를 받지 못했을 때`, s.signal_loss_alert],
-        ['device_health_alert', 'mapPin', '위치·전원 이상', 'GPS 위치 확인이 지연되거나 전압 저하로 단말기가 재시작될 때', s.device_health_alert ?? true],
+        ['device_health_alert', 'mapPin', '위치·전원 이상', 'GPS 수신이 늦거나 저전압으로 재시작할 때', s.device_health_alert ?? true],
         ['geofence_alert', 'target', '설정한 구역 출입', '설정한 펜스에 들어가거나 벗어날 때', s.geofence_alert],
       ].map(([key,icon,title,description,active])=><div className="pt-notif-choice" key={key}><span className="pt-notif-icon"><Icon name={icon} size={20}/></span>
         <div><h3>{title}</h3><p>{description}</p></div><span className="pt-toggle"><Switch label={title} checked={active} onChange={v=>patch({[key]:v})}/><span>{active?'켜짐':'꺼짐'}</span></span></div>)}</div>}

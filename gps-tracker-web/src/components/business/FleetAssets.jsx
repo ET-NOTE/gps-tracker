@@ -13,7 +13,7 @@ import {fleetDistance} from '../../lib/corporateOverview';
 import {useBusinessClock} from './useBusinessData';
 import {kstDateTime} from '../../lib/businessExport';
 import {projectFleetAssets,fleetAssetLabel} from '../../lib/fleetAssets';
-import {emptyAssetFilters,maintenanceScheduleFields,missingScheduleFields,filterFleetAssets,assetFilterError,assetOdometer,assetRegistrationDay} from '../../lib/fleetAssetFilters';
+import {emptyAssetFilters,maintenanceScheduleFields,missingScheduleFields,filterFleetAssets,assetFilterError,assetOdometer,assetRegistrationDay,vehicleDepartmentKey} from '../../lib/fleetAssetFilters';
 import {classifyDevice,ageString} from '../../colors';
 import {deviceBattery} from '../../lib/battery';
 import BatteryStatus from '../BatteryStatus';
@@ -29,7 +29,6 @@ import './fleet-reference-vehicles.css';
 export const fleetAssetsKey=['business','corporate','vehicles'];
 export function useFleetAssets() {return useQuery({queryKey:fleetAssetsKey,queryFn:()=>api.listFleetVehicles(),staleTime:15000});}
 export {projectFleetAssets} from '../../lib/fleetAssets';
-const vehicleDepartmentKey=asset=>asset.department_id!=null?`department:${asset.department_id}`:asset.department?.trim()?`department-name:${asset.department.trim()}`:'unassigned';
 const emptyVehicleLabels=new Set(['','-','—','미등록','차량정보미등록','차량번호미등록','차종미등록']);
 function mobileVehicleLabels(vehicle,manager){
   const labels=new Map();
@@ -110,7 +109,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const sortOptions=<><option value="name">차량 이름순</option><option value="created">최근 등록순</option><option value="distanceAsc">계기판 거리 낮은순</option><option value="distanceDesc">계기판 거리 높은순</option></>;
   const empty=!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>;
   return <div className="fleet-assets-list">
-    {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={editSchedule} refreshAssets={onChanged}/>:<>
+    {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} departments={departments} staff={staff} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={editSchedule} refreshAssets={onChanged}/>:<>
     <div className="fleet-record-toolbar" aria-label="차량 목록 조회">
       <div className="fleet-record-query">
         <label className="fleet-inline-search"><Icon name="search" size={15}/><input type="search" aria-label="등록 차량 검색" placeholder="차량번호, 모델, 담당자 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
