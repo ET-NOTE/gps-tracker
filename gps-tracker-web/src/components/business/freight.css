@@ -261,7 +261,8 @@
 .fr-admin-fields>.fr-field select {max-width:245px;}
 .fr-admin-fields>.is-wide {flex:1.4 1 195px;}
 .pt-member-shell .rnt-shell .fr-admin-fields .fr-field>.fr-resource-search {display:flex;align-items:center;gap:8px;color:var(--fleet-caption);height:37px;flex:none;}
-.fr-charge-list .rental-stage-period {flex:1.4 1 250px;min-width:0;}
+.fr-charge-list .rental-stage-period {flex:1.4 1 250px;min-width:0;margin:0;padding:0;border:0;}
+.fr-charge-list .rental-stage-period legend {margin:0 0 6px;padding:0;}
 .pt-member-shell .rnt-shell .fr-charge-list .rental-stage-period input {height:37px;min-width:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fleet-caption);font:400 12px/1.55 var(--fleet-font);}
 .pt-member-shell .rnt-shell .fr-admin-list>.fr-filters>.fr-btn {min-height:29px;padding:5px 10px;margin-left:auto;}
 :is(.fr-resource-list,.fr-admin-list) .fr-table th {white-space:nowrap;}
