@@ -307,10 +307,11 @@
   .pt-device-sidebar .pt-device-pane {height:auto;max-height:none;overflow:visible;gap:0}
   .pt-device-pane .pt-device-heading {padding:18px 15px 12px}
   .pt-device-pane .pt-device-filters {display:flex;flex-wrap:wrap;padding:0 15px;gap:8px}
-  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {display:grid;grid-template-columns:minmax(0,1.8fr) repeat(2,minmax(70px,1fr));align-items:center}
+  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {display:grid;grid-template-columns:minmax(0,1.6fr) minmax(88px,1fr) minmax(76px,1fr);align-items:center}
   .pt-device-pane .pt-device-filters .pt-search-field {flex:1.2 1 98px}
-  .pt-device-pane .pt-device-filters .pt-filter {flex:1 1 76px;height:36px;max-width:100%}
-  .pt-device-filters .pt-filter select {min-height:34px}
+  .pt-device-pane .pt-device-filters .pt-filter {position:relative;flex:1 1 76px;height:36px;max-width:100%}
+  .pt-device-filters .pt-filter select {min-height:34px;appearance:none;padding-inline:5px 14px}
+  .pt-device-filters .pt-filter::after {content:"";pointer-events:none;position:absolute;right:6px;top:42%;width:5px;height:5px;border:solid currentColor;border-width:0 1px 1px 0;transform:rotate(45deg)}
   .pt-device-sidebar .pt-device-list {flex:none;align-items:stretch;padding:0 12px 10px;scroll-padding-inline:12px;overflow-x:auto;overflow-y:hidden}
   .pt-device-sidebar .pt-device-card {flex:0 0 min(260px,100%);display:flex;flex-direction:column;min-height:250px;padding-block:12px}
   .pt-device-card .battery-status {margin-block:9px;min-height:72px}
@@ -365,12 +366,14 @@
   .pt-notif-choice .pt-toggle > span {display:none}
   .pt-work-alerts {flex-direction:column;align-items:flex-start}
 }
+@media(max-width:379px) {
+  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) .pt-search-field {grid-column:1/-1}
+}
 @media(max-width:359px) {
   .pt-member-shell .pt-header {padding-inline:8px}
   .pt-member-shell .pt-header-actions {gap:3px}
   .pt-member-shell .pt-header .pt-scope select {padding-inline:2px}
-  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) {grid-template-columns:repeat(2,minmax(0,1fr))}
-  .pt-device-pane .pt-device-filters:has(>label:nth-child(3)) .pt-search-field {grid-column:1/-1}
   .pt-account .pt-account-summary {min-height:93px}
   .pt-account .pt-services-heading {align-items:flex-start}
   .pt-account .pt-services-heading > div {min-width:0}

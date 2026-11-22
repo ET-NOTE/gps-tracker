@@ -24,7 +24,7 @@ function matchesDeviceStatus(filter, device, status) {
 }
 
 export default function PortalDeviceList({ devices = [], meta = {}, selectedId, detailId, onSelect, onDetail, onPair,
-  scope, scopeLabel, availableServices = [], filters, onFiltersChange, error, loading, onRetry, children }) {
+  scope, scopeLabel, availableServices = [], compact = false, filters, onFiltersChange, error, loading, onRetry, children }) {
   const {term, status:filter, service} = filters;
   const now = useVisibleNow(true, 60000);
   const rows = devices.map(device => ({ device, status: classifyDevice(device, meta[device.id], now) }));
@@ -40,7 +40,7 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
     </div>
     {children}
     <div className="pt-device-filters">
-      <label className="pt-search-field"><Icon name="search" size={15}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => onFiltersChange({...filters, term:e.target.value})}/></label>
+      <label className="pt-search-field"><Icon name="search" size={15}/><input type="search" aria-label="단말기 검색" title="이름·번호·차량 검색" placeholder={compact && showServices ? '검색' : '이름·번호·차량 검색'} value={term} onChange={e => onFiltersChange({...filters, term:e.target.value})}/></label>
       <label className="pt-filter"><select aria-label="단말기 상태 필터" value={filter} onChange={e => onFiltersChange({...filters, status:e.target.value})}>
         {FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}
         <optgroup label="세부 상태">{DETAILED_FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</optgroup>

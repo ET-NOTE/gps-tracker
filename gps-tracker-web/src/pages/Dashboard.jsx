@@ -947,7 +947,7 @@ export default function Dashboard({ onLogout }) {
   function closeTerminal() {setDetailId(null);setColorPickerId(null);}
   const panel = (
     <>
-      {view === 'devices' && <PortalDeviceList {...portalProps} devices={portalDevices} availableServices={enabledServices} scopeLabel={scopeOptions.find(option => option.value === portalScope)?.label}
+      {view === 'devices' && <PortalDeviceList {...portalProps} compact={bp === 'mobile'} devices={portalDevices} availableServices={enabledServices} scopeLabel={scopeOptions.find(option => option.value === portalScope)?.label}
         filters={deviceListFilters} onFiltersChange={setDeviceListFilters}
         meta={lastMetaRef.current} selectedId={filterDeviceId} detailId={detailId} loading={deviceQuery.isPending || loadingScopeDevices} error={deviceQuery.isError} onRetry={deviceQuery.refetch}
         onSelect={id => { persistFilterDevice(id); if (!isDesktop) mapAreaRef.current?.scrollIntoView({block:'start'}); }}
