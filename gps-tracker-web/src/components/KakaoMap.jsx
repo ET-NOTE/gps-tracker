@@ -425,7 +425,7 @@ function dotImageCached(color, isStop, size, isGapEndpoint = false) {
   return img;
 }
 
-const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo, onUserPan, onViewChange, visibleDeviceIds = null, deviceMap = null }, ref) {
+const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo, onUserPan, onViewChange, onZoomLevelChange, visibleDeviceIds = null, deviceMap = null }, ref) {
   // onPointInfo 가 제공되면 마커 클릭 시 kakao InfoWindow 대신 그 콜백을 호출.
   // 부모(Dashboard) 가 React 기반 bottom-sheet 으로 표시 (모바일 친화적).
   // 콜백 시그니처: ({ kind: 'main'|'point', label, color, meta, addr, lat, lng }) => void
@@ -443,6 +443,8 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
   const containerRef = useRef(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const onZoomLevelChangeRef = useRef(onZoomLevelChange);
+  onZoomLevelChangeRef.current = onZoomLevelChange;
   const [mapStatus, setMapStatus] = useState('loading');
   const [attempt, setAttempt] = useState(0);
   const mapRef       = useRef(null);
@@ -569,6 +571,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           level: 10,
         });
         zoomLevelRef.current = mapRef.current.getLevel();
+        onZoomLevelChangeRef.current?.(zoomLevelRef.current);
         sharedIwRef.current = new window.kakao.maps.InfoWindow({
           content: '<div></div>',
           removable: true,
@@ -594,6 +597,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
           const lvl = mapRef.current.getLevel();
           if (lvl !== zoomLevelRef.current) {
             zoomLevelRef.current = lvl;
+            onZoomLevelChangeRef.current?.(lvl);
             applyZoomStyles();
           }
           fireViewChange();

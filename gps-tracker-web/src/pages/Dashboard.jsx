@@ -661,7 +661,6 @@ export default function Dashboard({ onLogout }) {
   const handleMapViewChange = useCallback((view) => {
     if (view && view.level != null && lastZoomLevelRef.current !== view.level) {
       lastZoomLevelRef.current = view.level;
-      setMapLevel(view.level);
       clearTimeout(zoomRefreshTimerRef.current);
       zoomRefreshTimerRef.current = setTimeout(() => {
         refreshFnRef.current?.(true);
@@ -1113,7 +1112,7 @@ export default function Dashboard({ onLogout }) {
                 }
               } : undefined}
               onUserPan={handleUserPan}
-              onViewChange={handleMapViewChange} />
+              onViewChange={handleMapViewChange} onZoomLevelChange={setMapLevel} />
             {!fullToolOpen && !pointInfo && <MapTopOverlay
               externalControls
               devices={portalDevices} selected={filterDeviceId} onSelect={persistFilterDevice}
@@ -1160,7 +1159,7 @@ export default function Dashboard({ onLogout }) {
               '--pt-seeker-offset': (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0) + 'px',
               '--pt-command-bottom': ((view === 'devices' ? (isDesktop ? 48 : 43) : isDesktop ? 24 : 16) + (showMiniSeeker ? MINI_SEEKER_BOTTOM_HEIGHT : 0) + (view === 'devices' ? (showFences ? 114 : 57) : (showFences ? 120 : 60))) + 'px',
             }}>
-              <MapControls mapRef={mapRef} selected={selectedPortalDevice?.id} onOpenRoadview={openRoadview} deviceLayout={view === 'devices'} zoomLevel={mapReady ? mapRef.current?.getZoomLevel?.() ?? mapLevel : null}/>
+              <MapControls mapRef={mapRef} selected={selectedPortalDevice?.id} onOpenRoadview={openRoadview} deviceLayout={view === 'devices'} zoomLevel={mapReady ? mapLevel : null}/>
               {mapVisible && <MapActions simple={view === 'devices'}
                 hasDevice={Boolean(selectedPortalDevice)} tracking={userTrackPref} paused={seekerPaused}
                 canTrack={view === 'home' ? Boolean(selectedPortalDevice) : selectedPortalDevice?.last_lat != null && selectedPortalDevice?.last_lng != null}

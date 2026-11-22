@@ -112,3 +112,23 @@
   .rental-office .ro-table td>div {min-width:70px}
   .rnt-shell .rfl-table-scroll .rfl-table td.rental-list-empty {min-width:0;padding:20px 12px}
 }
+.rental-company-settings {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));
+  align-items:start;
+  gap:16px;
+}
+.rnt-shell[data-page="checkout"] .rental-workflow {container:rental-checkout / inline-size}
+@container rental-checkout (min-width:980px) {
+  .rnt-shell[data-page="checkout"] .rental-workflow .rental-workflow-filters {
+    display:grid;
+    grid-template-columns:minmax(240px,1.6fr) repeat(4,minmax(82px,.65fr)) minmax(150px,1fr) auto;
+    gap:10px;
+  }
+  .rnt-shell[data-page="checkout"] .rental-workflow .rental-workflow-filters>label {max-width:none;min-width:0}
+}
+@media(min-width:768px) {
+  .rnt-shell[data-page="rent-costs"] .ro-finance-filters .ro-period {flex-basis:100%}
+  .rnt-shell:is([data-page="rent-costs"],[data-page="rent-customers"]) .ro-filters .ro-field :is(input,select) {min-height:36px;height:36px}
+  .rnt-shell:is([data-page="rent-costs"],[data-page="rent-customers"]) .ro-toolbar button {height:36px;min-height:36px}
+}

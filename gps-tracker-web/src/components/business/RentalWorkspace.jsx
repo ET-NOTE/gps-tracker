@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from '../Icon';
 import { Modal } from '../ui';
 import { vehicleName } from '../../lib/business';
-import {useCorporateInfo} from '../../state';
+import {useCorporateInfo,useMe} from '../../state';
 import { useBusinessVehicle } from './BusinessWorkspace';
 import BusinessDrawer from './BusinessDrawer';
 import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
@@ -53,6 +53,8 @@ function WorkspaceSearch({devices, onTab, onClose, menu, onDevice}) {
 
 export default function RentalWorkspace({page,onTab,onNavigate,destinations,devices,children,menu=rentalMenu,serviceLabel='렌트카',heading='렌트카 운영',widthKey='rental.area.width',onSearchDevice,headerAction}) {
   const ownCompany=useCorporateInfo({staleTime:60000,retry:false});
+  const me=useMe();
+  const companyName=me.data?.id!=null&&ownCompany.data?.user_id===me.data.id ? ownCompany.data.company_name?.trim() : '';
   const landing=menu[0].pages[0][0];
   const group = menu.find(g => g.pages.some(([id])=>id===page)) || menu[0];
   const pageLabel = group.pages.find(([id]) => id === page)?.[1];
@@ -87,7 +89,7 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
     </aside>
     <div className="rnt-main"><header className="rnt-top ws-member-top no-print">
       <button className="ws-icon ws-menu" type="button" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={dialog==='nav'} onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
-      <WorkspaceBreadcrumb service={heading} group={group.label} page={pageLabel}/><WorkspaceScope ownName={ownCompany.data?.company_name?.trim()}/>
+      <WorkspaceBreadcrumb service={heading} group={group.label} page={pageLabel}/><WorkspaceScope ownName={companyName}/>
       <WorkspaceWidthControl className="rnt-width" wide={wide} onChange={chooseWidth}/>
       <button className="ws-wide-search" type="button" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
       {headerAction&&<div className="ws-alert-action">{headerAction}</div>}<WorkspaceAvatar label="계정 메뉴 열기" expanded={dialog==='account'} onClick={()=>setDialog('account')}/>
@@ -95,7 +97,7 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
       <div className="rnt-title"><div><h1>{title}</h1>{description && <p>{description}</p>}</div><div className="rnt-title-actions"><time>{today}</time></div></div>
       {children}
     </div></div></div>
-    {dialog==='nav'&&<BusinessDrawer navigation title={heading} subtitle={(ownCompany.data?.company_name?.trim()||serviceLabel)+' · 업무 공간'} onHome={()=>choose(landing)} onClose={()=>setDialog(null)}>{nav}
+    {dialog==='nav'&&<BusinessDrawer navigation title={heading} subtitle={(companyName||serviceLabel)+' · 업무 공간'} onHome={()=>choose(landing)} onClose={()=>setDialog(null)}>{nav}
       <button type="button" className="ws-nav-search" onClick={()=>setDialog('search')}><Icon name="search" size={17}/>차량·메뉴 검색</button>
       {onNavigate&&<button type="button" className="ws-nav-account" onClick={()=>setDialog('account')}><Icon name="user" size={16}/>계정 메뉴</button>}
     </BusinessDrawer>}

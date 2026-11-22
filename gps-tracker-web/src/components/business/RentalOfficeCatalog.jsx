@@ -86,7 +86,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
   }[kind];
   const filter=(label,selected,onChange,items)=><Field label={label}><select value={selected} onChange={e=>onChange(e.target.value)}><Options items={items}/></select></Field>;
   return <div className="rental-office">
-    {kind==='customers'&&<div className="ro-tabs"><button aria-pressed={!history} onClick={()=>setHistory(false)}>고객 명부</button><button aria-pressed={history} onClick={()=>setHistory(true)}>계약 이력·경고 관리</button></div>}
+    {history&&<div className="ro-tabs"><button onClick={()=>setHistory(false)}>고객 명부</button><button aria-pressed="true" onClick={()=>setHistory(true)}>계약 이력·경고 관리</button></div>}
     {history?<BusinessRenters/>:<>
       {kind==='customers'&&<Metrics items={[['조회 고객',rows.length+'명'],['법인 고객',rows.filter(c=>c.kind==='business').length+'명'],['면허 확인 필요',rows.filter(c=>!c.license_checked).length+'명']]}/>}
       <div className="ro-filters">
@@ -98,7 +98,9 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
         <Search value={query} setValue={setQuery} label={titles[kind]+' 검색'}/>
         {(query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<Button variant="ghost" size="sm" onClick={()=>{setQuery('');setStatus('all');setType('all');setAccount('all');setLicense('all');}}>초기화</Button>}
       </div>
-      <section className="ro-panel"><Toolbar count={rows.length}><Button onClick={()=>setEdit(null)}>{titles[kind]} 등록</Button></Toolbar>
+      <section className="ro-panel"><Toolbar count={rows.length}>
+        {kind==='customers'&&<Button variant="ghost" onClick={()=>setHistory(true)}>계약 이력·경고 관리</Button>}
+        <Button onClick={()=>setEdit(null)}>{titles[kind]} 등록</Button></Toolbar>
         <Table columns={[...cols,['상태',r=><span className={r.active?'ro-status':'ro-status off'}>{r.active?'사용 중':'사용 중지'}</span>],['관리',editButton]]} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
     </>}
     {selected&&kind==='rates'&&<RentalRecordDrawer title="요금표 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}

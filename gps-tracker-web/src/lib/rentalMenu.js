@@ -3,12 +3,12 @@ export const rentalMenu = [
   {id:'booking', label:'예약·배차', icon:'clock', pages:[['reservations','예약 목록'],['schedule','배차 캘린더']]},
   {id:'rental', label:'대여·반납', icon:'file', pages:[['contracts','계약 목록'],['checkout','출고 관리'],['active','대여 중 관리'],['returns','반납 관리'],['history','계약 조회·내보내기']]},
   {id:'customer', label:'고객 관리', icon:'users', pages:[['rent-customers','고객 목록'],['rent-accounts','법인·거래처']]},
-  {id:'fleetGroup', label:'차량 관리', icon:'car', pages:[['vehicles','차량 목록'],['service','정비·세차'],['incidents','사고·보험'],['devices','차량·단말기 연결']]},
+  {id:'fleetGroup', label:'차량 관리', icon:'car', pages:[['vehicles','차량 목록'],['service','정비·세차'],['incidents','사고·보험'],['devices','단말기 관리']]},
   {id:'control', label:'실시간 관제', icon:'map', pages:[['live','실시간 관제']]},
   {id:'finance', label:'요금·정산', icon:'coin', pages:[['rent-rates','요금·옵션'],['rent-payments','청구·수납'],['rent-refunds','환불·보증금'],['rent-costs','지출 내역']]},
   {id:'analysis', label:'통계·리포트', icon:'bar', pages:[['rent-reports','대여·매출 통계'],['rent-utilization','차량 가동·운영비']]},
   {id:'team', label:'사용자 관리', icon:'users', pages:[['staff','사용자 목록'],['branches','조직·지점 관리'],['groups','권한 그룹']]},
-  {id:'settings', label:'관리 설정', icon:'settings', pages:[['policy','대여 정책'],['rent-templates','계약서 양식'],['notifications','알림 설정'],['settings','서비스·이용권']]},
+  {id:'settings', label:'관리 설정', icon:'settings', pages:[['policy','대여 정책'],['rent-templates','계약서 양식'],['notifications','알림 설정'],['settings','회사·서비스 정보']]},
 ];
 
 export const rentalPages = new Map(rentalMenu.flatMap(g => g.pages));
@@ -42,4 +42,5 @@ export const rentalPageDescriptions = {
   live:'차량의 마지막 수신 위치와 대여 상태를 확인합니다.',
   'rent-reports':'기간별 계약과 대여료 수납·운영 지출을 확인합니다.',
   'rent-utilization':'차량별 대여 시간과 운영비를 비교합니다.',
+  settings:'대여 계약에 사용하는 사업자 정보와 서비스 이용 현황을 확인합니다.',
 };

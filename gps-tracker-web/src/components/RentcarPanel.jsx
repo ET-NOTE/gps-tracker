@@ -13,9 +13,10 @@ import RentalOffice from './business/RentalOffice';
 import RentalWorkflow from './business/RentalWorkflow';
 import RentalTeam, {useRentalTeamConfig} from './business/RentalTeam';
 import NotificationSettings from './NotificationSettings';
-import { BusinessSubscription as SubTab } from './business/BusinessPreferences';
+import { BusinessCompanyInfo, BusinessSubscription as SubTab } from './business/BusinessPreferences';
+import { fleetRequestScope } from '../lib/fleetSession';
 import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport';
-import { RentalVehicleScope, BusinessButton, BusinessError, BusinessEmpty, BusinessSettings } from './business/BusinessWorkspace';
+import { RentalVehicleScope, BusinessButton, BusinessError, BusinessEmpty } from './business/BusinessWorkspace';
 import RentalBoard from './business/RentalBoard';
 import RentalDispatchWeek from './business/RentalDispatchWeek';
 import ReturnDialog from './business/ReturnWizard';
@@ -28,11 +29,31 @@ import { StatCard, StatCardGrid } from './shared/StatCard';
 import { Modal, FormField, Button, Pill, SkeletonList, toast } from './ui';
 import {
   useRentals, useCreateRental, useUpdateRental, useDeleteRental,
-  useHandoffTokens, useIssueHandoffToken, useRevokeHandoffToken,
+  useHandoffTokens, useIssueHandoffToken, useRevokeHandoffToken, useMe, useCorporateInfo,
   qk,
 } from '../state';
 import { useQueryClient } from '@tanstack/react-query';
 import './business/rental-reference.css';
+
+function RentalCompanySettings({subscription,onSubscription,team}) {
+  const me=useMe();
+  const ownScope=fleetRequestScope('/corporate/info').owner==null;
+  const info=useCorporateInfo({enabled:ownScope&&team.isSuccess});
+  // Rental contract documents use the signed-in rental owner's business profile.
+  const ownsProfile=ownScope&&me.data?.id!=null&&me.data.id===info.data?.user_id;
+  let profile=<SkeletonList count={2} itemHeight={56}/>;
+  if(team.isError||me.isError||info.isError) {
+    const failed=[team,me,info].find(query=>query.isError);
+    profile=<BusinessError onRetry={failed.refetch}>회사 정보를 불러오지 못했습니다.</BusinessError>;
+  } else if(!ownScope||(info.isSuccess&&me.isSuccess&&!ownsProfile)) {
+    profile=<BusinessError>현재 렌트카 계정의 회사 정보를 확인할 수 없습니다.</BusinessError>;
+  } else if(team.isSuccess&&ownsProfile) {
+    profile=<BusinessCompanyInfo/>;
+  }
+  return <div className="rental-company-settings">{profile}{subscription.error
+    ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError>
+    : <SubTab kind="rentcar" sub={subscription.data} onChange={onSubscription}/>}</div>;
+}
 
 function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, destinations, onManageVehicle, onDevicesChange }) {
   const [localTab, setLocalTab] = useState('fleet');
@@ -40,7 +61,7 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   const tab = rentalPages.has(current) ? current : 'fleet';
   const [request, setRequest] = useState(null);
   const subscription = useBusinessSubscription('rentcar');
-  const company = useRentalTeamConfig(['vehicles','fleet','reservations','contracts','checkout','active','returns','schedule','service','incidents'].includes(tab));
+  const company = useRentalTeamConfig(['vehicles','fleet','reservations','contracts','checkout','active','returns','schedule','service','incidents','settings'].includes(tab));
   const branches = company.data?.branches || [];
   const assets=useRentalAssets();
   const vehicles=useMemo(()=>rentalInventory(assets.data || [],devices),[assets.data,devices]);
@@ -66,9 +87,8 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
       {tab==='history'&&<RentalsTab devices={devices} vehicles={vehicles} request={activeRequest}/>}
       {tab==='policy'&&<RentalPolicy/>}
       {tab==='notifications'&&<NotificationSettings/>}
-      {tab==='settings'&&<BusinessSettings hideNavigation subscription={subscription.error
-        ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError>
-        : <SubTab kind="rentcar" sub={subscription.data} onChange={v=>qc.setQueryData(qk.businessSubscription('rentcar'),v)}/>} />}
+      {tab==='settings'&&<RentalCompanySettings subscription={subscription} team={company}
+        onSubscription={v=>qc.setQueryData(qk.businessSubscription('rentcar'),v)}/>}
     </RentalWorkspace>
   </RentalVehicleScope>;
 }

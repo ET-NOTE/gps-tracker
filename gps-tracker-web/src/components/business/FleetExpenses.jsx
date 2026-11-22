@@ -13,6 +13,7 @@ import {BusinessSection,BusinessButton,BusinessError,BusinessEmpty} from './Busi
 import ExportButtons from './ExportButtons';
 import FleetRecordMetrics from './FleetRecordMetrics';
 import ExpenseBatchReview from './ExpenseBatchReview';
+import CombinedApprovals from './CombinedApprovals';
 import ExpenseCategorySettings from './ExpenseCategorySettings';
 import BusinessDrawer from './BusinessDrawer';
 import {ExpenseReceiptThumbnail,ExpenseInlineAttachments,ExpenseAttachmentViewer} from './ExpenseAttachments';
@@ -26,36 +27,17 @@ export default function FleetExpenses(props){
  const canExpenses=access.review_expenses??roleCanReview,canReservations=access.review_reservations??roleCanReview;
  const [kind,setKind]=useState('all'),[selected,setSelected]=useState(null);
  const choose=value=>{setSelected(null);setKind(value);};
- if(props.approvalsOnly&&props.reservationInbox){
+ if(props.approvalsOnly&&props.reservationInbox!==undefined){
   if(!canExpenses&&!canReservations)return null;
-  const mode = !canExpenses ? 'reservation' : !canReservations ? 'expense' : kind;
+  const tabs=[['all','전체 요청'],...(canReservations?[['reservation','예약 요청']]:[]),...(canExpenses?[['expense','지출 요청']]:[])];
+  const mode=tabs.some(([key])=>key===kind)?kind:'all';
   return <div className="fleet-approval-inbox">
-   {canExpenses&&canReservations&&<div className="corporate-view-switch" role="group" aria-label="승인 요청 종류">{[['all','전체 요청'],['reservation','예약 요청'],['expense','지출 요청']].map(([key,name])=><button key={key} type="button" className="corporate-view-option" aria-pressed={mode===key} onClick={()=>choose(key)}>{name}</button>)}</div>}
-   {mode==='all'?<CombinedApprovals onOpen={(type,row)=>{setSelected(row);setKind(type);}}/>:mode==='reservation'?React.cloneElement(props.reservationInbox,{request:selected?{reservation:selected}:undefined}):<ExpenseWorkspace approvalsOnly initialDetail={selected?.id}/>}
+   <div className="corporate-view-switch" role="group" aria-label="승인 요청 종류">{tabs.map(([key,name])=><button key={key} type="button" className="corporate-view-option" aria-pressed={mode===key} onClick={()=>choose(key)}>{name}</button>)}</div>
+   {mode==='all'?<CombinedApprovals canExpenses={canExpenses} canReservations={canReservations} onOpen={(type,row)=>{setSelected(row);setKind(type);}}/>:mode==='reservation'?React.cloneElement(props.reservationInbox,{request:selected?{reservation:selected}:undefined}):<ExpenseWorkspace approvalsOnly initialDetail={selected?.id}/>}
 
   </div>;
  }
  return <ExpenseWorkspace key={props.approvalsOnly?'approval':props.categoriesOnly?'categories':'expenses'} {...props}/>;
-}
-function CombinedApprovals({onOpen}) {
- const today=businessDate();
- const [month,setMonth]=useState(()=>today.slice(0,7));
- const valid=/^\d{4}-(0[1-9]|1[0-2])$/.test(month);
- const [year,num]=month.split('-').map(Number);
- const from=valid?month+'-01':'',to=valid?month+'-'+String(new Date(Date.UTC(year,num,0)).getUTCDate()).padStart(2,'0'):'';
- const expenseFilter={from,to,status:'pending'};
- const expenses=useQuery({queryKey:['fleet-expenses',expenseFilter],queryFn:()=>api.listExpenses(expenseFilter),enabled:valid});
- const bookingFilter=valid?{from:new Date(from+'T00:00:00+09:00').toISOString(),to:new Date(Date.parse(to+'T00:00:00+09:00')+86400000).toISOString()}:{};
- const bookings=useQuery({queryKey:['business','corporate','vehicle-reservations',bookingFilter],queryFn:()=>api.listFleetReservations(bookingFilter),enabled:valid});
- const rows=[...(bookings.data||[]).filter(r=>r.status==='pending'&&r.approval_required&&r.can_review).map(r=>({type:'reservation',id:r.id,date:kstDateTime(r.starts_at),person:r.driver_name,title:r.vehicle_name||r.license_plate||r.device_name,detail:r.company_purpose_name||r.purpose,row:r})),
-   ...(expenses.data?.items||[]).filter(r=>r.status==='pending'&&r.can_review).map(r=>({type:'expense',id:r.id,date:r.spent_on,person:r.staff_name,title:r.category_name,detail:expenseMoney(r.amount_krw)+'원',row:r}))].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
- const error=bookings.error||expenses.error;
- return <section className="fleet-member-approvals">
-   <header><div><h2>승인 대기 요청</h2><p>선택한 월의 차량 이용일과 지출일 기준입니다.</p></div><label>조회 월<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label></header>
-   {!valid?<p role="status">조회할 월을 선택해 주세요.</p>:error?<BusinessError onRetry={()=>{bookings.refetch();expenses.refetch();}}>{error.message||'승인 요청을 불러오지 못했습니다.'}</BusinessError>:
-    (expenses.isFetching||bookings.isFetching)?<p role="status">승인 요청 조회 중…</p>:!rows.length?<BusinessEmpty compact title="승인 대기 요청이 없습니다."/>:
-    <ul>{rows.map(r=><li key={r.type+r.id}><button type="button" onClick={()=>onOpen(r.type,r.row)}><span className="business-badge">{r.type==='reservation'?'차량 예약':'지출'}</span><span><strong>{r.title||'미지정'}</strong><small>{[r.person,r.detail].filter(Boolean).join(' · ')}</small></span><time>{r.date}</time><Icon name="chevron-right" size={16}/></button></li>)}</ul>}
- </section>;
 }
 function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories,initialDetail=null,initialScope}){
  const access=useFleetAccess(),qc=useQueryClient(),cats=useQuery({queryKey:['expense-categories'],queryFn:()=>api.expenseCategories()}),assets=useFleetAssets(),staff=useStaff(),org=useFleetOrganization();

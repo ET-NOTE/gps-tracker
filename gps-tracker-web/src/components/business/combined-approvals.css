@@ -1,0 +1,38 @@
+.fleet-combined-approvals{display:grid;gap:16px;min-width:0;color:var(--text)}
+.fleet-approval-actions,.fleet-approval-list-head,.fleet-approval-list-head>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fleet-approval-actions{justify-content:flex-end}
+.fleet-approval-list-head{justify-content:space-between}
+.fleet-approval-filters{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.fleet-approval-filters fieldset,.fleet-approval-filters label{margin:0;padding:0;border:0;min-width:0;font-size:12px;color:var(--text-2)}
+.fleet-approval-filters label{display:grid;gap:5px}
+.fleet-approval-filters legend{padding:0 0 5px}
+.fleet-approval-filters fieldset>div{display:flex;align-items:center;gap:6px}
+.fleet-approval-filters :is(select,input){box-sizing:border-box;max-width:100%;min-width:0;min-height:38px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:14px}
+.fleet-approval-table{min-width:0;overflow:auto;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.fleet-approval-table table{border-collapse:collapse;width:100%;font-size:14px}
+.fleet-approval-table thead{background:var(--surface-2);color:var(--text-2)}
+.fleet-approval-table :is(td,th){padding:11px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+.fleet-approval-table tr:last-child td{border-bottom:0}
+.fleet-approval-table td small{display:block;color:var(--text-2);margin-top:3px}
+.fleet-approval-detail{color:var(--primary);background:transparent;border:0;padding:4px 0;text-align:left;font:inherit;cursor:pointer}
+.fleet-approval-detail:hover{text-decoration:underline}
+@media (max-width:740px){
+ .fleet-approval-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .fleet-approval-filters fieldset,.fleet-approval-filters label:has(input[type="search"]){grid-column:1/-1}
+ .fleet-approval-filters fieldset>div{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+ .fleet-approval-filters :is(input,select){width:100%;font-size:16px;min-height:42px}
+ .fleet-approval-list-head{align-items:flex-start}
+ .fleet-approval-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .fleet-approval-table tr{display:grid;grid-template-columns:minmax(0,1fr);padding:10px 14px;border-bottom:1px solid var(--border)}
+ .fleet-approval-table tr:last-child{border-bottom:0}
+ .fleet-approval-table tbody,.fleet-approval-table table{display:block}
+ .fleet-approval-table td{display:grid;grid-template-columns:78px minmax(0,1fr);gap:0 6px;align-items:center;padding:4px 0;border:0;overflow-wrap:anywhere}
+ .fleet-approval-table td::before{content:attr(data-label);font-size:12px;color:var(--text-2)}
+ .fleet-approval-table td>small{grid-column:2}
+ .fleet-approval-table td>:is(input,button,span){justify-self:start}
+ .fleet-approval-table td:empty{display:none}
+}
+@media(max-width:380px){
+ .fleet-approval-filters fieldset>div{grid-template-columns:minmax(0,1fr)}
+ .fleet-approval-filters fieldset>div>span{display:none}
+}
