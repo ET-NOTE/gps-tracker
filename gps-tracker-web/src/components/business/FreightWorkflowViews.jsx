@@ -2,7 +2,7 @@ import {useState} from 'react';
 import truckArt from './freight-truck.svg';
 import {FreightBadge,FreightButton,FreightField,FreightTable} from './FreightKit';
 import {nextAction,Status} from './FreightDetail';
-import {addDays,candidate,costLabel,epoch,firstOrder,nameOf,orderStates,proofStates,routeName,shipStates,stamp,timeLabel,vehicleName,weekdays,weekOf} from '../../lib/freightWorkflow';
+import {addDays,candidate,costLabel,epoch,firstOrder,invoiceLabel,nameOf,orderStates,proofStates,routeName,shipStates,stamp,timeLabel,vehicleName,weekdays,weekOf} from '../../lib/freightWorkflow';
 const num=n=>Number(n).toLocaleString('ko-KR');
 const mainCell=(main,detail)=><>{main}<small>{detail}</small></>;
 function detailLink(label,click){return <button className="fr-link" onClick={click}>{label}</button>;}
@@ -17,11 +17,15 @@ export function WorkflowTable({page,data,rows,open,form}){
       <div className="fr-actions">{recurring?<FreightButton disabled={!o.active} onClick={()=>form('generate',page,o.id)}>주문 생성</FreightButton>:
         o.status==='open'?<FreightButton onClick={()=>form('assign',page,o.id)}>배차 등록</FreightButton>:<FreightButton onClick={()=>open(page,o.id)}>상세</FreightButton>}</div>]
   }))}/>;
-  return <FreightTable columns={proofs?['운송 / 화주','운송 구간','차량 / 기사','수령인 / 확인 시각','인수증','업무 처리']:['운송 / 화주','운송 구간','차량 / 기사','상차 / 하차 예정','운송 단계','인수증','업무 처리']} empty={proofs?'하차를 완료한 운송이 없습니다.':'조회된 운송이 없습니다.'} rows={rows.map(s=>{
+  return <FreightTable columns={proofs?['운송 / 화주','운송 구간','차량 / 기사','수령 확인','증빙 상태','청구 상태','업무 처리']:['운송 / 화주','운송 구간','차량 / 기사','상차 / 하차 예정','운송 단계','인수증','업무 처리']} empty={proofs?'하차를 완료한 운송이 없습니다.':'조회된 운송이 없습니다.'} rows={rows.map(s=>{
     const o=firstOrder(data,s),next=nextAction(s);
+    const proofLabel={missing:'인수증 등록',rework:'보완 등록',submitted:'증빙 확인'};
     return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[mainCell(detailLink(s.number,()=>open('shipments',s.id)),nameOf(data,'shippers',o?.shipperId)),routeName(data,o),mainCell(vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId)),
-      proofs?mainCell(s.proof.receiver||'—',timeLabel(s.proof.at)):mainCell(timeLabel(s.start),timeLabel(s.end)),...(!proofs?[<Status value={s.status} labels={shipStates}/>]:[]),<Status value={s.proof.status} labels={proofStates}/>,
-      <div className="fr-actions">{next?<FreightButton onClick={()=>form(next[0],'shipments',s.id)}>{next[1]}</FreightButton>:<FreightButton onClick={()=>open('shipments',s.id)}>상세</FreightButton>}{proofs&&s.proof.status==='submitted'&&<FreightButton onClick={()=>form('rework','shipments',s.id)}>보완 요청</FreightButton>}</div>]};
+      proofs?mainCell(s.proof.receiver||(s.proof.files?.length?'사진 첨부':'미등록'),timeLabel(s.proof.at)):mainCell(timeLabel(s.start),timeLabel(s.end)),...(!proofs?[<Status value={s.status} labels={shipStates}/>]:[]),<Status value={s.proof.status} labels={proofStates}/>,
+      ...(proofs?[<FreightBadge tone={s.invoiceStatus==='issued'?'blue':'neutral'}>{invoiceLabel(s)}</FreightBadge>]:[]),
+      <div className="fr-actions">{next?<FreightButton onClick={()=>form(next[0],'shipments',s.id)}>{proofs?proofLabel[s.proof.status]:next[1]}</FreightButton>:
+        proofs&&s.proof.status==='approved'?<FreightButton icon="wallet" onClick={()=>open('finance',s.id)}>정산 확인</FreightButton>:<FreightButton onClick={()=>open('shipments',s.id)}>상세</FreightButton>}
+        {proofs&&s.proof.status==='submitted'&&<FreightButton onClick={()=>form('rework','shipments',s.id)}>보완 요청</FreightButton>}</div>]};
   })}/>;
 }
 

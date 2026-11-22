@@ -175,7 +175,7 @@ export function BusinessLocation({ devices, onLive }) {
   const positions = `현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`;
   return <BusinessSection title="차량 위치" className={corporate ? 'fleet-location-panel' : undefined} description={corporate ? `위치 표시 ${counts.current + counts.old}대 · 전체 ${devices.length}대` : positions}
     action={onLive && <button className="fleet-dashboard-link" type="button" aria-label="실시간 관제" onClick={onLive}>{corporate ? '더보기' : '실시간 관제'} <Icon name="chevron-right" size={14}/></button>}>
-    <BusinessMap devices={devices} onSelect={selection?.focusVehicle || openVehicle} selectedId={selection?.focusedId} />
+    <BusinessMap devices={devices} onSelect={selection?.focusVehicle || openVehicle} selectedId={selection?.focusedId} controls={corporate?'compact':undefined} />
     {corporate ? <div className="fleet-location-counts" aria-label="차량 위치 수신 현황">
       <span>현재 수신 <b>{counts.current}</b></span><span>오래된 위치 <b>{counts.old}</b></span><span>위치 없음 <b>{counts.none}</b></span>
     </div> : <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>}

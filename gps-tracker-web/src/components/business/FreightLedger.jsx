@@ -116,6 +116,12 @@ function FinanceSide({r,billing,requiresProof,onConfirm,onPayment}) {
   </section>;
 }
 
+export function ShipmentLedger({data,shipment,save,onOpenShipment,onClose}) {
+  const [view,setView]=useState({id:shipment.id,action:'detail'});
+  const r=financeRow(data,shipment,true,shipmentFinance(data,shipment));
+  return <FreightLedgerDialogs billing {...{data,save,onOpenShipment,view,r}} setView={next=>next?setView(next):onClose()}/>;
+}
+
 export function FreightLedgerDialogs({billing,data,save,onOpenShipment,view,setView,eligible,r}) {
   const [chargeView,setChargeView]=useState(null),[paymentId,setPaymentId]=useState(null);
   const {s,fin}=r;
@@ -150,7 +156,7 @@ export function FreightLedgerDialogs({billing,data,save,onOpenShipment,view,setV
       <section className="fr-record-block"><h3>거래 기록 · {payments.length}건</h3>{payments.length?payments.map(p=><button key={p.id} type="button" className="fr-record-link" onClick={()=>setPaymentId(p.id)}>
         <span>{paymentNames[p.side]} · {costLabel(p.amount)}<small>{timeLabel(p.at)} · {p.method}</small></span></button>):<p className="fr-record-note">등록된 거래 기록이 없습니다.</p>}</section>
     </FreightDrawer>}
-    {chargeView&&<FreightChargeDialogs data={data} save={save} shipmentId={s.id} view={chargeView} setView={setChargeView}/>}
+    {chargeView&&<FreightChargeDialogs data={data} save={save} shipmentId={s.id} view={chargeView} setView={setChargeView} onOpenFinance={()=>setChargeView(null)}/>}
     {payment&&<Modal open title="거래 기록 상세" subtitle={s.number} size={530} onClose={()=>setPaymentId(null)} footer={<div className="service-form-actions"><FreightButton primary onClick={()=>setPaymentId(null)}>닫기</FreightButton></div>}>
       <FreightFacts items={[[ '구분',paymentNames[payment.side]],['금액',costLabel(payment.amount)],['거래 수단',payment.method],['거래 일시',timeLabel(payment.at)],['메모',payment.note||'—']]}/>
     </Modal>}

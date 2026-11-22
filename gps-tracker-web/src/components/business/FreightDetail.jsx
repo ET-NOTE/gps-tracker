@@ -3,10 +3,9 @@ import Icon from '../Icon';
 import truckArt from './freight-truck.svg';
 import {FreightBadge,FreightButton,FreightDrawer,FreightFacts,Status} from './FreightKit';
 import {FreightCatalogDialogs} from './FreightCatalog';
-import {financeRow,FreightLedgerDialogs} from './FreightLedger';
 import {FreightPhotos} from './FreightShipmentForms';
 import useFreightStaff from './useFreightStaff';
-import {costLabel,firstOrder,getRow,nameOf,orderStates,proofStates,shipStates,stepMap,timeLabel,vehicleName,weekdays} from '../../lib/freightWorkflow';
+import {costLabel,firstOrder,getRow,invoiceLabel,nameOf,orderStates,proofStates,shipStates,stepMap,timeLabel,vehicleName,weekdays} from '../../lib/freightWorkflow';
 import {shipmentFinance} from '../../lib/freightFinance';
 
 const eventLabels={requested:'배차 요청',confirmed:'배차 확정',arrived:'상차지 도착',loaded:'상차 완료',delivered:'하차 완료',reassigned:'배차 변경',cancelled:'배차 취소',declined:'배차 거절'};
@@ -62,7 +61,7 @@ export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage,
     {shipment?.status==='requested'&&<FreightButton onClick={()=>form('decline',kind,r.id)}>배차 거절</FreightButton>}
     {mayReassign&&<><FreightButton onClick={()=>form('assign',kind,r.id)}>재배차</FreightButton><FreightButton onClick={()=>form('release',kind,r.id)}>배차 해제</FreightButton></>}
     {shipment?.status==='delivered'&&shipment.proof.status==='submitted'&&<><FreightButton onClick={()=>form('rework',kind,r.id)}>보완 요청</FreightButton><FreightButton onClick={()=>form('proof',kind,r.id)}>인수증 수정</FreightButton></>}
-    {shipment&&<FreightButton onClick={()=>setRelated({kind:'finance',id:r.id,action:'detail',billing:true})}>운임·정산</FreightButton>}
+    {shipment&&<FreightButton onClick={()=>open('finance',r.id)}>운임·정산</FreightButton>}
   </div>;
   const staffName=order?.userId?(staff.rows.find(p=>String(p.id)===String(order.userId))?.name||'기존 담당자'):'운영 관리자';
   const branchName=nameOf(data,'branches',r.branchId);
@@ -97,7 +96,7 @@ export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage,
           <Block title="운임·정산"><FreightFacts items={[
             ['화주 청구 예정',costLabel(finance.sell)],['운송 지급 예정',costLabel(finance.buy)],['운임 차익',costLabel(finance.margin)],
             ['화주 순수납',costLabel(finance.received)],['운송비 순지급',costLabel(finance.paid)],
-            ['화주 청구 상태',r.invoiceStatus==='issued'?'청구 기록 완료':'청구 전'],['운송비 정산',r.payableStatus==='confirmed'?'금액 확인 완료':'금액 확인 전'],
+            ['화주 청구 상태',invoiceLabel(r)],['운송비 정산',r.payableStatus==='confirmed'?'금액 확인 완료':'금액 확인 전'],
           ]}/></Block>
           <Block title="운송 진행">{r.events?.length?<ol className="fr-record-history">{r.events.map((event,i)=><li key={i}>{eventLabels[event.type]||event.type}<small>{timeLabel(event.at)}</small>{event.note&&<p className="fr-record-note">{event.note}</p>}</li>)}</ol>:<p className="fr-record-note">진행 기록이 없습니다.</p>}</Block>
           <Block title="인수증·수령 확인"><FreightFacts items={[
@@ -110,11 +109,7 @@ export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage,
         <Block title="처리 이력">{r.history?.length?<ul className="fr-record-history">{r.history.map((h,i)=><li key={i}>{h.text}<small>{timeLabel(h.at)}</small></li>)}</ul>:<p className="fr-record-note">등록된 이력이 없습니다.</p>}</Block>
       </>}
     </FreightDrawer>
-    {related&&(related.kind==='finance'?<FreightLedgerDialogs data={data} save={save}
-      billing={related.billing} view={related} setView={setRelatedView}
-      r={financeRow(data,r,related.billing,finance)}
-      onOpenShipment={()=>setRelated(null)}/>
-    :<FreightCatalogDialogs kind={related.kind} data={data} save={save} view={related} setView={setRelatedView}
-      onOpenRecord={(kind,id)=>{setRelated(null);open(kind,id);}}/>)}
+    {related&&<FreightCatalogDialogs kind={related.kind} data={data} save={save} view={related} setView={setRelatedView}
+      onOpenRecord={(kind,id)=>{setRelated(null);open(kind,id);}}/>}
   </>;
 }

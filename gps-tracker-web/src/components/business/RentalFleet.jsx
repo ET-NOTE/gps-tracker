@@ -8,13 +8,15 @@ import { kstDateTime } from '../../lib/businessExport';
 import { terminalName } from '../../lib/corporateOverview';
 import { rentalFleetLabel, sameId, vehicleReadiness } from '../../lib/rentalFleet';
 import CarImage from '../CarImage';
+import sedan from '../entry/login-vehicle.png';
 import Icon from '../Icon';
 import { SkeletonList } from '../ui';
 import BusinessMap from './BusinessMap';
 import { BusinessButton, BusinessEmpty, BusinessError, useBusinessVehicle } from './BusinessWorkspace';
 import { useBusinessClock, useRentalOperations } from './useBusinessData';
 import RentalDashboard from './RentalDashboard';
-import RentalFleetWork, { fleetWorkKey } from './RentalFleetWork';
+import RentalVehicleRecord from './RentalVehicleRecord';
+import RentalFleetWork, { fleetWorkKey, WorkEditor } from './RentalFleetWork';
 import RentalAssetEditor, { RentalDeviceLink, useRentalAssets } from './RentalAssets';
 import ExportButtons from './ExportButtons';
 import './rental-fleet.css';
@@ -25,10 +27,11 @@ function terminalSignal(device, now) {
   return { code, label: state.label };
 }
 
-function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, contracts, now, onMap, onNavigate, onDevicesChange, onContracts, branches, refresh }) {
+function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, contracts, now, onMap, onTab, onNavigate, onDevicesChange, onContracts, branches, refresh }) {
   const [query, setQuery] = useState(''), [branch, setBranch] = useState(''), [vehicleClass, setClass] = useState('');
-  const [filter, setFilter] = useState(''), [connection, setConnection] = useState(''), [chosen, setChosen] = useState(null), [editing, setEditing] = useState(initialVehicleId ?? null);
+  const [filter, setFilter] = useState(''), [connection, setConnection] = useState(''), [chosen, setChosen] = useState(null), [editing, setEditing] = useState(null);
   const [registering,setRegistering] = useState(false),[linking,setLinking]=useState(null);
+  const [detailId,setDetailId] = useState(initialVehicleId ?? null), [workVehicleId,setWorkVehicleId] = useState(null);
   const openVehicle = useBusinessVehicle(), live = view === 'live', terminals = view === 'devices';
   const summary = rentalSummary(contracts, devices, now), needle = query.trim().toLowerCase();
   const allRows = devices.map(device => ({
@@ -41,6 +44,7 @@ function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, 
     && (!needle || [r.label, r.device.device_uid, r.terminal, r.className, r.device.car_model, r.device.car_plate].some(v => String(v || '').toLowerCase().includes(needle))));
   const branchOptions = [...new Set(allRows.map(r => r.branch).filter(Boolean))].sort(), classes = [...new Set(allRows.map(r => r.className).filter(Boolean))].sort();
   const selected = rows.find(r => sameId(r.device.id, chosen)) || rows[0];
+  const detail = allRows.find(row => sameId(row.device.id,detailId));
   const report = { filename: '렌트카_차량목록_' + businessDate(now), columns: [['label','차량'],['className','차종 등급'],['branch','지점'],['state','준비 상태'],['terminal','연결 단말기'],['signal','단말 수신'],['km','누적 거리(km)'],['fuel','잔량(%)']].map(([key,label])=>({key,label})),
     rows: rows.map(r => ({ ...r, state:r.state.label, signal:r.signal.label, km:r.device.rental_profile?.odometer_km, fuel:r.device.rental_profile?.fuel_level })) };
   const editAsset=vehicles.find(v=>sameId(v.id,editing));
@@ -62,19 +66,23 @@ function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, 
         {!rows.length && <BusinessEmpty title={empty} compact />}</div></section>
       <section className="rfl-card rfl-map"><BusinessMap devices={rows.flatMap(row=>row.device.terminal?[row.device.terminal]:[])} selectedId={selected?.device.device_id} onSelect={d=>setChosen(rows.find(r=>r.device.device_id===d.id)?.device.id)}/>
         {selected && <footer><div><strong>{selected.label}</strong><small>{selected.device.last_fix_at ? '마지막 위치 ' + kstDateTime(selected.device.last_fix_at) : '수신된 위치 없음'}</small></div>
-          <div className="rfl-buttons"><BusinessButton onClick={() => selected.device.terminal ? openVehicle?.(selected.device.terminal) : setEditing(selected.device.id)}>차량 상세</BusinessButton>{onMap && selected.device.device_id!=null && <BusinessButton icon="mapPin" onClick={() => onMap(selected.device.device_id)}>전체 지도</BusinessButton>}</div></footer>}</section></div>
+          <div className="rfl-buttons"><BusinessButton onClick={() => setDetailId(selected.device.id)}>차량 상세</BusinessButton>{onMap && selected.device.device_id!=null && <BusinessButton icon="mapPin" onClick={() => onMap(selected.device.device_id)}>전체 지도</BusinessButton>}</div></footer>}</section></div>
       : <section className="rfl-card rfl-list-card" aria-label={title}>
         {!rows.length ? <BusinessEmpty title={empty} /> : terminals ? <div className="rfl-table-scroll" tabIndex={0} role="region" aria-label="등록 단말기 목록"><table className="rfl-table"><thead><tr>{["단말기","연결 차량","지점","마지막 통신","수신 상태","연결 관리"].map(label=><th key={label}>{label}</th>)}</tr></thead>
-          <tbody>{rows.map(row=><tr key={row.device.id}><td><button className="rfl-link" onClick={()=>openVehicle?.(row.device)}>{row.terminal}</button></td><td>{row.device.boundVehicle ? rentalFleetLabel(row.device.boundVehicle) : "미연결"}</td><td>{row.branch || "미지정"}</td><td>{row.device.last_seen_at?kstDateTime(row.device.last_seen_at):"수신 이력 없음"}</td><td><span className="rfl-badge" data-tone={row.signal.code==="received"?"ready":"service"}>{row.signal.label}</span></td><td><BusinessButton onClick={()=>setLinking(row.device)}>차량 연결</BusinessButton></td></tr>)}</tbody></table></div> : <div className="rfl-table-scroll" tabIndex={0} role="region" aria-label="렌트카 차량 목록"><table className="rfl-table"><thead><tr><th>차량</th><th>소속 지점</th><th>대여·준비 상태</th><th>누적 거리</th><th>잔량</th><th>단말기 수신</th><th>작업</th></tr></thead>
-          <tbody>{rows.map(row=><tr key={row.device.id}><td data-label="차량"><button type="button" className="rfl-car" onClick={() => row.device.terminal ? openVehicle?.(row.device.terminal) : setEditing(row.device.id)}>
-            <span className="rfl-car-art">{row.device.device_id ? <CarImage deviceId={row.device.device_id} version={row.device.car_image_url} fallback={<Icon name="car" size={24}/>} /> : <Icon name="car" size={24}/>}</span>
+          <tbody>{rows.map(row=><tr key={row.device.id}><td><button className="rfl-link" onClick={()=>openVehicle?.(row.device)}>{row.terminal}</button></td><td>{row.device.boundVehicle ? rentalFleetLabel(row.device.boundVehicle) : "미연결"}</td><td>{row.branch || "미지정"}</td><td>{row.device.last_seen_at?kstDateTime(row.device.last_seen_at):"수신 이력 없음"}</td><td><span className="rfl-badge" data-tone={row.signal.code==="received"?"ready":"service"}>{row.signal.label}</span></td><td><BusinessButton onClick={()=>setLinking(row.device)}>차량 연결</BusinessButton></td></tr>)}</tbody></table></div> : <div className="rfl-table-scroll" tabIndex={0} role="region" aria-label="렌트카 차량 목록"><table className="rfl-table"><thead><tr><th>차량</th><th>지점</th><th>운영 상태</th><th>누적 거리</th><th>잔량</th><th>단말 수신</th></tr></thead>
+          <tbody>{rows.map(row=><tr className="rfl-record-row" key={row.device.id} onClick={() => setDetailId(row.device.id)}><td data-label="차량"><button type="button" className="rfl-car" aria-label={row.label+" 상세"} onClick={e => {e.stopPropagation();setDetailId(row.device.id);}}>
+            <span className="rfl-car-art"><CarImage deviceId={row.device.device_id} version={row.device.terminal?.car_image_url} fallback={<img src={sedan} alt=""/>}/></span>
             <span><strong>{row.label}</strong><small>{[...new Set([row.device.car_model,row.className].filter(Boolean))].join(' · ')}</small></span>
           </button></td><td data-label="지점">{row.branch || '미지정'}</td><td data-label="상태"><span className="rfl-badge" data-tone={row.state.code}>{row.state.label}</span></td>
           <td data-label="거리">{row.device.rental_profile?.odometer_km == null ? '—' : row.device.rental_profile.odometer_km.toLocaleString() + ' km'}</td>
           <td data-label="잔량">{row.device.rental_profile?.fuel_level == null ? '—' : row.device.rental_profile.fuel_level + '%'}</td>
           <td data-label="단말기">{row.signal.label}{row.device.device_id!=null && <small>{row.terminal}</small>}</td>
-          <td data-label="작업"><div className="rfl-buttons"><BusinessButton onClick={() => setEditing(row.device.id)}>정보 수정</BusinessButton><BusinessButton onClick={() => onContracts({ vehicleId:row.device.id })}>계약 보기</BusinessButton></div></td></tr>)}</tbody></table></div>}
+          </tr>)}</tbody></table></div>}
       </section>}
+    {detail && !editing && !workVehicleId && <RentalVehicleRecord row={detail} contracts={contracts} work={work} now={now} onClose={() => setDetailId(null)}
+      onEdit={() => setEditing(detail.device.id)} onMaintenance={() => setWorkVehicleId(detail.device.id)} onWorkDetail={id => onTab('service',id)}
+      onContracts={onContracts} onTerminal={detail.device.terminal && openVehicle ? () => openVehicle(detail.device.terminal) : undefined}/>}
+    {workVehicleId && <WorkEditor devices={vehicles} contracts={contracts} presetVehicleId={workVehicleId} onClose={() => setWorkVehicleId(null)} onSave={() => {setWorkVehicleId(null);refresh();}}/>}
     {(registering || editAsset) && <RentalAssetEditor asset={editAsset} terminals={trackers} vehicles={vehicles} branches={branches} onClose={()=>{setEditing(null);setRegistering(false);}}/>}
     {linking && <RentalDeviceLink terminal={linking} vehicles={vehicles} onClose={()=>setLinking(null)}/>}
   </div>;
@@ -94,5 +102,5 @@ export default function RentalFleet({ view = 'fleet', devices = [], vehicles = [
   const data={devices:vehicles,work:work.data || [],contracts:rentals.data || [],now};
   if (view === 'fleet') return <RentalDashboard {...data} branches={branches} onTab={onTab} onContracts={onContracts} onNew={() => onContracts({new:true})} onWork={onTab} />;
   if (view === 'service' || view === 'incidents') return <RentalFleetWork key={view} {...data} branches={branches} incident={view === 'incidents'} initialId={initialWorkId} onVehicles={()=>onTab('vehicles')}/>;
-  return <Directory key={view} view={view} {...data} devices={view==='devices'?tracked:vehicles} vehicles={vehicles} trackers={devices} initialVehicleId={initialVehicleId} onMap={onMap} onContracts={onContracts} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} refresh={()=>Promise.all([work.refetch(),rentals.refetch(),assets.refetch(),onDevicesChange?.()])}/>;
+  return <Directory key={view} view={view} {...data} devices={view==='devices'?tracked:vehicles} vehicles={vehicles} trackers={devices} initialVehicleId={initialVehicleId} onMap={onMap} onTab={onTab} onContracts={onContracts} onNavigate={onNavigate} onDevicesChange={onDevicesChange} branches={branches} refresh={()=>Promise.all([work.refetch(),rentals.refetch(),assets.refetch(),onDevicesChange?.()])}/>;
 }

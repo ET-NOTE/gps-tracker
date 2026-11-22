@@ -1,6 +1,7 @@
 export const orderStates={open:'미배차',assigned:'배차 완료',completed:'운송 완료',cancelled:'주문 취소'};
 export const shipStates={requested:'수락 대기',confirmed:'배차 확정',loading:'상차 대기',in_transit:'운송 중',delivered:'하차 완료',cancelled:'배차 취소'};
 export const proofStates={missing:'미제출',submitted:'확인 대기',approved:'확인 완료',rework:'보완 요청'};
+export const invoiceLabel=s=>s.invoiceStatus==='issued'?'청구 기록 완료':'청구 전';
 export const weekdays=['일','월','화','수','목','금','토'];
 export const stepMap={
   confirmed:{type:'arrived',to:'loading',label:'상차지 도착'},

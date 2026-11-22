@@ -6,7 +6,7 @@ import { currentPeriod, inPeriod, PeriodFilter } from './FreightLedger';
 import { chargeStates } from '../../lib/freightFinance';
 import { costLabel, timeLabel } from '../../lib/freightWorkflow';
 
-export default function FreightCharges({data,save,onPage}) {
+export default function FreightCharges({data,save,onPage,onOpenFinance}) {
   const [query,setQuery]=useState(''),[period,setPeriod]=useState(currentPeriod),[state,setState]=useState(''),[kind,setKind]=useState(''),[branch,setBranch]=useState(''),[view,setView]=useState(null);
   const shipments=new Map(data.shipments.map(s=>[s.id,s]));
   const rows=data.charges.filter(x=>inPeriod(x.at,period)&&(!branch||shipments.get(x.shipmentId)?.branchId===branch)&&(!state||x.status===state)&&
@@ -26,6 +26,6 @@ export default function FreightCharges({data,save,onPage}) {
     <FreightTable columns={headings} rows={rows.map(x=>{const cells=values(x);
       cells[0]=<button className="fr-link" onClick={()=>setView({action:'detail',id:x.id})}>{cells[0]}</button>;cells[cells.length-1]=<FreightBadge tone={tones[x.status]}>{chargeStates[x.status]}</FreightBadge>;return {id:x.id,onOpen:()=>setView({id:x.id,action:'detail'}),cells};
     })} empty="조회 조건에 해당하는 추가 비용이 없습니다."/>
-    {view&&<FreightChargeDialogs {...{data,save,view,setView}}/>}
+    {view&&<FreightChargeDialogs {...{data,save,view,setView,onOpenFinance}}/>}
   </section>;
 }

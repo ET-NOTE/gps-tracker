@@ -92,3 +92,44 @@
 .fleet-quick-panel section button:hover,.fleet-quick-panel section button:focus-visible {background:var(--status-info-bg)}
 .fleet-quick-panel strong {font-size:15px; font-weight:550}
 .fleet-quick-panel small {font-size:13px; color:var(--text-2); overflow-wrap:anywhere}
+
+.fleet-map-controls {
+  --map-inset: 15px;
+  --map-bottom: 17px;
+  --map-button: 32px;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.fleet-map-controls.is-compact { --map-inset: 10px; --map-bottom: 13px; --map-button: 27px; }
+.fleet-map-zoom, .fleet-map-fit {
+  position: absolute;
+  right: var(--map-inset);
+  padding: 2px;
+  background: #fff;
+  color: #536171;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  box-shadow: 0 3px 11px #27384f12;
+  pointer-events: auto;
+}
+.fleet-map-zoom { bottom: calc(var(--map-bottom) + var(--map-button) + 9px); display: grid; }
+.fleet-map-zoom button, .fleet-map-fit {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  line-height: 1;
+}
+.fleet-map-zoom button { width: var(--map-button); height: var(--map-button); padding: 0; border: 0; border-radius: 5px; background: transparent; color: inherit; }
+.business-workspace .business-content .fleet-map-controls button { min-height: var(--map-button); }
+.fleet-map-fit { bottom: var(--map-bottom); width: calc(var(--map-button) + 6px); height: calc(var(--map-button) + 2px); }
+.fleet-map-minus { width: 12px; border-top: 1.5px solid currentColor; }
+.fleet-map-zoom button:disabled { opacity: .38; cursor: default; }
+.fleet-map-zoom button:enabled:hover, .fleet-map-fit:hover { background: #f0f5fb; }
+.fleet-map-controls button:focus-visible { outline: 2px solid #3974d7; outline-offset: -2px; }
+.fleet-map-controls output { position: absolute; right: calc(var(--map-inset) + var(--map-button) + 15px); bottom: calc(var(--map-bottom) + 4px); font-size: 12px; color: #536171; background: #fffffff0; padding: 3px 6px; border-radius: 4px; }
+@media (pointer: coarse) {
+  .fleet-map-controls, .fleet-map-controls.is-compact { --map-button: 44px; }
+}

@@ -127,6 +127,12 @@
 .pt-account-fields > .pt-security-card {grid-column:2;grid-row:2}
 .pt-account .pt-account-fields .profile-card {border:1px solid var(--pt-line)!important;background:var(--surface)!important;border-radius:12px!important;padding:21px 22px!important}
 .pt-account .pt-account-fields .profile-card h2 {font:400 13px/1.6 var(--fleet-font)!important;color:var(--pt-label)!important}
+.pt-security-row {width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;padding:8px 0;border:0;background:transparent;color:var(--pt-ink);font:400 13px/1.6 var(--fleet-font);text-align:left;cursor:pointer}
+.pt-security-row svg,.pt-security-card .pt-section-head svg {color:var(--pt-muted)}
+.pt-security-row:hover {color:var(--pt-link)}
+.pt-password-form,.pt-password-form label {display:grid;gap:8px;min-width:0}
+.pt-password-form {gap:16px;font:400 12px/1.6 var(--fleet-font);color:var(--text-2)}
+.pt-password-form input {box-sizing:border-box}
 .pt-account-phones {min-width:0}
 .pt-notif-choices {border:1px solid var(--pt-line);border-radius:12px;background:var(--surface);padding:3px 22px}
 .pt-notif-choice {display:flex;align-items:center;gap:15px;padding:23px 0}

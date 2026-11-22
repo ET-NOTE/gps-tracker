@@ -130,3 +130,17 @@
     padding: 10px 0 max(0px, env(safe-area-inset-bottom, 0px) - var(--modal-padding, 16px));
   }
 }
+.rfl-record-row {cursor:pointer}
+.rfl-record-row:hover,.rfl-record-row:focus-within {background:var(--surface-2)}
+.rfl-record-row .rfl-car-art {width:70px;height:33px;background:transparent}
+.rfl-record-row .rfl-car-art img {object-fit:contain}
+.rental-vehicle-hero {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:6px;padding:18px;margin:4px 0 20px;border-radius:12px;background:linear-gradient(150deg,var(--surface-2),var(--border));overflow:hidden}
+.rental-vehicle-hero>div {min-width:0;overflow-wrap:anywhere}
+.rental-vehicle-hero strong {font-size:23px;line-height:1.35;font-weight:400;letter-spacing:-.5px}
+.rental-vehicle-hero small {display:block;font-size:12px;margin-top:4px;color:var(--text-3)}
+.rental-vehicle-hero>img {display:block;grid-column:1/-1;width:min(280px,100%);aspect-ratio:280/126;object-fit:contain;margin:0 auto;mix-blend-mode:multiply}
+[data-theme=dark] .rental-vehicle-hero>img {mix-blend-mode:normal}
+.rental-vehicle-hero~section {margin-bottom:23px}
+.rental-related-header {display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rental-related-header .business-button {font-size:12px;min-height:30px}
+@media(max-width:670px) {.rfl-record-row .rfl-car-art {width:55px;height:28px}}

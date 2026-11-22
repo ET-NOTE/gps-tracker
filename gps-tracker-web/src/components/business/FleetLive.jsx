@@ -49,7 +49,7 @@ export default function FleetLive({devices, initialId, onRefresh}) {
     </div>
     <section className="fleet-live-map" aria-label="차량 위치 지도">
       <header className="fleet-live-panel-head"><h2>차량 위치 <small>{rows.length}대</small></h2></header>
-      <BusinessMap devices={rows} selectedId={selected?.id} onSelect={select}/>
+      <BusinessMap devices={rows} selectedId={selected?.id} onSelect={select} controls="full"/>
       {selected&&<div className="business-map-selection"><div><strong>{corporateVehicleName(selected)}</strong><p>{selected.last_fix_at ? '마지막 위치 '+kstDateTime(selected.last_fix_at) : '수신된 위치 없음'}</p></div><BusinessButton onClick={()=>openVehicle(selected)}>차량 상세</BusinessButton></div>}
     </section>
     <section className="fleet-live-list" aria-label="관제 차량">

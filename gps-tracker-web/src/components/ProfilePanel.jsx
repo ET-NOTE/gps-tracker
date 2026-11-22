@@ -2,6 +2,7 @@ import PrivacyRequests from './PrivacyRequests';
 import {rememberFleetOwner} from '../lib/fleetSession';
 import {FleetJoin} from './business/FleetAccess';
 import Switch from './ui/Switch';
+import Modal from './ui/Modal';
 // 내정보 패널 — 서브탭 구조: 계정 / 포인트 / 채팅 / 알림 / 테마.
 // 채팅 탭은 admin 본인은 노출 안 함 (자기 자신과의 채팅 thread 가 admin inbox 에 잡히지 않게).
 import { useState, useEffect, useRef } from 'react';
@@ -134,6 +135,25 @@ function AccountTab({ me, setMe, onLogout, onPrivacy, embedded, companySection }
   }
 
 
+  function closePassword() {
+    if (pwBusy) return;
+    setPwOpen(false);
+    setPwCur('');
+    setPwNew('');
+  }
+
+  const passwordForm = <form className={embedded ? 'pt-password-form' : undefined}
+    onSubmit={event => { event.preventDefault(); if (!pwBusy) changePassword(); }}>
+    <label>현재 비밀번호<input type="password" autoComplete="current-password" required value={pwCur}
+      onChange={event => setPwCur(event.target.value)} style={st.input}/></label>
+    <label>새 비밀번호<input type="password" autoComplete="new-password" required minLength={8} placeholder="8자 이상" value={pwNew}
+      onChange={event => setPwNew(event.target.value)} style={st.input}/></label>
+    <div className={embedded ? 'pt-dialog-actions' : undefined} style={embedded ? undefined : { display: 'flex', gap: 6, marginTop: 8 }}>
+      <button type="button" onClick={closePassword} disabled={pwBusy} className={embedded ? 'pt-button' : undefined} style={embedded ? undefined : st.btnSecondary}>취소</button>
+      <button type="submit" disabled={pwBusy} className={embedded ? 'pt-button pt-primary' : undefined} style={embedded ? undefined : st.btn}>{pwBusy ? '변경 중…' : '변경'}</button>
+    </div>
+  </form>;
+
   return (
     <div className={embedded ? 'pt-account-fields' : undefined} style={embedded ? undefined : { display: 'flex', flexDirection: 'column', gap: 10 }}>
       {embedded && <section className="pt-panel pt-account-form">
@@ -165,7 +185,7 @@ function AccountTab({ me, setMe, onLogout, onPrivacy, embedded, companySection }
       {joinFleet&&<FleetJoin onClose={()=>setJoinFleet(false)} onJoined={async id=>{rememberFleetOwner(id);await qc.invalidateQueries({queryKey:['fleet-memberships']});setJoinFleet(false);navigate('/corporate');}}/>}
       {!embedded && <AccountTypeCard />}
 
-      <div className={embedded ? 'pt-account-phones' : undefined} ref={phonesSection} tabIndex={embedded ? -1 : undefined}><PhonesCard me={me} setMe={setMe} /></div>
+      {!embedded && <PhonesCard me={me} setMe={setMe} />}
 
       {!embedded && <Card title="프로필">
         <input placeholder="이름 (표시될 이름)" value={name}
@@ -176,25 +196,18 @@ function AccountTab({ me, setMe, onLogout, onPrivacy, embedded, companySection }
         </button>
       </Card>}
 
-      <Card title="계정 보안" className="pt-security-card">
-        {!pwOpen ? (
-          <button onClick={() => setPwOpen(true)} style={st.btnSecondary}>비밀번호 변경</button>
-        ) : (
-          <>
-            <input type="password" placeholder="현재 비밀번호" value={pwCur}
-              onChange={e => setPwCur(e.target.value)} style={st.input} />
-            <input type="password" placeholder="새 비밀번호 (8자 이상)" value={pwNew}
-              onChange={e => setPwNew(e.target.value)} style={{ ...st.input, marginTop: 6 }} />
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              <button onClick={changePassword} disabled={pwBusy} style={{ ...st.btn, flex: 1 }}>
-                {pwBusy ? '...' : '변경'}
-              </button>
-              <button onClick={() => { setPwOpen(false); setPwCur(''); setPwNew(''); }}
-                style={{ ...st.btnSecondary, flex: 1 }}>취소</button>
-            </div>
-          </>
-        )}
-      </Card>
+      {embedded ? <section className="pt-panel pt-security-card">
+        <div className="pt-section-head"><h3>계정 보안</h3><Icon name="shield" size={17}/></div>
+        <button type="button" className="pt-security-row" aria-haspopup="dialog" onClick={() => setPwOpen(true)}>
+          비밀번호 관리<Icon name="chevron-right" size={15}/>
+        </button>
+        <Modal open={pwOpen} onClose={closePassword} mobileForm size={530} title="비밀번호 관리" className="pt-standard-dialog">
+          {passwordForm}
+        </Modal>
+      </section> : <Card title="계정 보안">
+        {pwOpen ? passwordForm : <button onClick={() => setPwOpen(true)} style={st.btnSecondary}>비밀번호 변경</button>}
+      </Card>}
+      {embedded && <div className="pt-account-phones" ref={phonesSection} tabIndex={-1}><PhonesCard me={me} setMe={setMe}/></div>}
 
       <CleanupCard />
 

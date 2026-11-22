@@ -11,11 +11,11 @@ import BusinessDrawer from './BusinessDrawer';
 
 export const fleetWorkKey = () => [authScope(), 'rental-fleet-work'];
 
-function WorkEditor({ devices, contracts, initial, incident, onClose, onSave }) {
+export function WorkEditor({ devices, contracts, initial, presetVehicleId, incident, onClose, onSave }) {
   const start = Date.now();
   const [requestKey] = useState(() => incident && !initial ? crypto.randomUUID() : undefined);
   const [form, setForm] = useState(() => ({
-    device: String(initial?.vehicle_id || devices.find(d=>matchesVehicle(initial,d))?.id || devices[0]?.id || ''), contract: String(initial?.contract_id || ''),
+    device: String(initial?.vehicle_id || devices.find(d=>matchesVehicle(initial,d))?.id || presetVehicleId || devices[0]?.id || ''), contract: String(initial?.contract_id || ''),
     kind: initial?.kind || (incident ? 'accident' : 'cleaning'), note: initial?.note || '',
     from: kstInput(initial?.starts_at || new Date(start).toISOString()),
     to: kstInput(initial?.ends_at || new Date(start + 3600000).toISOString()),

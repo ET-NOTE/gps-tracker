@@ -1,10 +1,11 @@
 import {useRef,useState} from 'react';
 import FreightDetail from './FreightDetail';
+import {ShipmentLedger} from './FreightLedger';
 import FreightOrderForm from './FreightOrderForm';
 import {FreightActionForm,FreightAssignForm,FreightProofForm} from './FreightShipmentForms';
 import {DispatchView,ScheduleView,WorkflowTable} from './FreightWorkflowViews';
 import {FreightButton,FreightField,FreightFilters,FreightForm,FreightOptions,FreightStats} from './FreightKit';
-import {epoch,firstOrder,getRow,inputTime,makeOrder,nameOf,orderStates,proofStates,record,routeName,shipStates,stamp,timeLabel,vehicleName,weekdays} from '../../lib/freightWorkflow';
+import {epoch,firstOrder,getRow,inputTime,invoiceLabel,makeOrder,nameOf,orderStates,proofStates,record,routeName,shipStates,stamp,timeLabel,vehicleName,weekdays} from '../../lib/freightWorkflow';
 import {freightHeaders,importOrders} from '../../lib/freightCsv';
 import {csvCell} from '../../lib/businessExport';
 import {saveBlob} from '../../lib/fileDownload';
@@ -75,10 +76,12 @@ export function FreightRecordActions({data,save,onPage,startDispatch,children}) 
   const d=dialog,r=d&&getRow(data,d.kind,d.id);
   return <>{children({open,form,navigate,feedback,setFeedback})}
     {details.map(({kind,id},index)=>{
-      const row=getRow(data,kind,id);
+      const row=getRow(data,kind==='finance'?'shipments':kind,id);
+      const onClose=()=>setDetails(previous=>previous.slice(0,index));
+      if(kind==='finance')return row&&<ShipmentLedger key={kind+':'+id} shipment={row} {...{data,save,onClose}} onOpenShipment={shipmentId=>related('shipments',shipmentId)}/>;
       return row&&<FreightDetail key={kind+':'+id} {...{kind,row,data,form,save}} open={related}
         onDispatch={orderId=>{close();setDetails([]);startDispatch(orderId);}}
-        onClose={()=>setDetails(previous=>previous.slice(0,index))} onPage={navigate}/>;
+        onClose={onClose} onPage={navigate}/>;
     })}
     {d&&(['new','edit'].includes(d.action)?<FreightOrderForm data={data} row={r} recurring={d.kind==='recurring'} onClose={close} commit={commit} onPage={navigate}/>:
       d.action==='assign'?<FreightAssignForm data={data} order={d.kind==='orders'?r:firstOrder(data,r)} shipment={d.kind==='shipments'?r:null} initialVehicle={d.vehicle} onClose={close} commit={commit}/>:
@@ -128,15 +131,15 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatc
   const count=status=>rows.filter(r=>r.status===status).length;
   const summary=recurring?[['정기 주문',rows.length],['사용 중',rows.filter(r=>r.active).length],['사용 중지',rows.filter(r=>!r.active).length]]:
     isOrder?[['조회 주문',rows.length],['미배차',count('open')],['배차 진행',count('assigned')],['운임 미정',rows.filter(r=>r.sellAmount==null||r.buyAmount==null).length]]:
-    proofs?Object.entries(proofStates).map(([key,label])=>[label,rows.filter(r=>r.proof.status===key).length]):
+    proofs?[['조회 완료 운송',rows.length],...Object.entries({missing:'인수증 미제출',submitted:'증빙 확인 대기',approved:'확인 완료'}).map(([key,label])=>[label,rows.filter(r=>r.proof.status===key).length])]:
     [['조회 운송',rows.length],['수락 대기',count('requested')],['운송 진행',rows.filter(r=>['confirmed','loading','in_transit'].includes(r.status)).length],['하차 완료',count('delivered')]];
   async function exportRows(){
-    const header=recurring?['정기 주문','화주','구간','반복 요일','상·하차 시간','사용 여부']:isOrder?['주문번호','화주','구간','상차','하차','차량 형태','중량kg','청구 운임','지급 운임','상태']:['운송번호','화주','구간','상차','하차','차량','기사','운송 상태','인수증 상태','수령인'];
+    const header=recurring?['정기 주문','화주','구간','반복 요일','상·하차 시간','사용 여부']:isOrder?['주문번호','화주','구간','상차','하차','차량 형태','중량kg','청구 운임','지급 운임','상태']:['운송번호','화주','구간','상차','하차','차량','기사','운송 상태','인수증 상태','수령인',...(proofs?['청구 상태']:[])];
     const body=rows.map(r=>{
       const o=isShipment?firstOrder(data,r):r,shipper=nameOf(data,'shippers',o.shipperId),route=routeName(data,o);
       return recurring?[r.name,shipper,route,r.weekdays.map(v=>weekdays[v]).join('/'),r.startTime+' ~ '+r.endTime,r.active?'사용 중':'중지']:
         isOrder?[r.number,shipper,route,timeLabel(r.start),timeLabel(r.end),r.vehicleType,r.weightKg,r.sellAmount,r.buyAmount,orderStates[r.status]]:
-        [r.number,shipper,route,timeLabel(r.start),timeLabel(r.end),vehicleName(data,r.vehicleId),nameOf(data,'drivers',r.driverId),shipStates[r.status],proofStates[r.proof.status],r.proof.receiver];
+        [r.number,shipper,route,timeLabel(r.start),timeLabel(r.end),vehicleName(data,r.vehicleId),nameOf(data,'drivers',r.driverId),shipStates[r.status],proofStates[r.proof.status],r.proof.receiver,...(proofs?[invoiceLabel(r)]:[])];
     });
     try{await downloadCsv(names[page]+'_'+stamp().slice(0,10),[header,...body]);}catch(e){setFeedback(e.message);}
   }
