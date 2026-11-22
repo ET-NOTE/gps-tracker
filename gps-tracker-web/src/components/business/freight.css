@@ -122,6 +122,20 @@
 .fr-money-card h3 {margin-bottom:8px}
 .fr-money-card .fr-facts>div {padding:9px 0}
 .fr-money-card .fr-actions {gap:7px;margin-top:12px}
+.fr-drawer-inner .fr-finance-actions .fr-btn {gap:7px;white-space:nowrap}
+.fr-finance-actions .fr-btn svg {flex:none;stroke-width:1.6}
+.fr-finance-actions .fr-btn:disabled {opacity:.48}
+:root:not([data-theme="dark"]) .fr-finance-actions .fr-btn:not(.is-primary) {color:#5b6574}
+:root:not([data-theme="dark"]) .fr-finance-actions:not(.fr-record-heading) .fr-btn:not(.is-primary) {border-color:#e0e5ec}
+:root:not([data-theme="dark"]) .fr-finance-actions .fr-btn:not(.is-primary):enabled:hover {background:#f5f7fa;border-color:#cdd5e0}
+.fr-finance-actions .fr-btn.is-primary {border-color:var(--primary);box-shadow:0 3px 8px rgba(54,118,229,.1)}
+.fr-drawer-inner .fr-record-heading.fr-finance-actions .fr-btn {min-height:28px;padding:5px 9px;font-size:11px;background:transparent;border-color:transparent}
+.fr-drawer-inner .fr-money-card .fr-btn {min-height:28px;padding:5px 9px}
+@media (pointer:coarse) {
+  .fr-finance-actions .fr-btn {position:relative}
+  .fr-finance-actions .fr-btn::after {content:"";position:absolute;inset-inline:0;top:50%;height:44px;transform:translateY(-50%)}
+  .fr-drawer-inner .fr-finance-actions.fr-actions {row-gap:14px}
+}
 .fr-import-guide {grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
 .fr-import-guide p {margin:0}
 .fr-record-note {font-size:13px;line-height:1.75;color:var(--fr-drawer-muted);white-space:pre-wrap}

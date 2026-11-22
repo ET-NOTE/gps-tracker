@@ -107,7 +107,7 @@ function FinanceSide({r,billing,requiresProof,onConfirm,onPayment}) {
       [billing?'청구 확인':'지급 대상 확인',r.confirmed?'확인 완료':'확인 전'],
       ...(r.confirmed?[['확인 일시',timeLabel(billing?s.invoiceAt:s.payableAt)]]:[]),
       [billing?'수납 상태':'지급 상태',<FreightBadge tone={tone}>{label}</FreightBadge>]]}/>
-    <div className="fr-actions">
+    <div className="fr-actions fr-finance-actions">
       <FreightButton icon="check" disabled={!canConfirm} onClick={onConfirm}>{billing?'청구 확인':'지급 대상 확인'}</FreightButton>
       <FreightButton primary={billing} disabled={!(paymentLimit(fin,side)>0)} onClick={()=>onPayment(side)}>{billing?'수납 기록':'지급 기록'}</FreightButton>
       <FreightButton disabled={!(paymentLimit(fin,side+'_refund')>0)} onClick={()=>onPayment(side+'_refund')}>{billing?'환불 기록':'환수 기록'}</FreightButton>
@@ -136,11 +136,11 @@ export function FreightLedgerDialogs({billing,data,save,onOpenShipment,view,setV
   }
   const defaultSide=(billing?['receipt','receipt_refund','payout','payout_refund']:['payout','payout_refund','receipt','receipt_refund']).find(side=>paymentLimit(fin,side)>0);
   return <>
-    {(!view.fromList||view.action==='detail')&&<FreightDrawer title="운임·정산 상세" subtitle={s.number} onClose={close} footer={<div className="fr-actions">
-      <FreightButton icon="edit" onClick={()=>open('agreement',billing)}>합의 운임</FreightButton>
+    {(!view.fromList||view.action==='detail')&&<FreightDrawer title="운임·정산 상세" subtitle={s.number} onClose={close} footer={<div className="fr-actions fr-finance-actions">
+      <FreightButton icon="pencil" onClick={()=>open('agreement',billing)}>합의 운임</FreightButton>
       <FreightButton icon="plus" disabled={!data.codes.chargeTypes.length} onClick={()=>setChargeView({action:'form'})}>추가 비용</FreightButton>
-      <FreightButton primary disabled={!defaultSide} onClick={()=>open('payment',defaultSide.startsWith('receipt'),defaultSide)}>거래 기록</FreightButton></div>}>
-      <div className="fr-record-heading"><Status value={s.status} labels={shipStates}/>
+      <FreightButton icon="wallet" primary disabled={!defaultSide} onClick={()=>open('payment',defaultSide.startsWith('receipt'),defaultSide)}>거래 기록</FreightButton></div>}>
+      <div className="fr-record-heading fr-finance-actions"><Status value={s.status} labels={shipStates}/>
         <FreightButton icon="file" onClick={()=>onOpenShipment(s.id)}>운송 상세</FreightButton></div>
       {sideRows.map((sideRow,i)=><FinanceSide key={i} r={sideRow} billing={i===0} requiresProof={data.policies.requireProofForBilling}
         onConfirm={()=>open('confirm',i===0)} onPayment={side=>open('payment',i===0,side)}/>)}
