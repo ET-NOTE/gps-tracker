@@ -16,7 +16,8 @@ import { BusinessButton, BusinessEmpty, BusinessError, useBusinessVehicle } from
 import { useBusinessClock, useRentalOperations } from './useBusinessData';
 import RentalDashboard from './RentalDashboard';
 import RentalVehicleRecord from './RentalVehicleRecord';
-import RentalFleetWork, { fleetWorkKey, WorkEditor } from './RentalFleetWork';
+import RentalRecordDrawer from './RentalRecordDrawer';
+import RentalFleetWork, { fleetWorkKey } from './RentalFleetWork';
 import RentalAssetEditor, { RentalDeviceLink, useRentalAssets } from './RentalAssets';
 import ExportButtons from './ExportButtons';
 import './rental-fleet.css';
@@ -27,18 +28,38 @@ function terminalSignal(device, now) {
   return { code, label: state.label };
 }
 
+function directoryRow(device, terminals, work, summary, now) {
+  const hasTerminal = terminals || device.device_id != null;
+  const terminal = terminals ? device : device.terminal;
+  return {
+    device, label:rentalFleetLabel(device), terminal:terminal ? terminalName(terminal) : hasTerminal ? '단말기 정보 없음' : '단말기 미연결',
+    state:vehicleReadiness(device,work,summary,now), branch:device.rental_profile?.branch || '',
+    className:device.rental_profile?.class_name || device.car_model || '',
+    signal:hasTerminal ? terminalSignal(device,now) : {code:'unlinked',label:'단말기 미연결'},
+  };
+}
+
+export function ContractVehicleRecord({ vehicle, contract, vehicles, trackers, now, branches, onClose, onWork, onContracts }) {
+  const work = useQuery({queryKey:fleetWorkKey(),queryFn:api.rentalFleetWork,staleTime:15000});
+  const rentals = useRentalOperations(now);
+  const failed = [work,rentals].filter(q=>q.isError);
+  if (failed.length || work.isLoading || rentals.isLoading) return <RentalRecordDrawer title="렌트카 차량 상세" subtitle={rentalFleetLabel(vehicle)} onClose={onClose}>
+    {failed.length ? <BusinessError onRetry={() => failed.forEach(q=>q.refetch())}>차량 운영 정보를 불러오지 못했습니다.</BusinessError> : <SkeletonList count={3} itemHeight={54}/>}
+  </RentalRecordDrawer>;
+  const contracts = rentals.data.some(c=>sameId(c.id,contract.id)) ? rentals.data : [...rentals.data,contract];
+  const row = directoryRow(vehicle,false,work.data,rentalSummary(contracts,vehicles,now),now);
+  return <RentalVehicleRecord row={row} contracts={contracts} work={work.data} now={now} vehicles={vehicles} trackers={trackers} branches={branches}
+    onClose={onClose} onWorkDetail={id=>onWork('service',id)} onWorkSaved={work.refetch} onContracts={onContracts}/>;
+}
+
 function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, contracts, now, onMap, onTab, onNavigate, onDevicesChange, onContracts, branches, refresh }) {
   const [query, setQuery] = useState(''), [branch, setBranch] = useState(''), [vehicleClass, setClass] = useState('');
-  const [filter, setFilter] = useState(''), [connection, setConnection] = useState(''), [chosen, setChosen] = useState(null), [editing, setEditing] = useState(null);
+  const [filter, setFilter] = useState(''), [connection, setConnection] = useState(''), [chosen, setChosen] = useState(null);
   const [registering,setRegistering] = useState(false),[linking,setLinking]=useState(null);
-  const [detailId,setDetailId] = useState(initialVehicleId ?? null), [workVehicleId,setWorkVehicleId] = useState(null);
+  const [detailId,setDetailId] = useState(initialVehicleId ?? null);
   const openVehicle = useBusinessVehicle(), live = view === 'live', terminals = view === 'devices';
   const summary = rentalSummary(contracts, devices, now), needle = query.trim().toLowerCase();
-  const allRows = devices.map(device => ({
-    device, label: rentalFleetLabel(device), terminal: view!=='devices' ? device.terminal ? terminalName(device.terminal) : '단말기 미연결' : terminalName(device), state: vehicleReadiness(device, work, summary, now),
-    branch: device.rental_profile?.branch || '', className: device.rental_profile?.class_name || device.car_model || '',
-    signal: view!=='devices' && !device.device_id ? {code:'unlinked',label:'단말기 미연결'} : terminalSignal(device, now),
-  }));
+  const allRows = devices.map(device => directoryRow(device,terminals,work,summary,now));
   const rows = allRows.filter(r => (!branch || r.branch === branch) && (!vehicleClass || r.className === vehicleClass)
     && (!filter || r.state.code === filter) && (!connection || r.signal.code === connection)
     && (!needle || [r.label, r.device.device_uid, r.terminal, r.className, r.device.car_model, r.device.car_plate].some(v => String(v || '').toLowerCase().includes(needle))));
@@ -47,7 +68,6 @@ function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, 
   const detail = allRows.find(row => sameId(row.device.id,detailId));
   const report = { filename: '렌트카_차량목록_' + businessDate(now), columns: [['label','차량'],['className','차종 등급'],['branch','지점'],['state','준비 상태'],['terminal','연결 단말기'],['signal','단말 수신'],['km','누적 거리(km)'],['fuel','잔량(%)']].map(([key,label])=>({key,label})),
     rows: rows.map(r => ({ ...r, state:r.state.label, signal:r.signal.label, km:r.device.rental_profile?.odometer_km, fuel:r.device.rental_profile?.fuel_level })) };
-  const editAsset=vehicles.find(v=>sameId(v.id,editing));
   const title = live ? '관제 차량' : terminals ? '등록 단말기' : '차량 목록';
   const empty = devices.length ? '조건에 맞는 ' + (terminals ? '단말기가' : '차량이') + ' 없습니다.' : (view==='vehicles'?'등록된 렌트 차량이 없습니다.':'등록된 단말기가 없습니다.');
   return <div className="rfl-page">
@@ -79,11 +99,9 @@ function Directory({ view, devices, vehicles, trackers, initialVehicleId, work, 
           <td data-label="단말기">{row.signal.label}{row.device.device_id!=null && <small>{row.terminal}</small>}</td>
           </tr>)}</tbody></table></div>}
       </section>}
-    {detail && !editing && !workVehicleId && <RentalVehicleRecord row={detail} contracts={contracts} work={work} now={now} onClose={() => setDetailId(null)}
-      onEdit={() => setEditing(detail.device.id)} onMaintenance={() => setWorkVehicleId(detail.device.id)} onWorkDetail={id => onTab('service',id)}
-      onContracts={onContracts} onTerminal={detail.device.terminal && openVehicle ? () => openVehicle(detail.device.terminal) : undefined}/>}
-    {workVehicleId && <WorkEditor devices={vehicles} contracts={contracts} presetVehicleId={workVehicleId} onClose={() => setWorkVehicleId(null)} onSave={() => {setWorkVehicleId(null);refresh();}}/>}
-    {(registering || editAsset) && <RentalAssetEditor asset={editAsset} terminals={trackers} vehicles={vehicles} branches={branches} onClose={()=>{setEditing(null);setRegistering(false);}}/>}
+    {detail && <RentalVehicleRecord row={detail} contracts={contracts} work={work} now={now} vehicles={vehicles} trackers={trackers} branches={branches}
+      onClose={() => setDetailId(null)} onWorkDetail={id => onTab('service',id)} onWorkSaved={refresh} onContracts={onContracts}/>}
+    {registering && <RentalAssetEditor terminals={trackers} vehicles={vehicles} branches={branches} onClose={()=>setRegistering(false)}/>}
     {linking && <RentalDeviceLink terminal={linking} vehicles={vehicles} onClose={()=>setLinking(null)}/>}
   </div>;
 }

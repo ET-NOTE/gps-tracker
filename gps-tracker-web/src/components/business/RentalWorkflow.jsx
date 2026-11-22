@@ -1,3 +1,4 @@
+import { ContractVehicleRecord } from './RentalFleet';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
@@ -72,7 +73,7 @@ function ContractPerson({contract,driver,onClose}) {
   </RentalRecordDrawer>;
 }
 
-export default function RentalWorkflow({ stage='reservations', devices=[], vehicles=[], branches: configuredBranches=[], request }) {
+export default function RentalWorkflow({ stage='reservations', devices=[], vehicles=[], branches: configuredBranches=[], request, onContracts, onWork }) {
   const now=useBusinessClock(), qc=useQueryClient();
   const [filters,setFilters]=useState(baseFilters), [detail,setDetail]=useState(null), [dialog,setDialog]=useState(null);
   const [reconfirmId,setReconfirmId]=useState(null);
@@ -175,10 +176,12 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
             {isAssigned(focused)&&['draft','active','overdue'].includes(focused.status)&&<BusinessButton onClick={()=>open('handoff',focused)}>인수·반납 링크</BusinessButton>}</div>}/>
     </RentalRecordDrawer>}
     {(dialog?.kind==='customer'||dialog?.kind==='driver')&&<ContractPerson contract={dialog.contract} driver={dialog.kind==='driver'} onClose={close}/>}
-    {dialog?.kind==='vehicle'&&<RentalRecordDrawer title="차량 정보" subtitle={carLabel(dialog.contract)} onClose={close}>
-      <RecordFields rows={[['차량번호',assignedVehicle?.license_plate||dialog.contract.license_plate],
-        ['차종',assignedVehicle?.car_model||dialog.contract.rental_terms?.requested_model],
-        ['소속 지점',assignedVehicle?.branch],['단말기',assignedVehicle?.device_name||dialog.contract.device_name]]}/>
+    {dialog?.kind==='vehicle'&&assignedVehicle&&<ContractVehicleRecord vehicle={assignedVehicle} contract={dialog.contract} vehicles={vehicles} trackers={devices}
+      branches={configuredBranches} now={now} onClose={close} onContracts={onContracts} onWork={onWork}/>}
+    {dialog?.kind==='vehicle'&&!assignedVehicle&&<RentalRecordDrawer title="차량 정보" subtitle={carLabel(dialog.contract)} onClose={close}>
+      <p className="rental-record-text">현재 차량 목록에서 조회할 수 없어 계약에 기록된 정보를 표시합니다.</p>
+      <RecordFields rows={[['차량번호',dialog.contract.license_plate],['요청 차종',dialog.contract.rental_terms?.requested_model],
+        ['단말기',dialog.contract.device_name]]}/>
     </RentalRecordDrawer>}
     {dialog?.kind==='terms'&&<ContractTerms contract={dialog.contract} onClose={close}/>}
     {dialog?.kind==='ledger' && <ContractLedger contract={dialog.contract} onClose={close}/>}

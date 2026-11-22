@@ -185,3 +185,7 @@
   .fr-filters>.is-wide { grid-column:1/-1; }
   .fr-unit-list button { flex-wrap:wrap; }
 }
+@media (max-width:760px) {
+  .fr-workflow .fr-table th,
+  .fr-workflow .fr-table td:first-child .fr-link {white-space:nowrap}
+}

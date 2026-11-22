@@ -94,8 +94,8 @@ export default function BusinessMap({ devices = [], onSelect, selectedId, contro
     </div>}
     {level!=null && <div className={'fleet-map-controls'+(controls==='compact'?' is-compact':'')} role="group" aria-label="지도 보기 조절">
       <div className="fleet-map-zoom">
-        <button type="button" aria-label="지도 확대" title="지도 확대" disabled={level<=1} onClick={()=>zoomBy(-1)}><Icon name="plus" size={17}/></button>
-        <button type="button" aria-label="지도 축소" title="지도 축소" disabled={level>=14} onClick={()=>zoomBy(1)}><span className="fleet-map-minus" /></button>
+        <button type="button" className="fleet-map-step" aria-label="지도 확대" title="지도 확대" disabled={level<=1} onClick={()=>zoomBy(-1)}><Icon name="plus" size={17}/></button>
+        <button type="button" className="fleet-map-step" aria-label="지도 축소" title="지도 축소" disabled={level>=14} onClick={()=>zoomBy(1)}><span className="fleet-map-minus" /></button>
       </div>
       <output aria-label="지도 확대 단계">{level}단계</output>
       <button type="button" className="fleet-map-fit" aria-label="지도 전체 보기" title="지도 전체 보기" onClick={resetView}><Icon name="target" size={17}/></button>
