@@ -6,7 +6,7 @@ import {FormField,Input,Modal,Select,Textarea} from '../ui';
 import Icon from '../Icon';
 import './fleet-maintenance-history.css';
 
-const kinds={service:'정기 점검',oil:'엔진오일 교체',tires:'타이어 교체',insurance:'보험 갱신',inspection:'차량 검사',other:'기타'};
+export const maintenanceKinds={service:'정기 점검',oil:'엔진오일 교체',tires:'타이어 교체',insurance:'보험 갱신',inspection:'차량 검사',other:'기타'};
 const scheduleKinds={
   next_service_date:['service','oil','tires','other'],
   insurance_expiry:['insurance'],
@@ -15,7 +15,7 @@ const scheduleKinds={
 
 export function CompletionEditor({assets,initialVehicle,schedule,today,onClose,onSaved,onConflict}) {
   const [vehicleId,setVehicleId]=useState(String(schedule?.asset.id||initialVehicle||''));
-  const choices=schedule?scheduleKinds[schedule.key]:Object.keys(kinds);
+  const choices=schedule?scheduleKinds[schedule.key]:Object.keys(maintenanceKinds);
   const [kind,setKind]=useState(choices[0]);
   const [completedOn,setCompletedOn]=useState(today);
   const [note,setNote]=useState('');
@@ -52,7 +52,7 @@ export function CompletionEditor({assets,initialVehicle,schedule,today,onClose,o
       </Select></FormField>
       {schedule&&<p className="fleet-maintenance-original"><Icon name="clock" size={16}/>{schedule.label} <time dateTime={schedule.date}>{schedule.date}</time></p>}
       <div className="fleet-maintenance-form-row">
-        <FormField label="정비 종류"><Select disabled={busy} value={kind} onChange={e=>setKind(e.target.value)}>{choices.map(k=><option key={k} value={k}>{kinds[k]}</option>)}</Select></FormField>
+        <FormField label="정비 종류"><Select disabled={busy} value={kind} onChange={e=>setKind(e.target.value)}>{choices.map(k=><option key={k} value={k}>{maintenanceKinds[k]}</option>)}</Select></FormField>
         <FormField label="완료일"><Input required disabled={busy} type="date" max={today} value={completedOn} onChange={e=>setCompletedOn(e.target.value)}/></FormField>
       </div>
       <FormField label="메모"><Textarea disabled={busy} rows={3} maxLength={400} value={note} onChange={e=>setNote(e.target.value)}/></FormField>
@@ -61,7 +61,7 @@ export function CompletionEditor({assets,initialVehicle,schedule,today,onClose,o
   </Modal>;
 }
 
-export function MaintenanceHistory({assets,vehicle,setVehicle}) {
+export function MaintenanceHistory({assets,vehicle,setVehicle,onDetail}) {
   const [kind,setKind]=useState('');
   const history=useInfiniteQuery({
     queryKey:['fleet-maintenance-history',vehicle,kind],
@@ -77,15 +77,16 @@ export function MaintenanceHistory({assets,vehicle,setVehicle}) {
   return <>
     <div className="fleet-operations-filters">
       <select aria-label="완료 이력 차량" value={vehicle} onChange={e=>setVehicle(e.target.value)}><option value="">전체 차량</option>{assets.map(a=><option key={a.id} value={a.id}>{fleetAssetLabel(a)}</option>)}</select>
-      <select aria-label="완료 이력 정비 종류" value={kind} onChange={e=>setKind(e.target.value)}><option value="">전체 종류</option>{Object.entries(kinds).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>
+      <select aria-label="완료 이력 정비 종류" value={kind} onChange={e=>setKind(e.target.value)}><option value="">전체 종류</option>{Object.entries(maintenanceKinds).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>
       {(vehicle||kind)&&<button type="button" className="business-button" onClick={()=>{setVehicle('');setKind('');}}>초기화</button>}
     </div>
     {history.isPending&&<p role="status">완료 이력을 불러오는 중…</p>}
     {history.isError&&<div role="alert" className="business-empty"><strong>완료 이력을 불러오지 못했습니다.</strong><button type="button" className="business-button" onClick={()=>history.isFetchNextPageError?history.fetchNextPage():history.refetch()}>다시 시도</button></div>}
     {history.isSuccess&&!rows.length&&<div className="business-empty"><strong>{vehicle||kind?'조건에 맞는 완료 이력이 없습니다.':'등록된 정비 완료 이력이 없습니다.'}</strong></div>}
     {!!rows.length&&<ul aria-label="정비 완료 이력" className="fleet-maintenance-history">{rows.map(row=><li key={row.id}>
+      <button type="button" className="fleet-care-card-open" aria-label={(labels.get(row.vehicle_id)||'차량 정보 미등록')+' '+(maintenanceKinds[row.kind]||row.kind)+' 완료 이력 상세'} onClick={()=>onDetail(row)}/>
       <header><time dateTime={row.completed_on}>{row.completed_on}</time><span className="business-badge good">완료</span></header>
-      <h3>{kinds[row.kind]||row.kind}</h3>
+      <h3>{maintenanceKinds[row.kind]||row.kind}</h3>
       <strong>{labels.get(row.vehicle_id)||'차량 정보 미등록'}</strong>
       {row.scheduled_on&&<small>예정일 {row.scheduled_on}</small>}
       {row.note&&<p>{row.note}</p>}

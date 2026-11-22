@@ -68,17 +68,22 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
   const [editing,setEditing]=useState(undefined),[detail,setDetail]=useState(null),[costId,setCostId]=useState(null);
   const [entry,setEntry]=useState(null);
   const [method,setMethod]=useState('all');
-  const matches=(...values)=>values.some(v=>String(v??'').toLowerCase().includes(query.trim().toLowerCase()));
+  const search=query.trim().toLowerCase();
+  const matches=(...values)=>values.some(v=>String(v??'').toLowerCase().includes(search));
+  const matchesContract=(id,...values)=>matches('#'+id,'R-'+id,...values);
   if (kind==='reports'||kind==='utilization') return <Figures book={book} devices={devices} period={period} dates={dates} onResetPeriod={onResetPeriod} pending={pending} usage={kind==='utilization'}/>;
   const isCost=kind==='costs',isPayments=kind==='payments',isRefunds=kind==='refunds';
   const balance=c=>c.billed_krw-c.paid_krw;
-  const contracts=book.contracts.filter(c=>matches(c.id,c.renter_name,c.renter_phone,c.vehicle_name)&&
-    (!branch||c.pickup_location===branch)&&
-    (account==='all'||String(matchOfficeCustomer(c,catalog)?.account_id??'')===account) &&
-    (filter==='all'||(filter==='pending'?balance(c)>0:filter==='excess'?balance(c)<0:balance(c)<=0)));
-  const entries=book.entries.filter(e=>(isPayments||e.kind!=='payment')&&matches(e.contract_id,e.renter_name,e.memo)&&
+  const accountNames=new Map(catalog.accounts.map(a=>[a.id,a.name]));
+  const contracts=book.contracts.filter(c=>{
+    const accountId=matchOfficeCustomer(c,catalog)?.account_id;
+    return matchesContract(c.id,c.renter_name,c.renter_phone,c.vehicle_name,accountNames.get(accountId)) &&
+      (!branch||c.pickup_location===branch) && (account==='all'||String(accountId??'')===account) &&
+      (filter==='all'||(filter==='pending'?balance(c)>0:filter==='excess'?balance(c)<0:balance(c)<=0));
+  });
+  const entries=book.entries.filter(e=>(isPayments||e.kind!=='payment')&&matchesContract(e.contract_id,e.renter_name,e.memo)&&
     (isPayments || filter==='all'||e.kind===filter) && (!isRefunds || method==='all'||e.method===method));
-  const returns=isRefunds?outstandingReturns(book.contracts.filter(c=>matches(c.id,c.renter_name))):[];
+  const returns=isRefunds?outstandingReturns(book.contracts.filter(c=>matchesContract(c.id,c.renter_name))):[];
   const costs=book.costs.filter(c=>(filter==='all'||c.category===filter)&&(device==='all'||matchesVehicle(c,devices.find(v=>String(v.id)===device)))&&
     (!branch||devices.some(v=>v.branch===branch&&matchesVehicle(c,v)))&&matches(c.vehicle_name,c.vendor,c.memo));
   const costDetail=book.costs.find(row=>row.id===costId);

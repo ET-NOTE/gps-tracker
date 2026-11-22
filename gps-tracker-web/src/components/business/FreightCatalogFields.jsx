@@ -33,7 +33,7 @@ export function catalogFields(key,d) {
     ...(shipper?[typed('email','이메일','email',false)]:[]),option(shipper?'billing':'settlement',shipper?'청구 방식':'정산 방식',choices(['건별','월합산'])),active,memo];
 }
 export function catalogTable(key,d,terminalLabel) {
-  const n=(r,k)=>r[k]||'—', branch=r=>nameOf(d,'branches',r.branchId),carrier=r=>r.carrierId?nameOf(d,'carriers',r.carrierId):'자사 운영';
+  const branch=r=>nameOf(d,'branches',r.branchId),carrier=r=>r.carrierId?nameOf(d,'carriers',r.carrierId):'자사 운영';
   const plate=r=>vehicleName(d,r.vehicleId),amount=x=>Number(x||0).toLocaleString('ko-KR'),active=r=>r.active!==false?'사용 중':'사용 중지';
   switch(key){
     case 'vehicles': return [['차량번호',r=>r.plate],['차량명',r=>r.model],['형태 · 적재능력',r=>r.type+' · '+amount(r.capacityKg)+'kg'],['기사 · 소속',r=>(r.driverId?nameOf(d,'drivers',r.driverId):'미지정')+' · '+carrier(r)],['운영 지점',branch],['준비 상태',r=>readinessLabels[r.readiness]],['단말 수신',terminalLabel]];
@@ -41,7 +41,18 @@ export function catalogTable(key,d,terminalLabel) {
     case 'services': return [['차량',plate],['구분',r=>r.type],['시작 일시',r=>timeLabel(r.start)],['종료 예정',r=>timeLabel(r.end)],['비용',r=>costLabel(r.cost)],['상태',r=>serviceStates[r.status]]];
     case 'locations': return [['장소',r=>r.name],['지역 · 주소',r=>r.region+' · '+r.address],['담당자',r=>r.contact],['연락처',r=>r.phone],['작업 가능 시간',r=>r.openTime+' – '+r.closeTime+(r.closeTime<=r.openTime?' (다음 날)':'')]];
     case 'rates': return [['요율 이름',r=>r.name],['구간',r=>r.pickupRegion+' → '+r.dropoffRegion],['차량 조건',r=>r.vehicleType+' · '+amount(r.capacityKg)+'kg'],['화주 운임',r=>costLabel(r.sellAmount)],['운송비',r=>costLabel(r.buyAmount)],['상태',active]];
-    default: return [[key==='shippers'?'화주':'운송사',r=>r.name],['담당자',r=>r.contact],['연락처',r=>r.phone],['사업자등록번호',r=>n(r,'businessNumber')],[key==='shippers'?'청구 방식':'정산 방식',r=>r.billing||r.settlement],['상태',active]];
+    default: {
+      const shipper=key==='shippers';
+      const countBy=(rows,field)=>{
+        const counts=new Map();
+        for(const row of rows)counts.set(row[field],(counts.get(row[field])||0)+1);
+        return counts;
+      };
+      const orders=shipper&&countBy(d.orders,'shipperId');
+      const vehicles=!shipper&&countBy(d.vehicles,'carrierId'),drivers=!shipper&&countBy(d.drivers,'carrierId');
+      const linked=r=>shipper?(orders.get(r.id)||0)+'건 주문':(vehicles.get(r.id)||0)+'대 · '+(drivers.get(r.id)||0)+'명';
+      return [[shipper?'화주':'협력 운송사',r=>r.name],['담당자',r=>r.contact],['연락처',r=>r.phone],['정산 방식',r=>r.billing||r.settlement],['연결 현황',linked],['상태',active]];
+    }
   }
 }
 export function catalogFilters(key,d) {

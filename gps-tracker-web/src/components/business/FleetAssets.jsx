@@ -58,7 +58,8 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const [detailTab,setDetailTab]=useState(mapReturn?.detailTab ?? 'status');
   const openDetail=(id,tab='status',terminal=null)=>{setRequestedTerminal(terminal);setDetailTab(tab);setDetail(id);};
   const [filters,setFilters]=useState(()=>({...emptyAssetFilters,missingSchedulesOnly:initialMissingSchedules,...mapReturn?.directory?.filters}));
-  const [scheduleAsset,setScheduleAsset]=useState(null);
+  const [scheduleEdit,setScheduleEdit]=useState(null);
+  const editSchedule=(asset,scope)=>setScheduleEdit({asset,scope});
   const [filterOpen,setFilterOpen]=useState(false),[draft,setDraft]=useState({...emptyAssetFilters});
   const filterError=assetFilterError(draft);
   const advancedActive=Object.keys(emptyAssetFilters).some(key=>filters[key]!==emptyAssetFilters[key]);
@@ -103,13 +104,13 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   }
   const exportButton=<button type="button" className="business-button" disabled={!rows.length||exporting} onClick={exportVehicles}><Icon name="download" size={15}/>CSV 다운로드</button>;
 
-  const closeEdit=()=>{setEdit(null);setScheduleAsset(null);};
+  const closeEdit=()=>{setEdit(null);setScheduleEdit(null);};
   const saved=()=>{closeEdit();onChanged();};
   const countLabel=`${filters.missingSchedulesOnly?'점검 일정 미등록 ':'총 '}${rows.length}대${filtered?` · 전체 등록 ${assets.length}대`:''}`;
   const sortOptions=<><option value="name">차량 이름순</option><option value="created">최근 등록순</option><option value="distanceAsc">계기판 거리 낮은순</option><option value="distanceDesc">계기판 거리 높은순</option></>;
   const empty=!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>;
   return <div className="fleet-assets-list">
-    {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={setScheduleAsset} refreshAssets={onChanged}/>:<>
+    {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={editSchedule} refreshAssets={onChanged}/>:<>
     <div className="fleet-record-toolbar" aria-label="차량 목록 조회">
       <div className="fleet-record-query">
         <label className="fleet-inline-search"><Icon name="search" size={15}/><input type="search" aria-label="등록 차량 검색" placeholder="차량번호, 모델, 담당자 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label>
@@ -158,7 +159,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
           </button>
           {filters.missingSchedulesOnly&&<div className="mobile-vehicle-schedule">
             <span>{missingScheduleFields(v.profile).map(([,label])=>label).join(' · ')} 미등록</span>
-            {access.manage_vehicles&&<button className="business-button" type="button" aria-label={`${fleetAssetLabel(v)} 점검 일정 등록`} onClick={()=>setScheduleAsset(v)}>일정 등록</button>}
+            {access.manage_vehicles&&<button className="business-button" type="button" aria-label={`${fleetAssetLabel(v)} 점검 일정 등록`} onClick={()=>editSchedule(v,'missing')}>일정 등록</button>}
           </div>}
         </li>;
       })}</ul></div>{empty}
@@ -169,7 +170,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
         <td>{v.bindings.some(b=>!b.ended_at)?v.bindings.filter(b=>!b.ended_at).map(b=><div key={b.id}>{b.terminal_name}{b.is_primary&&<span className="business-badge">대표</span>}</div>):'미연결'}{byVehicle.get(v.id)?.has_primary_terminal&&<small>{byVehicle.get(v.id).terminal_status_label||classifyDevice(byVehicle.get(v.id),meta[v.id]).label}</small>}</td>
         <td className="is-number">{Number.isFinite(stats.byVehicle.get(v.id)?.total_distance_m)?(stats.byVehicle.get(v.id).total_distance_m/1000).toLocaleString("ko-KR",{maximumFractionDigits:1})+" km":"—"}</td>
         <td className="is-number">{assetOdometer(v)==null?'미등록':`${assetOdometer(v).toLocaleString()} km`}</td><td>{assetRegistrationDay(v.created_at)||'미등록'}</td>
-        {filters.missingSchedulesOnly&&<td>{access.manage_vehicles&&<button type="button" className="business-link" aria-label={`${fleetAssetLabel(v)} 점검 일정 등록`} onClick={()=>setScheduleAsset(v)}>일정 등록</button>}<small>{missingScheduleFields(v.profile).map(([,label])=>label).join(' · ')}</small></td>}
+        {filters.missingSchedulesOnly&&<td>{access.manage_vehicles&&<button type="button" className="business-link" aria-label={`${fleetAssetLabel(v)} 점검 일정 등록`} onClick={()=>editSchedule(v,'missing')}>일정 등록</button>}<small>{missingScheduleFields(v.profile).map(([,label])=>label).join(' · ')}</small></td>}
         <td><span className={`business-badge ${v.enabled?'good':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span></td>
         <td>{access.manage_vehicles?<div className="fleet-assets-row-actions"><button type="button" className="fleet-assets-connect-button" aria-label={`${fleetAssetLabel(v)} 단말 연결`} onClick={()=>openDetail(v.id,'connections')}>단말 연결</button><button type="button" className="fleet-assets-edit-button" aria-label={`${fleetAssetLabel(v)} 수정`} title="차량 정보 수정" onClick={()=>setEdit(v)}><Icon name="edit" size={16}/></button></div>:<span className="fleet-assets-row-arrow" aria-hidden="true"><Icon name="chevron-right" size={16}/></span>}</td>
       </tr>)}</tbody></table></div>{empty}
@@ -188,15 +189,18 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
         <fieldset><legend>차량 등록일 (한국 시간)</legend><div className="fleet-asset-range">{[['from','등록 시작일'],['to','등록 종료일']].map(([key,label])=><label key={key}>{label}<input aria-label={label} type="date" value={draft[key]} onChange={e=>changeFilter(key,e.target.value)}/></label>)}</div><p>시작일과 종료일을 모두 포함합니다.</p></fieldset>
       </div>{filterError&&<p className="fleet-assets-filter-error" role="alert">{filterError}</p>}
     </Modal>}
-    {(edit||scheduleAsset)&&<FleetAssetForm asset={edit||scheduleAsset} scheduleOnly={!!scheduleAsset} staff={staff} onClose={closeEdit} onSaved={saved}/>}
+    {(edit||scheduleEdit)&&<FleetAssetForm asset={edit||scheduleEdit.asset} scheduleOnly={!!scheduleEdit} scheduleScope={scheduleEdit?.scope} staff={staff} onClose={closeEdit} onSaved={saved}/>}
     {selected&&<FleetAssetDetail key={selected.id} initialTab={detailTab} suggestedTerminalId={requestedTerminal} meta={meta[selected.id]} asset={selected} devices={devices} onClose={()=>setDetail(null)} onChanged={onChanged} onMap={onMap && ((sim,origin)=>onMap(sim,{...origin,directory:{query,group,department,availability,sort,filters}}))} onReport={onReport} onReserve={onReserve}/>}
   </div>;
 }
-export function FleetAssetForm({asset,staff=[],onClose,onSaved,scheduleOnly=false}) {
+export function FleetAssetForm({asset,staff=[],onClose,onSaved,scheduleOnly=false,scheduleScope='all'}) {
   const formId=useId();
   const org=useFleetOrganization();
   const groups=useVehicleGroups(!scheduleOnly);
-  const scheduleFields=scheduleOnly?missingScheduleFields(asset.profile):maintenanceScheduleFields;
+  let scheduleFields=maintenanceScheduleFields;
+  if(scheduleOnly && scheduleScope==='missing') scheduleFields=missingScheduleFields(asset.profile);
+  else if(scheduleOnly && scheduleScope!=='all') scheduleFields=maintenanceScheduleFields.filter(([key])=>key===scheduleScope);
+  const scheduleTitle=asset.profile?.[scheduleScope] ? '점검 일정 수정' : '점검 일정 등록';
   const queryClient=useQueryClient();
   const [form,setForm]=useState({name:asset.name||'',license_plate:asset.license_plate||'',car_model:asset.car_model||'',department:scheduleOnly&&!asset.department_id?asset.department||'':'',department_id:asset.department_id||'',group_id:asset.group_id||'',manager_staff_id:asset.manager_staff_id||'',enabled:asset.enabled!==false,profile:{...asset.profile}}),[saving,setSaving]=useState(false),[error,setError]=useState('');
   const pending=useRef(false),mounted=useRef(true);
@@ -204,7 +208,7 @@ export function FleetAssetForm({asset,staff=[],onClose,onSaved,scheduleOnly=fals
   const close=()=>{if(!pending.current)onClose();};
   const field=(key,value)=>setForm(p=>({...p,[key]:value}));
   const profile=(key,value)=>setForm(p=>({...p,profile:{...p.profile,[key]:value}}));
-  const hasChanges=!scheduleOnly||scheduleFields.some(([key])=>Boolean(form.profile[key]));
+  const hasChanges=!scheduleOnly||scheduleFields.some(([key])=>(form.profile[key]||'')!==(asset.profile?.[key]||''));
   async function save(e){
     e.preventDefault();
     if(pending.current||!mounted.current||!hasChanges)return;
@@ -222,11 +226,11 @@ export function FleetAssetForm({asset,staff=[],onClose,onSaved,scheduleOnly=fals
     }catch(e){if(mounted.current)setError(e.message||'차량을 저장하지 못했습니다.');}
     finally{pending.current=false;if(mounted.current)setSaving(false);}
   }
-  return <Modal open mobileForm size={scheduleOnly?'md':720} title={scheduleOnly?'점검 일정 등록':asset.id?'차량 정보 수정':'차량 등록'} subtitle={scheduleOnly||asset.id?fleetAssetLabel(asset):undefined} onClose={saving?undefined:close}
+  return <Modal open mobileForm size={scheduleOnly?'md':720} title={scheduleOnly?scheduleTitle:asset.id?'차량 정보 수정':'차량 등록'} subtitle={scheduleOnly||asset.id?fleetAssetLabel(asset):undefined} onClose={saving?undefined:close}
     footer={<div className="service-form-actions"><Button type="button" variant="ghost" onClick={close} disabled={saving}>취소</Button><Button type="submit" form={formId} disabled={saving||!hasChanges}>{saving?'저장 중…':'저장'}</Button></div>}>
     <form id={formId} onSubmit={save} aria-busy={saving}><fieldset className="fleet-asset-form fleet-assets-editor" disabled={saving} style={{border:0,margin:0,padding:0,minWidth:0}}>
     {!scheduleOnly&&<fieldset><legend>차량 기본 정보</legend><div className="fleet-asset-fields"><FormField label="차량명"><Input required maxLength={120} value={form.name} onChange={e=>field('name',e.target.value)}/></FormField><FormField label="차량번호"><Input maxLength={32} value={form.license_plate} onChange={e=>field('license_plate',e.target.value)}/></FormField><FormField label="차종"><Input maxLength={120} value={form.car_model} onChange={e=>field('car_model',e.target.value)}/></FormField><FormField label="부서"><Select value={form.department_id} onChange={e=>field('department_id',e.target.value)}><option value="">미지정</option>{(org.data||[]).filter(i=>i.kind==='department'&&(i.active||i.id===asset.department_id)).map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</Select></FormField><FormField label="담당자"><Select value={form.manager_staff_id} onChange={e=>field('manager_staff_id',e.target.value)}><option value="">미지정</option>{staff.filter(s=>s.active||s.id===asset.manager_staff_id).map(s=><option key={s.id} value={s.id}>{s.name}{!s.active?' (비활성)':''}</option>)}</Select></FormField><FormField label="차량 그룹"><Select disabled={!groups.data} value={form.group_id} onChange={e=>field('group_id',e.target.value)}><option value="">{groups.error?'그룹 조회 실패':groups.isPending?'그룹 조회 중…':'그룹 미지정'}</option>{groups.data?.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</Select></FormField><FormField label="계기판 누적거리 (km)"><Input type="number" min="0" step="0.1" value={form.profile.odometer_km??''} onChange={e=>profile('odometer_km',e.target.value)}/></FormField></div></fieldset>}
-    <fieldset><legend>{scheduleOnly?'미등록 일정':'점검 일정'}</legend><div className="fleet-asset-fields">{scheduleFields.map(([key,label])=><FormField key={key} label={label}><Input type="date" name={key} value={form.profile[key]||''} onChange={e=>profile(key,e.target.value)}/></FormField>)}{!scheduleOnly&&<FormField label="다음 정비 주행거리 (km)"><Input type="number" min="0" value={form.profile.next_service_km??''} onChange={e=>profile('next_service_km',e.target.value)}/></FormField>}</div></fieldset>
+    <fieldset><legend>{scheduleOnly&&scheduleScope==='missing'?'미등록 일정':'점검 일정'}</legend><div className="fleet-asset-fields">{scheduleFields.map(([key,label])=><FormField key={key} label={label}><Input type="date" name={key} value={form.profile[key]||''} onChange={e=>profile(key,e.target.value||null)}/></FormField>)}{!scheduleOnly&&<FormField label="다음 정비 주행거리 (km)"><Input type="number" min="0" value={form.profile.next_service_km??''} onChange={e=>profile('next_service_km',e.target.value)}/></FormField>}</div></fieldset>
     {!scheduleOnly&&<><details><summary>연식·취득·연료 정보</summary><div className="fleet-asset-fields">{[['model_year','연식'],['engine_cc','배기량 (cc)'],['purchase_price_krw','취득가액 (원)'],['fuel_efficiency_kmpl','연비 (km/L)']].map(([key,label])=><FormField key={key} label={label}><Input type="number" min="0" step={key==='fuel_efficiency_kmpl'?'0.1':'1'} value={form.profile[key]??''} onChange={e=>profile(key,e.target.value)}/></FormField>)}<FormField label="취득일"><Input type="date" value={form.profile.acquired_at||''} onChange={e=>profile('acquired_at',e.target.value)}/></FormField><FormField label="차량 유형"><Select value={form.profile.vehicle_type||''} onChange={e=>profile('vehicle_type',e.target.value)}><option value="">미지정</option>{[['sedan','승용'],['van','승합'],['truck','화물'],['special','특수'],['ev','전기']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></FormField><FormField label="연료"><Select value={form.profile.fuel_type||''} onChange={e=>profile('fuel_type',e.target.value)}><option value="">미지정</option>{[['gasoline','휘발유'],['diesel','경유'],['lpg','LPG'],['ev','전기']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></FormField></div></details>
     <FormField label="메모"><Textarea maxLength={2000} value={form.profile.note||''} onChange={e=>profile('note',e.target.value)}/></FormField><label className="fleet-asset-toggle"><input type="checkbox" checked={form.enabled} onChange={e=>field('enabled',e.target.checked)}/>사용 가능</label></>}
     {error&&<p role="alert" className="business-error">{error}</p>}

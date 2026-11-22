@@ -8,6 +8,9 @@
 .ro-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:14px;color:var(--text,#253347)}
 .ro-field>span,.ro-tokens>span{font-size:13px;font-weight:650;color:var(--text-2,#526278)}
 .ro-field input,.ro-field select,.ro-field textarea{font:inherit;width:100%;min-width:0;min-height:40px;padding:8px 11px;border:1px solid var(--border,#d7dee8);border-radius:7px;background:var(--surface,#fff);color:inherit}
+.ro-field>.ro-search-control{position:relative;font:inherit;color:inherit}
+.ro-search-control>svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none}
+.ro-field .ro-search-control input{padding-inline-start:33px}
 .ro-field small,.ro-note{color:var(--text-2,#526278);font-size:13px}
 .ro-field textarea{resize:vertical}
 .ro-field :is(input,select,textarea):focus-visible,.ro-tabs button:focus-visible{outline:2px solid var(--primary,#217bdc);outline-offset:2px}
@@ -71,7 +74,7 @@
   .ro-charts{grid-template-columns:minmax(0,1fr)}
   .ro-period{width:100%;gap:8px}.ro-period>.ro-field{flex:1 1 100px}
   .ro-filters>.ro-field{flex:1 1 130px;max-width:none}
-  .ro-filters>.ro-field:has(>input[type=search]){flex-basis:100%}
+  .ro-filters>.ro-field:has(.ro-search-control){flex-basis:100%}
   .ro-field input,.ro-field select,.ro-field textarea{font-size:16px;min-height:44px}
   .ro-table-box{overflow:visible}
   .ro-table,.ro-table tbody{display:block}

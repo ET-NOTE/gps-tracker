@@ -37,3 +37,48 @@
   .fleet-maintenance-actions { width: 100%; }
   .fleet-maintenance-actions button { flex: 1 1 auto; }
 }
+
+.fleet-care-grid, .fleet-maintenance-history {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px;
+}
+.fleet-care-card, .fleet-maintenance-history li {
+  position:relative; min-width:0; border:1px solid var(--border); border-radius:12px;
+  padding:20px; background:var(--surface); overflow-wrap:anywhere;
+}
+.fleet-care-card-open {
+  position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:inherit;
+  background:transparent; padding:0; cursor:pointer;
+}
+.fleet-care-card-open:focus-visible {outline:2px solid var(--primary);outline-offset:-2px}
+.fleet-care-card:hover, .fleet-maintenance-history li:hover {border-color:var(--primary)}
+.fleet-care-card header,.fleet-care-summary,.fleet-care-card time,.fleet-care-vehicle,.fleet-care-card footer,.fleet-care-detail footer {display:flex;align-items:center;gap:8px}
+.fleet-care-card header,.fleet-care-summary {justify-content:space-between;font-size:12px;color:var(--text-2)}
+.fleet-care-vehicle {margin:18px 0 14px; min-width:0}
+.fleet-care-vehicle>svg,.fleet-care-vehicle>img {width:52px;height:34px;object-fit:contain;flex:none;color:var(--text-3)}
+.fleet-care-vehicle small {display:block;color:var(--text-3);margin-top:3px;font-size:12px}
+.fleet-care-card h3 {margin:0;font-size:14px;font-weight:500}
+.fleet-care-card footer {flex-wrap:wrap;margin-top:14px}
+.fleet-care-card footer button {position:relative;min-height:32px}
+.business-drawer-backdrop .business-drawer:has(.fleet-care-detail) {width:min(470px,100%);height:100%;max-height:100%;border-radius:0}
+.business-drawer:has(.fleet-care-detail)>header {padding:20px 24px}
+.business-drawer:has(.fleet-care-detail)>header h2 {font-size:17px;font-weight:500}
+.business-drawer:has(.fleet-care-detail)>.business-drawer-body {padding:0;display:flex;flex:1;min-height:0;overflow:hidden}
+.fleet-care-detail {display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
+.fleet-care-body {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:22px 24px}
+.fleet-care-hero {display:grid;place-items:center;margin:20px 0;background:var(--surface-2);border-radius:10px}
+.fleet-care-hero img {display:block;width:min(100%,280px);height:120px;object-fit:contain}
+.fleet-care-body h3 {font-size:14px;font-weight:500;margin:18px 0 8px}
+.fleet-care-body dl {margin:0}
+.fleet-care-body dl>div {display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.fleet-care-body dt {color:var(--text-2);flex-shrink:0}
+.fleet-care-body dd {margin:0;text-align:right;overflow-wrap:anywhere}
+.fleet-care-body p {white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+.fleet-care-detail footer {justify-content:flex-end;flex-wrap:wrap;padding:14px 22px max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+.fleet-care-detail footer .business-button,.fleet-care-card footer .business-button {font:400 12px/1.55 var(--fleet-font);padding:7px 13px;border-radius:8px}
+@media(max-width:1000px){.fleet-care-grid,.fleet-maintenance-history{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){
+  .fleet-care-grid,.fleet-maintenance-history{grid-template-columns:minmax(0,1fr);gap:10px}
+  .fleet-care-card,.fleet-maintenance-history li {padding:16px}
+  .fleet-care-card footer button,.fleet-care-detail footer button {min-height:42px}
+  .fleet-care-body,.business-drawer:has(.fleet-care-detail)>header {padding:16px 20px}
+}

@@ -169,6 +169,7 @@ export default function Dashboard({ onLogout }) {
   const [detailId, setDetailId]       = useState(null);
   const [roadview, setRoadview]       = useState(null);    // {lat, lng, panoId} or null
   const [toast, setToast]             = useState(null);     // 가벼운 중앙 토스트 메시지 (1초)
+  const [deviceListFilters, setDeviceListFilters] = useState({term:'', status:'all', service:''});
   const [filterDeviceId, setFilterDeviceId] = useState(null);  // null=전체, 또는 device id
   const hasSelectedDevice = devices.some(device => device.id === filterDeviceId);
   const { showRoutePlanner, showGeofence, showSeeker, showMiniSeeker, fullToolOpen, openTool, closeTool, toggleMini } = useHomeMapTools(view, hasSelectedDevice);
@@ -947,6 +948,7 @@ export default function Dashboard({ onLogout }) {
   const panel = (
     <>
       {view === 'devices' && <PortalDeviceList {...portalProps} devices={portalDevices} availableServices={enabledServices} scopeLabel={scopeOptions.find(option => option.value === portalScope)?.label}
+        filters={deviceListFilters} onFiltersChange={setDeviceListFilters}
         meta={lastMetaRef.current} selectedId={filterDeviceId} detailId={detailId} loading={deviceQuery.isPending || loadingScopeDevices} error={deviceQuery.isError} onRetry={deviceQuery.refetch}
         onSelect={id => { persistFilterDevice(id); if (!isDesktop) mapAreaRef.current?.scrollIntoView({block:'start'}); }}
         onDetail={setDetailId}

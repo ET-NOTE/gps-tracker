@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import Icon from '../Icon';
 import { classifyDevice, isStale } from '../../colors';
 import BatteryStatus from '../BatteryStatus';
@@ -25,10 +24,8 @@ function matchesDeviceStatus(filter, device, status) {
 }
 
 export default function PortalDeviceList({ devices = [], meta = {}, selectedId, detailId, onSelect, onDetail, onPair,
-  scope, scopeLabel, availableServices = [], error, loading, onRetry, children }) {
-  const [term, setTerm] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [service, setService] = useState('');
+  scope, scopeLabel, availableServices = [], filters, onFiltersChange, error, loading, onRetry, children }) {
+  const {term, status:filter, service} = filters;
   const now = useVisibleNow(true, 60000);
   const rows = devices.map(device => ({ device, status: classifyDevice(device, meta[device.id], now) }));
   const serviceOptions = SERVICES.filter(s => availableServices.includes(s.key) || devices.some(d => d.portalServices?.includes(s.key)));
@@ -43,12 +40,12 @@ export default function PortalDeviceList({ devices = [], meta = {}, selectedId, 
     </div>
     {children}
     <div className="pt-device-filters">
-      <label className="pt-search-field"><Icon name="search" size={15}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => setTerm(e.target.value)}/></label>
-      <label className="pt-filter"><select aria-label="단말기 상태 필터" value={filter} onChange={e => setFilter(e.target.value)}>
+      <label className="pt-search-field"><Icon name="search" size={15}/><input type="search" aria-label="단말기 검색" placeholder="이름·번호·차량 검색" value={term} onChange={e => onFiltersChange({...filters, term:e.target.value})}/></label>
+      <label className="pt-filter"><select aria-label="단말기 상태 필터" value={filter} onChange={e => onFiltersChange({...filters, status:e.target.value})}>
         {FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}
         <optgroup label="세부 상태">{DETAILED_FILTERS.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</optgroup>
       </select></label>
-      {showServices && <label className="pt-filter"><select aria-label="업무 구분" value={selectedService} onChange={e => setService(e.target.value)}>
+      {showServices && <label className="pt-filter"><select aria-label="업무 구분" value={selectedService} onChange={e => onFiltersChange({...filters, service:e.target.value})}>
         <option value="">전체 서비스</option>{serviceOptions.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
       </select></label>}
     </div>

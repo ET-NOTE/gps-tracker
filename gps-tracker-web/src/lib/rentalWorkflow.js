@@ -41,7 +41,7 @@ export function workflowRows(rows, stage, { query='', status='', branch='', from
     if (subset==='late' && state!=='overdue') return false;
     if (subset==='open' && state==='returned' || subset==='returned' && state!=='returned') return false;
     if ((from && end<from) || (to && start>to)) return false;
-    return !q || [c.id, 'R-'+c.id, c.license_plate,c.device_name,c.renter_name,c.renter_phone,c.rental_terms?.driver_name,c.rental_terms?.requested_model]
+    return !q || [c.id, 'R-'+c.id, '#'+c.id, c.license_plate,c.device_name,c.renter_name,c.renter_phone,c.rental_terms?.driver_name,c.rental_terms?.requested_model]
       .some(v=>String(v ?? '').toLocaleLowerCase().includes(q));
   }).sort((a,b)=> Date.parse(stage==='active' || stage==='returns'?a.ends_at:a.starts_at) - Date.parse(stage==='active' || stage==='returns'?b.ends_at:b.starts_at) || a.id-b.id);
 }

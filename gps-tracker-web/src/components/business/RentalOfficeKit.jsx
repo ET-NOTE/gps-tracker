@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {Button, Modal} from '../ui';
+import Icon from '../Icon';
 
 export function Field({label,children,wide=false}) {
   const labelId=React.useId();
@@ -25,7 +26,9 @@ export function Toolbar({count,unit='건',children}) {
   return <div className="ro-toolbar"><strong>{count.toLocaleString('ko-KR')}{unit}</strong><div>{children}</div></div>;
 }
 export function Search({value,setValue,label}) {
-  return <Field label="검색"><input type="search" value={value} onChange={e=>setValue(e.target.value)} placeholder={label} aria-label={label}/></Field>;
+  return <Field label="검색"><span className="ro-search-control"><Icon name="search" size={15}/>
+    <input type="search" value={value} onChange={e=>setValue(e.target.value)} placeholder={label} aria-label={label}/>
+  </span></Field>;
 }
 export function PeriodFields({period,onChange}) {
   return <div className="ro-period">{[['from','조회 시작일'],['to','조회 종료일']].map(([key,label])=><Field label={label} key={key}><input type="date" value={period[key]} onChange={e=>onChange({...period,[key]:e.target.value})}/></Field>)}</div>;

@@ -55,8 +55,24 @@ async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVeh
  const render=assets=>React.createElement(mod.namespace.FleetAssets,{assets,devices,onChanged,initialMissingSchedules,mapReturn,onMap:(deviceId,origin)=>maps.push({deviceId,origin}),onReport:value=>reports.push(value.id)});
  await act(async()=>{r=create(render(data));});
  t.after(async()=>{await act(async()=>r.unmount());});
- return {r,reports,maps,connections,vehicleUpdates,invalidations,refresh:assets=>act(async()=>r.update(render(assets)))};
+ return {r,reports,maps,connections,vehicleUpdates,invalidations,FleetAssetForm:mod.namespace.FleetAssetForm,refresh:assets=>act(async()=>r.update(render(assets)))};
 }
+
+test('editing a registered maintenance date selects that field and preserves other schedules',async t=>{
+ const {r,FleetAssetForm,vehicleUpdates}=await mount(t);
+ const asset={...vehicles[0],updated_at:'2026-11-19T00:00:00Z',profile:{insurance_expiry:'2027-01-03',inspection_expiry:'2027-02-01',next_service_date:null}};
+ await act(async()=>r.update(React.createElement(FleetAssetForm,{asset,scheduleOnly:true,scheduleScope:'insurance_expiry',onClose(){},onSaved(){}})));
+ const dialog=r.root.findByProps({role:'dialog','aria-label':'점검 일정 수정'});
+ const input=dialog.findByType('input');
+ assert.equal(input.props.name,'insurance_expiry');
+ assert.equal(input.props.value,'2027-01-03');
+ assert.equal(button(r,'저장').props.disabled,true);
+ await act(()=>input.props.onChange({target:{value:'2027-02-04'}}));
+ await act(async()=>dialog.findByType('form').props.onSubmit({preventDefault(){}}));
+ assert.equal(vehicleUpdates.length,1);
+ assert.deepEqual({...vehicleUpdates[0].body.profile},{...asset.profile,insurance_expiry:'2027-02-04'});
+ assert.equal(vehicleUpdates[0].body.updated_at,asset.updated_at);
+});
 
 test('phone rows identify the registered terminal even when its telemetry is missing',async t=>{
  const pending={...vehicles[0],bindings:[{id:21,device_id:81,is_primary:true,terminal_name:'등록된 단말'}]};
