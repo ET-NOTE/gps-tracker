@@ -46,8 +46,19 @@ export function installRentalOfficeFixture(api, { rentals, devices, empty, faile
   };
   api.rentalOffice=async(method,route,body)=>{
     if(failed)throw Error('렌트카 정보 조회 실패');
-    if(route==='/catalog')return structuredClone(catalog);
-    if(route==='/catalog?summary=true')return structuredClone({...catalog,customers:catalog.customers.map(c=>({...c,contracts_count:customerContracts(c.id).length}))});
+    const inUse=id=>rentals.some(c=>c.template_id===id);
+    if(route==='/catalog'||route==='/catalog?summary=true')return structuredClone({...catalog,
+      customers:route==='/catalog'?catalog.customers:catalog.customers.map(c=>({...c,contracts_count:customerContracts(c.id).length})),
+      templates:catalog.templates.map(t=>({...t,in_use:inUse(t.id)}))});
+    if(method==='DELETE'&&/^\/(templates|costs)\/\d+$/.test(route)){
+      const [,kind,id]=route.split('/');
+      const rows=kind==='templates'?catalog.templates:costs;
+      const index=rows.findIndex(row=>row.id===Number(id));
+      if(index<0)throw Object.assign(Error('삭제할 항목을 찾을 수 없습니다.'),{status:404});
+      if(rows[index].revision!==body.revision)throw Object.assign(Error('변경된 기록입니다. 다시 확인해 주세요.'),{status:409});
+      if(kind==='templates'&&inUse(Number(id)))throw Object.assign(Error('계약에 연결된 양식은 삭제할 수 없습니다.'),{status:409});
+      rows.splice(index,1);return;
+    }
     if(route.startsWith('/catalog/')){
       const [, ,kind,id]=route.split('/');
       const current=id&&catalog[kind].find(c=>c.id===Number(id));
@@ -73,7 +84,7 @@ export function installRentalOfficeFixture(api, { rentals, devices, empty, faile
     if(route.startsWith('/costs')){
       const d=devices.find(d=>d.id===body.device_id),id=Number(route.split('/')[2]);
       const row={...body,vehicle_name:d?.license_plate||d?.car_plate||d?.display_name,occurred_on:body.occurred_on||day};
-      if(id)Object.assign(costs.find(c=>c.id===id),row);
+      if(id){const current=costs.find(c=>c.id===id);Object.assign(current,row,{revision:current.revision+1});}
       else costs.unshift({...row,id:++serial,revision:1});
       return {id:id||serial};
     }

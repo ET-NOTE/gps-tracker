@@ -270,7 +270,7 @@ pub(super) async fn prepare_booking_operation(tx: &mut Transaction<'_, Postgres>
 }
 
 #[derive(Deserialize)]
-struct Review { license_checked: bool, contract_confirmed: bool, template_body: Option<String> }
+struct Review { license_checked: bool, contract_confirmed: bool, template_body: Option<String>, template_id: Option<i64> }
 
 async fn review(State(s): State<AppState>, u: RentalOwner, Path(id): Path<i64>, Json(input): Json<Review>) -> AppResult<Json<Value>> {
     let mut tx=s.db.begin().await?;
@@ -278,6 +278,15 @@ async fn review(State(s): State<AppState>, u: RentalOwner, Path(id): Path<i64>, 
     let mut terms=c.rental_terms.ok_or_else(||AppError::BadRequest("기존 계약은 계약 편집에서 확인해 주세요.".into()))?;
     if c.status!="draft" { return Err(AppError::Conflict("출고 전 예약만 확인할 수 있습니다.".into())); }
     if input.template_body.as_ref().is_some_and(|v|v.chars().count()>20000) { return Err(AppError::BadRequest("계약 내용이 너무 깁니다.".into())); }
+    let template_id = input.template_id.or(c.template_id);
+    if let Some(id) = input.template_id.filter(|id| Some(*id) != c.template_id) {
+        let available: Option<i64> = sqlx::query_scalar("SELECT id FROM rental_office_catalog
+            WHERE id=$1 AND user_id=$2 AND kind='templates' AND active FOR SHARE")
+            .bind(id).bind(u.user_id).fetch_optional(&mut *tx).await?;
+        if available.is_none() {
+            return Err(AppError::Conflict("사용할 수 없는 계약서 양식입니다. 최신 목록에서 다시 선택해 주세요.".into()));
+        }
+    }
     terms["license_checked"]=json!(input.license_checked);
     // Keep the contact in its existing retention-managed field. Saved template text uses a reference.
     let snapshot=input.template_body.map(|body|match c.renter_phone.as_deref().filter(|s|!s.is_empty()) {
@@ -286,13 +295,14 @@ async fn review(State(s): State<AppState>, u: RentalOwner, Path(id): Path<i64>, 
     let snapshot = json!(snapshot);
     if !input.contract_confirmed {
         terms["confirmed_at"] = Value::Null;
-    } else if terms["confirmed_at"].is_null() || terms["template_body"] != snapshot {
+    } else if terms["confirmed_at"].is_null() || terms["template_body"] != snapshot || template_id != c.template_id {
         terms["confirmed_at"] = json!(Utc::now());
     }
     terms["template_body"]=snapshot;
-    sqlx::query("UPDATE rental_contracts SET rental_terms=$1,updated_at=now() WHERE id=$2 AND user_id=$3")
-        .bind(&terms).bind(id).bind(u.user_id).execute(&mut *tx).await?;
+    sqlx::query("UPDATE rental_contracts SET rental_terms=$1,template_id=$4,updated_at=now() WHERE id=$2 AND user_id=$3")
+        .bind(&terms).bind(id).bind(u.user_id).bind(template_id).execute(&mut *tx).await?;
     tx.commit().await?;
+    terms["template_id"] = json!(template_id);
     Ok(Json(terms))
 }
 

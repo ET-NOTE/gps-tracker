@@ -189,6 +189,7 @@ pub struct Contract {
     pub vehicle_id: Option<i64>,
     pub device_id: Option<i64>,
     pub rental_terms: Option<Value>,
+    pub template_id: Option<i64>,
     pub device_name: Option<String>,
     pub license_plate: Option<String>,
     pub renter_name: String,
@@ -655,7 +656,7 @@ async fn return_contract(
                upd.settled_amount_krw, upd.settled_at, upd.pickup_location, upd.return_location,
                upd.status, upd.note, upd.created_at,
                upd.base_fee_krw, upd.late_hours, upd.late_fee_krw, upd.over_km, upd.over_km_fee_krw,
-               upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json, upd.rental_terms
+               upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json, upd.rental_terms, upd.template_id
           FROM upd
      LEFT JOIN rental_asset_directory d ON d.vehicle_id = upd.vehicle_id AND d.owner_id = upd.user_id"#,
     )
@@ -1052,7 +1053,7 @@ const SQL_INVOICE_SELECT: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms, c.template_id
     FROM rental_contracts c LEFT JOIN rental_asset_directory d ON d.vehicle_id = c.vehicle_id AND d.owner_id = c.user_id
     WHERE c.id = $1 AND c.user_id = $2";
 
@@ -1064,7 +1065,7 @@ const SQL_CONTRACT_LIST: &str =
     c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
     c.status, c.note, c.created_at,
     c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
+    c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms, c.template_id
     FROM rental_contracts c LEFT JOIN rental_asset_directory d ON d.vehicle_id = c.vehicle_id AND d.owner_id = c.user_id
     WHERE c.user_id = $1
       AND ((c.starts_at < $3 AND c.ends_at > $2)
@@ -1095,7 +1096,7 @@ SELECT ins.id, ins.user_id, ins.vehicle_id, ins.device_id,
        ins.settled_amount_krw, ins.settled_at, ins.pickup_location, ins.return_location,
        ins.status, ins.note, ins.created_at,
        ins.base_fee_krw, ins.late_hours, ins.late_fee_krw, ins.over_km, ins.over_km_fee_krw,
-       ins.extra_fee_krw, ins.refund_krw, ins.returned_at, ins.settlement_json, ins.rental_terms
+       ins.extra_fee_krw, ins.refund_krw, ins.returned_at, ins.settlement_json, ins.rental_terms, ins.template_id
   FROM ins
 LEFT JOIN rental_asset_directory d ON d.vehicle_id = ins.vehicle_id AND d.owner_id = ins.user_id"#;
 
@@ -1124,7 +1125,7 @@ SELECT upd.id, upd.user_id, upd.vehicle_id, upd.device_id,
        upd.settled_amount_krw, upd.settled_at, upd.pickup_location, upd.return_location,
        upd.status, upd.note, upd.created_at,
        upd.base_fee_krw, upd.late_hours, upd.late_fee_krw, upd.over_km, upd.over_km_fee_krw,
-       upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json, upd.rental_terms
+       upd.extra_fee_krw, upd.refund_krw, upd.returned_at, upd.settlement_json, upd.rental_terms, upd.template_id
   FROM upd
 LEFT JOIN rental_asset_directory d ON d.vehicle_id = upd.vehicle_id AND d.owner_id = upd.user_id"#;
 
@@ -1230,7 +1231,7 @@ async fn renter_detail(
                   c.settled_amount_krw, c.settled_at, c.pickup_location, c.return_location,
                   c.status, c.note, c.created_at,
                   c.base_fee_krw, c.late_hours, c.late_fee_krw, c.over_km, c.over_km_fee_krw,
-                  c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms
+                  c.extra_fee_krw, c.refund_krw, c.returned_at, c.settlement_json, c.rental_terms, c.template_id
              FROM rental_contracts c LEFT JOIN rental_asset_directory d ON d.vehicle_id = c.vehicle_id AND d.owner_id = c.user_id
             WHERE c.user_id = $1 AND c.renter_phone = $2
          ORDER BY c.starts_at DESC LIMIT 100"#,

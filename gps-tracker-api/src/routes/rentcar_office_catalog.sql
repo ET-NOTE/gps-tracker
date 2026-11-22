@@ -32,6 +32,8 @@
                        WHEN 'accounts' THEN jsonb_build_object('customers_count',coalesce(a.customers,0),
                          'outstanding_krw',coalesce(a.outstanding,0))
                        WHEN 'rates' THEN jsonb_build_object('vehicles_count',coalesce(v.total,0))
+                       WHEN 'templates' THEN jsonb_build_object('in_use',EXISTS(SELECT FROM rental_contracts c
+                         WHERE c.user_id=m.user_id AND c.template_id=m.id))
                        ELSE '{}'::jsonb END ORDER BY m.active DESC,m.name,m.id) AS rows
     FROM masters m LEFT JOIN counts n ON n.id=m.id AND m.kind='customers'
     LEFT JOIN accounts a ON a.account_id=m.id AND m.kind='accounts'

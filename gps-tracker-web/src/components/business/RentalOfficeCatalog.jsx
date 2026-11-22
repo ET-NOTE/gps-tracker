@@ -2,6 +2,8 @@ import React,{useState} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {api} from '../../api';
 import {Button,Modal} from '../ui';
+import Icon from '../Icon';
+import RentalOfficeDelete from './RentalOfficeDelete';
 import {BusinessRenters} from './BusinessPeople';
 import {Field,FormModal,Metrics,Options,PeriodFields,Search,Table,Toolbar} from './RentalOfficeKit';
 import {fillTemplate,initialPeriod,periodOk,templateKeys,won} from '../../lib/rentalOffice';
@@ -109,7 +111,9 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
       <p className="rental-record-notice">변경한 요금은 새 견적에 적용됩니다. 기존 계약은 약정한 금액을 유지합니다.</p>
     </RentalRecordDrawer>}
     {selected&&kind==='templates'&&<RentalRecordDrawer title="계약서 양식" subtitle={selected.name} onClose={()=>setSelectedId(null)}
-      footer={<><Button onClick={()=>setPreview(selected)}>미리보기</Button><Button variant="primary" onClick={()=>setEdit(selected)}>양식 수정</Button></>}>
+      footer={<><RentalOfficeDelete kind="templates" row={selected} onDeleted={()=>setSelectedId(null)}/>
+        <Button variant="ghost" icon={<Icon name="eye" size={15}/>} onClick={()=>setPreview(selected)}>미리보기</Button>
+        <Button variant="primary" icon={<Icon name="pencil" size={15}/>} onClick={()=>setEdit(selected)}>양식 수정</Button></>}>
       <div className="rental-template-status"><span className={selected.active?'ro-status':'ro-status off'}>{selected.active?'사용 중':'사용 중지'}</span><span>{selected.body.length.toLocaleString('ko-KR')}자</span></div>
       <pre className="ro-paper">{selected.body}</pre>
     </RentalRecordDrawer>}

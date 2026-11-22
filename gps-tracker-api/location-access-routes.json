@@ -1423,6 +1423,14 @@
     "class": "non_location",
     "reason": "Owner rental vehicle profile or maintenance and incident records. No telemetry or coordinates."
   },
+  "rentcar_office.rs DELETE /rentcar/office/costs/:id": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental operating cost deletion. No telemetry or coordinates."
+  },
+  "rentcar_office.rs DELETE /rentcar/office/templates/:id": {
+    "class": "non_location",
+    "reason": "Owner-scoped rental document template deletion. No telemetry or coordinates."
+  },
   "rentcar_office.rs GET /rentcar/office/book": {
     "class": "non_location",
     "reason": "Rental customer catalog, pricing, financial records or contractual period reporting. No telemetry or coordinates."

@@ -1,7 +1,7 @@
 use axum::{
     extract::{FromRequestParts, Path, Query, State},
     http::request::Parts,
-    routing::{get, patch, post},
+    routing::{delete, get, patch, post},
     Json, Router,
 };
 use chrono::{DateTime, NaiveDate, Utc};
@@ -51,11 +51,12 @@ pub fn router() -> Router<AppState> {
         .route("/rentcar/office/catalog", get(catalog))
         .route("/rentcar/office/catalog/:kind", post(create_master))
         .route("/rentcar/office/catalog/:kind/:id", patch(edit_master))
+        .route("/rentcar/office/templates/:id", delete(delete_template))
         .route("/rentcar/office/customers/:id/contracts", get(customer_history))
         .route("/rentcar/office/book", get(book))
         .route("/rentcar/office/ledger", post(record))
         .route("/rentcar/office/costs", post(create_cost))
-        .route("/rentcar/office/costs/:id", patch(edit_cost))
+        .route("/rentcar/office/costs/:id", patch(edit_cost).delete(delete_cost))
 }
 
 fn bad(message: &str) -> AppError {
@@ -91,9 +92,12 @@ async fn catalog(State(s): State<AppState>, u: RentalOwner, Query(options):Query
         CATALOG_SUMMARY_SQL
     } else {
         "SELECT coalesce(jsonb_object_agg(kind, rows),'{}') FROM (
-            SELECT kind, jsonb_agg(details || jsonb_build_object('id',id,'name',name,
-                'active',active,'revision',revision) ORDER BY active DESC,name,id) AS rows
-            FROM rental_office_catalog WHERE user_id=$1 GROUP BY kind) k"
+            SELECT kind, jsonb_agg(details || jsonb_build_object('id',m.id,'name',name,
+                'active',active,'revision',revision) || CASE WHEN kind='templates' THEN
+                    jsonb_build_object('in_use',EXISTS(SELECT FROM rental_contracts c
+                        WHERE c.user_id=m.user_id AND c.template_id=m.id))
+                    ELSE '{}'::jsonb END ORDER BY active DESC,name,m.id) AS rows
+            FROM rental_office_catalog m WHERE user_id=$1 GROUP BY kind) k"
     };
     let data: Value = sqlx::query_scalar(sql)
     .bind(u.user_id)
@@ -291,6 +295,42 @@ async fn edit_master(
 }
 
 #[derive(Deserialize)]
+struct DeleteRevision {
+    revision: i64,
+}
+
+async fn delete_template(
+    State(s): State<AppState>, owner: RentalOwner, Path(id): Path<i64>, Json(input): Json<DeleteRevision>,
+) -> AppResult<Json<Value>> {
+    let deleted = sqlx::query("DELETE FROM rental_office_catalog
+        WHERE id=$1 AND user_id=$2 AND kind='templates' AND revision=$3")
+        .bind(id).bind(owner.user_id).bind(input.revision).execute(&s.db).await
+        .map_err(|e| if e.as_database_error().is_some_and(|e| e.is_foreign_key_violation()) {
+            AppError::Conflict("계약에 연결된 양식은 삭제할 수 없습니다.".into())
+        } else { e.into() })?;
+    if deleted.rows_affected() == 0 {
+        let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT FROM rental_office_catalog
+            WHERE id=$1 AND user_id=$2 AND kind='templates')")
+            .bind(id).bind(owner.user_id).fetch_one(&s.db).await?;
+        return Err(if exists { changed() } else { AppError::NotFound });
+    }
+    Ok(Json(json!({"id":id})))
+}
+
+async fn delete_cost(
+    State(s): State<AppState>, owner: RentalOwner, Path(id): Path<i64>, Json(input): Json<DeleteRevision>,
+) -> AppResult<Json<Value>> {
+    let deleted = sqlx::query("DELETE FROM rental_office_costs WHERE id=$1 AND user_id=$2 AND revision=$3")
+        .bind(id).bind(owner.user_id).bind(input.revision).execute(&s.db).await?;
+    if deleted.rows_affected() == 0 {
+        let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT FROM rental_office_costs WHERE id=$1 AND user_id=$2)")
+            .bind(id).bind(owner.user_id).fetch_one(&s.db).await?;
+        return Err(if exists { changed() } else { AppError::NotFound });
+    }
+    Ok(Json(json!({"id":id})))
+}
+
+#[derive(Deserialize)]
 struct Period {
     from: NaiveDate,
     to: NaiveDate,
@@ -477,7 +517,11 @@ async fn save_cost(db: &PgPool, uid: i64, id: Option<i64>, c: Cost) -> AppResult
             RETURNING id")
             .bind(uid).bind(c.request_key).bind(device).bind(car).bind(c.occurred_on)
             .bind(c.category).bind(c.amount_krw).bind(c.vendor.trim()).bind(c.memo.trim()).bind(vehicle)
-            .fetch_optional(&mut *tx).await?
+            .fetch_optional(&mut *tx).await.map_err(|e| {
+                if e.as_database_error().and_then(|d| d.constraint()) == Some("rental_office_cost_keys_pkey") {
+                    AppError::Conflict("이미 삭제된 운영비입니다. 목록을 새로고침해 주세요.".into())
+                } else { e.into() }
+            })?
     };
     let id = saved.ok_or_else(changed)?;
     tx.commit().await?;

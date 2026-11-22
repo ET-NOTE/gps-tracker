@@ -33,7 +33,7 @@ export function PeriodFields({period,onChange}) {
 export function Metrics({items}) {
   return <dl className="ro-metrics">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
 }
-export function FormModal({title,onClose,save,children,canSave=true,size=720}) {
+export function FormModal({title,onClose,save,children,canSave=true,size=720,submitLabel='저장'}) {
   const [busy,setBusy] = useState(false), [error,setError] = useState('');
   const formId=React.useId();
   const lock=React.useRef(false);
@@ -47,7 +47,7 @@ export function FormModal({title,onClose,save,children,canSave=true,size=720}) {
   }
   return <Modal open size={size} mobileForm title={title} onClose={busy?undefined:onClose} closeOnEsc={!busy} closeOnBackdrop={!busy}
     footer={<div className="service-form-actions"><Button variant="ghost" onClick={onClose} disabled={busy}>취소</Button>
-      <Button variant="primary" type="submit" form={formId} busy={busy} disabled={!canSave}>저장</Button></div>}>
+      <Button variant="primary" type="submit" form={formId} busy={busy} disabled={!canSave}>{submitLabel}</Button></div>}>
     <form id={formId} className="ro-modal" onSubmit={submit}><fieldset disabled={busy} className="ro-form-grid">{children}</fieldset>
       {error && <p role="alert" className="ro-error">{error}</p>}
     </form>

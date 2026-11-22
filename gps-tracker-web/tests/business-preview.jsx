@@ -133,7 +133,7 @@ if ((params.get('kind') || 'rental') === 'rental' && !params.has('account')) {
         cancellation_fee_krw:body.fee_krw,cancelled_at:new Date().toISOString()};
       return {...contract};
     },
-    reviewRental:async (id,input)=>{const c=findRental(id);Object.assign(c.rental_terms,{license_checked:input.license_checked,confirmed_at:input.contract_confirmed?new Date().toISOString():null,template_body:input.template_body});return c.rental_terms;},
+    reviewRental:async (id,input)=>{const c=findRental(id);if(input.template_id!=null)c.template_id=input.template_id;Object.assign(c.rental_terms,{license_checked:input.license_checked,confirmed_at:input.contract_confirmed?new Date().toISOString():null,template_body:input.template_body});return c.rental_terms;},
     checkoutRental:async (id,input)=>{const c=findRental(id);if (!c.vehicle_id || c.status!=='draft')throw Error('출고 대기 차량을 배정해 주세요.');c.status='active';c.pickup_odometer_km=input.odometer_km;c.rental_terms.checkout_at=new Date().toISOString();c.rental_terms.pickup_fuel=input.fuel_percent;return {ok:true};},
     extendRental:async(id,body)=>{const c=findRental(id);if(c.ends_at!==body.expected_ends_at)throw Error('반납 예정이 변경됐습니다.');c.ends_at=body.ends_at;
       c.rental_terms.pricing.extension_krw=(c.rental_terms.pricing.extension_krw || 0)+body.additional_krw;return {...c};},

@@ -1,6 +1,8 @@
 import React,{useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Button} from '../ui';
+import Icon from '../Icon';
+import RentalOfficeDelete from './RentalOfficeDelete';
 import {api} from '../../api';
 import {Field,FormModal,Metrics,Options,Search,Table,Toolbar} from './RentalOfficeKit';
 import {costKinds,entryKinds,kstDay,kstInput,matchOfficeCustomer,methods,outstandingReturns,readTime,recordLimit,suggestedRecordAmount,won} from '../../lib/rentalOffice';
@@ -129,7 +131,8 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
     <section className="ro-panel">{isRefunds?<header className="ro-section-heading"><h2>거래 기록</h2><span>{rows.length}건</span></header>:<Toolbar count={rows.length}>{actions}</Toolbar>}
       <Table columns={cols} rows={rows} onRecord={isCost?openCost:isPayments?setDetail:setEntry} empty={isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
     {costDetail&&<RentalRecordDrawer title="운영비 상세" subtitle={costKinds[costDetail.category]+' · '+won(costDetail.amount_krw)} onClose={()=>setCostId(null)}
-      footer={<Button variant="primary" onClick={()=>setEditing(costDetail)}>운영비 수정</Button>}>
+      footer={<><RentalOfficeDelete kind="costs" row={costDetail} onDeleted={()=>setCostId(null)}/>
+        <Button variant="primary" icon={<Icon name="pencil" size={15}/>} onClick={()=>setEditing(costDetail)}>운영비 수정</Button></>}>
       <RecordFields rows={[[ '차량',costDetail.vehicle_name],['차량 지점',devices.find(v=>matchesVehicle(costDetail,v))?.branch],
         ['지출일',costDetail.occurred_on],['항목',costKinds[costDetail.category]],['금액',won(costDetail.amount_krw)],['거래처',costDetail.vendor]]}/>
       <section><h3>메모</h3><p className="rental-record-text">{costDetail.memo||'등록된 메모가 없습니다.'}</p></section>

@@ -198,6 +198,7 @@ function WorkflowAction({kind,c,onClose,onSaved}) {
   const company=useQuery({queryKey:qk.corporateInfo(),queryFn:api.getCorporateInfo,enabled:review});
   const [license,setLicense]=useState(!!terms.license_checked),[confirmed,setConfirmed]=useState(!!terms.confirmed_at);
   const [body,setBody]=useState(templateText(c)),[odometer,setOdometer]=useState(String(c.pickup_odometer_km ?? ''));
+  const [templateId,setTemplateId]=useState(c.template_id ?? null);
   const [fuel,setFuel]=useState(''),[note,setNote]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [inspected,setInspected]=useState(false),[photoBusy,setPhotoBusy]=useState(false),[photoDraft,setPhotoDraft]=useState(false);
   const pending=busy || photoBusy;
@@ -205,12 +206,19 @@ function WorkflowAction({kind,c,onClose,onSaved}) {
     if (photoDraft) {setError('선택한 사진을 저장하거나 선택 취소한 후 닫아 주세요.');return;}
     onClose();
   }
+  function chooseTemplate(value) {
+    const t=cat.data?.templates.find(item=>String(item.id)===value);
+    setTemplateId(t?.id ?? null);
+    setBody(t?fillTemplate(t.body,{...c,vehicle_name:carLabel(c),requested_model:terms.requested_model,billed_krw:agreementTotal(c)},company.data?.company_name):templateText(c));
+    setConfirmed(false);
+  }
   async function save() {
     if (pending || photoDraft) return;
     if(!review && (!odometer || !Number.isInteger(Number(odometer)) || Number(odometer)<0 || fuel==='' || !Number.isInteger(Number(fuel)) || Number(fuel)<0 || Number(fuel)>100)) {setError('계기판 주행거리와 연료·충전량을 확인해 주세요.');return;}
     if (!review && !inspected) {setError('차량 상태와 인도 항목을 확인해 주세요.');return;}
     setBusy(true);setError('');
-    try{if(review) await api.reviewRental(c.id,{license_checked:license,contract_confirmed:confirmed,template_body:body.trim() || null});
+    try{if(review) await api.reviewRental(c.id,{license_checked:license,contract_confirmed:confirmed,template_body:body.trim() || null,
+      ...(templateId!=null && templateId!==c.template_id?{template_id:templateId}:{})});
       else await api.checkoutRental(c.id,{odometer_km:Number(odometer),fuel_percent:Number(fuel),note:note.trim() || null});
       await onSaved();
     }catch(e){setError(e.message || '저장하지 못했습니다.');}finally{setBusy(false);}
@@ -222,7 +230,10 @@ function WorkflowAction({kind,c,onClose,onSaved}) {
       {error && <p role="alert" className="business-error">{error}</p>}
       {review?<><p>실운전자 <strong>{terms.driver_name || c.renter_name}</strong></p>
         <label className="rental-check"><input type="checkbox" checked={license} onChange={e=>setLicense(e.target.checked)}/>실운전자 면허를 확인했습니다</label>
-        {!!cat.data?.templates?.length && <FormField label="계약서 양식"><Select defaultValue="" onChange={e=>{const t=cat.data.templates.find(x=>String(x.id)===e.target.value);if(t){setBody(fillTemplate(t.body,{...c,vehicle_name:carLabel(c),requested_model:terms.requested_model,billed_krw:agreementTotal(c)},company.data?.company_name));setConfirmed(false);}}}><option value="">양식 선택</option>{cat.data.templates.filter(x=>x.active!==false).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</Select></FormField>}
+        {!!cat.data?.templates?.length && <FormField label="계약서 양식"><Select value={templateId??''} onChange={e=>chooseTemplate(e.target.value)}>
+          {c.template_id==null&&<option value="">양식 선택</option>}
+          {cat.data.templates.filter(t=>t.active!==false||t.id===c.template_id).map(t=><option key={t.id} value={t.id} disabled={t.active===false}>{t.name}</option>)}
+        </Select></FormField>}
         <FormField label="계약 조건"><Textarea value={body} onChange={e=>{setBody(e.target.value);setConfirmed(false);}} maxLength={20000}/></FormField>
         <label className="rental-check"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>고객과 계약 조건을 확인했습니다</label></>:
         <><p>실운전자 <strong>{terms.driver_name || c.renter_name}</strong></p>
