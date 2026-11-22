@@ -29,10 +29,6 @@
 .ro-contract-link{display:grid;gap:2px;padding:0;background:none;border:0;text-align:left;cursor:pointer;color:inherit;font:inherit}
 .ro-contract-link:hover strong,.ro-contract-link:focus-visible strong{color:var(--primary,#2476c7);text-decoration:underline}
 .ro-contract-link span{color:var(--text-2,#526278);font-size:12px}
-.ro-cost-details{display:grid;margin:0}
-.ro-cost-details>div{display:grid;grid-template-columns:minmax(80px,28%) 1fr;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border,#dfe4ec)}
-.ro-cost-details dt{color:var(--text-2,#526278)}
-.ro-cost-details dd{margin:0;overflow-wrap:anywhere}
 .ro-table-box{max-width:100%;overflow:auto;border-radius:0 0 12px 12px}
 .ro-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto}
 .ro-table th,.ro-table td{padding:12px 14px;text-align:left;line-height:1.6;border-top:1px solid var(--border,#e4e8ef);overflow-wrap:anywhere}

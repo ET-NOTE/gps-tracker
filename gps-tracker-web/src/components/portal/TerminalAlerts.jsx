@@ -12,7 +12,7 @@ export default function TerminalAlerts({ devices = [], meta = {}, onDevice, scop
   const [open, setOpen] = useState(false);
   const now = useVisibleNow(true, 60000);
   const alerts = devices.map(device => ({ device, state: classifyDevice(device, meta?.[device.id], now) }))
-    .filter(({ state }) => ['offline', 'attention'].includes(deviceBucket(state)));
+    .filter(({ state }) => deviceBucket(state) !== 'normal');
   const close = () => setOpen(false);
   return <>
     <button type="button" className={className} aria-label={'단말기 상태 알림 ' + alerts.length + '건'} aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(true)}>

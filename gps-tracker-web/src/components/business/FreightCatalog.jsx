@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { FreightDrawer } from './FreightKit';
-import { FreightBadge, FreightButton, FreightFacts, FreightFilters, FreightForm, FreightStats, FreightTable } from './FreightKit';
+import { FreightBadge, FreightButton, FreightFacts, FreightFilters, FreightForm, FreightStats, FreightTable, Status } from './FreightKit';
 import { FormField, formValues, OfficeFilter, downloadRows } from './FreightOfficeFields';
 import { catalogFields, catalogFilters, catalogTable } from './FreightCatalogFields';
 import { availabilityLabels, catalogNames, catalogInUse, saveCatalog, removeCatalog, finishService, readinessLabels } from '../../lib/freightCatalog';
-import { epoch, getRow, nameOf, timeLabel, shipStates, vehicleName } from '../../lib/freightWorkflow';
+import { epoch, getRow, nameOf, orderStates, timeLabel, shipStates, vehicleName } from '../../lib/freightWorkflow';
 import { terminalState } from './FreightDevices';
 
-function relatedRows(data,kind,id) {
-  if (kind==='vehicles'||kind==='drivers'||kind==='carriers') {
-    const field={vehicles:'vehicleId',drivers:'driverId',carriers:'carrierId'}[kind];
-    return data.shipments.filter(r=>r[field]===id).map(r=>[r.number,timeLabel(r.start)+' · '+shipStates[r.status]]);
-  }
-  if(kind==='locations'||kind==='shippers')return data.orders.filter(o=>kind==='shippers'?o.shipperId===id:o.pickupLocationId===id||o.dropoffLocationId===id).map(o=>[o.number,o.cargoName]);
-  return [];
+function CatalogLinks({data,kind,id,onOpen}) {
+  const orders=data.orders.filter(o=>(kind==='shippers'&&o.shipperId===id)||(kind==='locations'&&(o.pickupLocationId===id||o.dropoffLocationId===id)));
+  const orderIds=new Set(orders.map(o=>o.id));
+  const shipments=data.shipments.filter(s=>(kind==='vehicles'&&s.vehicleId===id)||(kind==='carriers'&&s.carrierId===id)||
+    (kind==='shippers'&&s.orderIds?.some(orderId=>orderIds.has(orderId))));
+  const lists=[];
+  if(kind==='vehicles')lists.push(['관리 일정','services',data.services.filter(s=>s.vehicleId===id)]);
+  if(kind==='locations'||kind==='shippers')lists.push(['연결 주문','orders',orders]);
+  if(['shippers','carriers','vehicles'].includes(kind))lists.push(['연결된 운송','shipments',shipments]);
+  return lists.map(([title,type,rows])=><section key={type} className="fr-record-block"><h3>{title} · {rows.length}건</h3>
+    {rows.length?rows.map(r=><button type="button" className="fr-record-link" key={r.id} onClick={()=>onOpen(type,r.id)}>
+      <span>{r.number||r.type}<small>{timeLabel(r.start)}{r.cargoName?' · '+r.cargoName:''}</small></span>
+      {type==='services'?<FreightBadge tone={r.status==='done'?'green':'neutral'}>{r.status==='done'?'완료':'예정'}</FreightBadge>:<Status value={r.status} labels={type==='shipments'?shipStates:orderStates}/>}
+    </button>):<p className="fr-record-note">등록된 내역이 없습니다.</p>}
+  </section>);
 }
 function facts(fields,row) {
   return fields.map(f=>{
@@ -22,7 +30,7 @@ function facts(fields,row) {
     return [f.label,value==null||value===''?'—':value];
   });
 }
-export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenShipment}) {
+export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenRecord}) {
   const [query,setQuery]=useState(''),[filter,setFilter]=useState({}),[view,setView]=useState(null);
   const filters=catalogFilters(kind,data),title=catalogNames[kind];
   const columns=catalogTable(kind,data,v=>{
@@ -45,7 +53,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenS
     <FreightFilters query={query} onQuery={setQuery} placeholder={title+' 검색'} onReset={()=>{setFilter({});setQuery('');}}>{filters.map(f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>)}
       {missing&&<div className="fr-setup-hint"><span>{missing}</span><FreightButton onClick={()=>onPage(!readyBranch?'organization':'cargo-vehicles')}>{!readyBranch?'지점 관리':'차량 목록'}</FreightButton></div>}</FreightFilters>
     <FreightTable columns={headings} rows={rows.map(row=>({id:row.id,onOpen:()=>toDetail(row.id),cells:columns.map(([,cell],i)=>i===0?<button type="button" className="fr-link" onClick={()=>toDetail(row.id)}>{cell(row)}</button>:cell(row))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
-    {view&&<FreightCatalogDialogs {...{kind,data,save,view,setView,onOpenShipment}}/>}
+    {view&&<FreightCatalogDialogs {...{kind,data,save,view,setView,onOpenRecord}}/>}
   </section>;
 }
 
@@ -70,7 +78,7 @@ function DriverDetail({data,row,onVehicle,onShipment}) {
   </div>;
 }
 
-export function FreightCatalogDialogs({kind,data,save,view,setView,onOpenShipment}) {
+export function FreightCatalogDialogs({kind,data,save,view,setView,onOpenRecord}) {
   const [vehicleView,setVehicleView]=useState(null);
   const fields=catalogFields(kind,data),title=catalogNames[kind];
   const row=view.id?getRow(data,kind,view.id):null;
@@ -89,19 +97,21 @@ export function FreightCatalogDialogs({kind,data,save,view,setView,onOpenShipmen
     await save(next);
     if(view.action==='delete')close();else toDetail(row.id);
   }
-  const related=row&&kind!=='drivers'?relatedRows(data,kind,row.id):[];
+
   return <>
     {row&&<FreightDrawer title={title+' 상세'} subtitle={row.plate||row.name||row.type} onClose={close}
       footer={<div className="fr-actions"><FreightButton onClick={close}>닫기</FreightButton>
         {kind!=='services'&&!catalogInUse(data,kind,row.id)&&<FreightButton onClick={()=>setView({action:'delete',id:row.id})}>삭제</FreightButton>}
         {kind==='services'&&row.status!=='done'&&<FreightButton onClick={()=>setView({action:'done',id:row.id})}>작업 완료</FreightButton>}
         {(kind!=='services'||row.status!=='done')&&<FreightButton primary onClick={()=>setView({action:'form',id:row.id})}>정보 수정</FreightButton>}</div>}>
-      {kind==='drivers'?<DriverDetail data={data} row={row} onVehicle={id=>setVehicleView({id,action:'detail'})} onShipment={onOpenShipment}/>:
-        <FreightFacts items={[...facts(fields,row),...(row.completedAt?[['완료 일시',timeLabel(row.completedAt)]]:[])]}/>}
-      {related.length>0&&<section className="fr-card"><h3>연결 내역 {related.length}건</h3><FreightFacts items={related}/></section>}
+      {kind==='drivers'?<DriverDetail data={data} row={row} onVehicle={id=>setVehicleView({id,action:'detail'})} onShipment={id=>onOpenRecord('shipments',id)}/>:<>
+        <FreightFacts items={[...facts(fields.filter(f=>f.key!=='note'&&f.key!=='instructions'),row),...(row.completedAt?[['완료 일시',timeLabel(row.completedAt)]]:[])]}/>
+        {fields.filter(f=>f.key==='note'||f.key==='instructions').map(f=><section className="fr-record-block" key={f.key}><h3>{f.label}</h3><p className="fr-record-note">{row[f.key]||'등록된 내용이 없습니다.'}</p></section>)}
+        <CatalogLinks data={data} kind={kind} id={row.id} onOpen={onOpenRecord}/>
+      </>}
     </FreightDrawer>}
-    {vehicleView&&<FreightCatalogDialogs kind="vehicles" data={data} save={save} view={vehicleView} setView={setVehicleView}/>}
-    {view?.action==='form'&&<FreightForm title={title+(row?' 수정':' 등록')} onClose={closeForm} onSubmit={submit}>
+    {vehicleView&&<FreightCatalogDialogs kind="vehicles" data={data} save={save} view={vehicleView} setView={setVehicleView} onOpenRecord={onOpenRecord}/>}
+    {view?.action==='form'&&<FreightForm size={kind==='services'||kind==='drivers'?530:720} title={title+(row?' 수정':' 등록')} onClose={closeForm} onSubmit={submit}>
       {fields.map(f=><FormField key={f.key} field={f} initial={row||{}}/>)}
     </FreightForm>}
     {['delete','done'].includes(view?.action)&&row&&<FreightForm title={view.action==='delete'?title+' 삭제':'작업 완료 기록'} onClose={closeForm} onSubmit={confirm} submitLabel={view.action==='delete'?'삭제':'완료 기록'}>

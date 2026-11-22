@@ -49,12 +49,14 @@ function Editor({kind,catalog,row,close}) {
   </FormModal>;
 }
 function Preview({row,devices,close}) {
-  const [period,setPeriod]=useState(initialPeriod), [id,setId]=useState('');
+  const [period,setPeriod]=useState(initialPeriod), [id,setId]=useState(null);
   const q=useQuery({queryKey:officeBookKey(period),queryFn:()=>api.rentalOffice('GET','/book?'+new URLSearchParams(period)),enabled:periodOk(period)});
-  const contract=q.data?.contracts.find(c=>String(c.id)===id);
-  return <Modal open size="lg" onClose={close} title="계약서 미리보기" subtitle={row.name}>
-    <div className="ro-modal"><div className="ro-filters"><PeriodFields period={period} onChange={p=>{setId('');setPeriod(p);}}/>
-      <Field label="정보를 채울 계약"><select value={id} onChange={e=>setId(e.target.value)}><option value="">양식 원문</option>{q.data?.contracts.map(c=><option key={c.id} value={c.id}>#{c.id} · {c.renter_name}</option>)}</select></Field></div>
+  const selected=id??String(q.data?.contracts[0]?.id??'');
+  const contract=q.data?.contracts.find(c=>String(c.id)===selected);
+  return <Modal open mobileForm size={720} onClose={close} title="계약서 미리보기" subtitle={row.name}
+    footer={<div className="service-form-actions"><Button onClick={close}>닫기</Button></div>}>
+    <div className="ro-modal"><div className="ro-filters"><PeriodFields period={period} onChange={p=>{setId(null);setPeriod(p);}}/>
+      <Field label="정보를 채울 계약"><select value={selected} onChange={e=>setId(e.target.value)}><option value="">양식 원문</option>{q.data?.contracts.map(c=><option key={c.id} value={c.id}>#{c.id} · {c.renter_name}</option>)}</select></Field></div>
       {!periodOk(period)&&<p role="alert">조회 기간을 1년 이내로 선택해 주세요.</p>}
       {q.isError&&<p role="alert">계약을 불러오지 못했습니다. <button onClick={()=>q.refetch()}>다시 시도</button></p>}
       <pre className="ro-paper">{fillTemplate(row.body,contract,q.data?.company_name,devices)}</pre>
@@ -72,7 +74,6 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
     (license==='all'||r.license_checked===(license==='yes')) &&
     [r.name,r.phone,r.email,r.contact,r.body,r.business_number,findAccount(r)].some(v=>String(v??'').toLowerCase().includes(query.trim().toLowerCase())));
   const editButton=r=><Button size="sm" variant="ghost" aria-label={r.name+' 수정'} onClick={()=>setEdit(r)}>수정</Button>;
-  const hasDetails=kind==='customers'||kind==='accounts';
   const openRecord=r=>setSelectedId(r.id);
   const recordLink=r=><button type="button" className="ro-detail-link" aria-label={r.name+' 상세 열기'} onClick={()=>openRecord(r)}>{r.name}</button>;
   const cols={
@@ -80,8 +81,8 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
       ['운전면허',c=><span className={c.license_checked?'ro-status':'ro-status amber'}>{c.license_checked?'확인 완료':'확인 필요'}</span>],['대여 이력',c=>(c.contracts_count||0)+'건']],
     accounts:[['거래처명',c=><>{recordLink(c)}{c.business_number&&<small className="ro-secondary">{c.business_number}</small>}</>],['담당자',c=>c.contact],['연락처',c=>c.phone],['정산 방식',c=>billing[c.billing]],
       ['연결 고객',c=>(c.customers_count||0)+'명'],['미수금',c=>won(c.outstanding_krw)]],
-    rates:[['차종',c=><strong>{c.name}</strong>],['1일 대여요금',c=>won(c.daily_krw)],['보증금',c=>won(c.deposit_krw)],['1일 자차 보장료',c=>won(c.coverage_krw)],['등록 차량',c=>(c.vehicles_count||0)+'대']],
-    templates:[['양식 이름',c=><strong>{c.name}</strong>],['내용',c=><span className="ro-excerpt">{c.body.slice(0,80)}</span>],['미리보기',c=><Button variant="ghost" size="sm" onClick={()=>setPreview(c)}>미리보기</Button>]]
+    rates:[['차종',recordLink],['1일 대여요금',c=>won(c.daily_krw)],['보증금',c=>won(c.deposit_krw)],['1일 자차 보장료',c=>won(c.coverage_krw)],['등록 차량',c=>(c.vehicles_count||0)+'대']],
+    templates:[['양식 이름',recordLink],['내용',c=><span className="ro-excerpt">{c.body.slice(0,80)}</span>],['미리보기',c=><Button variant="ghost" size="sm" onClick={()=>setPreview(c)}>미리보기</Button>]]
   }[kind];
   const filter=(label,selected,onChange,items)=><Field label={label}><select value={selected} onChange={e=>onChange(e.target.value)}><Options items={items}/></select></Field>;
   return <div className="rental-office">
@@ -98,9 +99,19 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
         {(query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<Button variant="ghost" size="sm" onClick={()=>{setQuery('');setStatus('all');setType('all');setAccount('all');setLicense('all');}}>초기화</Button>}
       </div>
       <section className="ro-panel"><Toolbar count={rows.length}><Button onClick={()=>setEdit(null)}>{titles[kind]} 등록</Button></Toolbar>
-        <Table columns={[...cols,['상태',r=><span className={r.active?'ro-status':'ro-status off'}>{r.active?'사용 중':'사용 중지'}</span>],['관리',editButton]]} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={hasDetails?openRecord:undefined}/></section>
+        <Table columns={[...cols,['상태',r=><span className={r.active?'ro-status':'ro-status off'}>{r.active?'사용 중':'사용 중지'}</span>],['관리',editButton]]} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
     </>}
-    {selected&&<RentalRecordDrawer title={titles[kind]+' 상세'} subtitle={selected.name} onClose={()=>setSelectedId(null)}
+    {selected&&kind==='rates'&&<RentalRecordDrawer title="요금표 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}
+      footer={<Button variant="primary" onClick={()=>setEdit(selected)}>요금 수정</Button>}>
+      <RecordFields rows={cols.slice(1).map(([label,render])=>[label,render(selected)])}/>
+      <p className="rental-record-notice">변경한 요금은 새 견적에 적용됩니다. 기존 계약은 약정한 금액을 유지합니다.</p>
+    </RentalRecordDrawer>}
+    {selected&&kind==='templates'&&<RentalRecordDrawer title="계약서 양식" subtitle={selected.name} onClose={()=>setSelectedId(null)}
+      footer={<><Button onClick={()=>setPreview(selected)}>미리보기</Button><Button variant="primary" onClick={()=>setEdit(selected)}>양식 수정</Button></>}>
+      <div className="rental-template-status"><span className={selected.active?'ro-status':'ro-status off'}>{selected.active?'사용 중':'사용 중지'}</span><span>{selected.body.length.toLocaleString('ko-KR')}자</span></div>
+      <pre className="ro-paper">{selected.body}</pre>
+    </RentalRecordDrawer>}
+    {selected&&(kind==='customers'||kind==='accounts')&&<RentalRecordDrawer title={titles[kind]+' 상세'} subtitle={selected.name} onClose={()=>setSelectedId(null)}
       footer={<Button variant="primary" onClick={()=>setEdit(selected)}>{kind==='accounts'?'거래처':'고객'} 수정</Button>}>
       {kind==='customers'?<><CustomerFields person={selected} accounts={catalog.accounts}/><RentalCustomerHistory key={selected.id} customerId={selected.id}/></>:<>
         <RecordFields rows={[['사업자등록번호',selected.business_number],['담당자',selected.contact],['연락처',selected.phone],

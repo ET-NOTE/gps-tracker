@@ -820,9 +820,9 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
 
   const routePlanRef = useRef({ markers: [], polys: [] });
   useEffect(() => () => { routePlanRef.current.markers.forEach(m => m.setMap(null)); routePlanRef.current.polys.forEach(p => p.setMap(null)); }, []);
-  function frameDevices(selected, level = 4) {
+  function frameDevices(selected, level = 4, scope = deviceMapRef.current?.devices) {
     const map = mapRef.current, sdk = window.kakao?.maps;
-    const devices = deviceMapRef.current?.devices.filter(d => (selected == null || d.id === selected) && validPosition(d));
+    const devices = scope?.filter(d => (selected == null || d.id === selected) && validPosition(d));
     if (!map || !sdk || !devices?.length) return false;
     const positions = devices.map(d => new sdk.LatLng(Number(d.last_lat), Number(d.last_lng)));
     markProgrammatic();
@@ -845,6 +845,7 @@ const KakaoMap = forwardRef(function KakaoMap({ onReady, onRoadview, onPointInfo
     }
   }, [positionedIds, mapStatus]);
   useImperativeHandle(ref, () => ({
+    fitDeviceScope(devices) { return frameDevices(null, 4, devices); },
     updateBatteryMeta(deviceId, meta) {
       const entry = markersRef.current[deviceId];
       if (entry) entry.meta = { ...entry.meta, vbatMv: meta.vbatMv, cbcMv: meta.cbcMv, batteryAt: meta.batteryAt };

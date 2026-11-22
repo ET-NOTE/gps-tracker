@@ -16,15 +16,15 @@ function downloadCsv(name,rows){
 }
 function BulkForm({commit,onClose}){
   const [source,setSource]=useState(''),[error,setError]=useState('');
-  return <FreightForm title="운송 주문 일괄 등록" onClose={onClose} submitLabel="일괄 등록" onSubmit={()=>commit(next=>importOrders(next,source))}>
-    <p className="fr-note">등록 서식에 화주·지점·상하차지 이름을 입력해 주세요. 최대 100건까지 등록할 수 있습니다.</p>
-    <div><FreightButton onClick={async()=>{try{await downloadCsv('화물주문_등록서식',[freightHeaders]);}catch(e){setError(e.message);}}}>등록 서식 다운로드</FreightButton></div>
+  return <FreightForm title="운송 주문 일괄 등록" subtitle="CSV 서식 · 최대 100건" size={720} onClose={onClose} submitLabel="주문 일괄 등록" onSubmit={()=>commit(next=>importOrders(next,source))}>
+    <div className="fr-import-guide"><p className="fr-record-note">등록된 화주·지점·상하차지 이름을 입력해 주세요.</p>
+      <FreightButton icon="download" onClick={async()=>{try{await downloadCsv('화물주문_등록서식',[freightHeaders]);}catch(e){setError(e.message);}}}>등록 서식</FreightButton></div>
     <FreightField wide label="CSV 파일"><input type="file" accept=".csv,text/csv" onChange={async e=>{
       const file=e.target.files[0];if(!file)return;
       try{if(file.size>1024*1024)throw Error('1MB 이하의 파일을 선택해 주세요.');setSource(await file.text());setError('');}catch(err){setError(err.message);}
     }}/></FreightField>
     {error&&<p role="alert" className="fr-note fr-error">{error}</p>}
-    <FreightField wide label="CSV 내용"><textarea required rows="8" value={source} onChange={e=>setSource(e.target.value)}/></FreightField>
+    <FreightField wide label="CSV 내용"><textarea required rows="8" placeholder="등록 서식의 머리글과 내용을 붙여넣으세요." value={source} onChange={e=>setSource(e.target.value)}/></FreightField>
   </FreightForm>;
 }
 function OrderActionForm({action,row,commit,onClose}){

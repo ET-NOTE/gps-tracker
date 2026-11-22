@@ -60,7 +60,18 @@
 .rental-office .ro-detail-link:hover,.rental-record-related:hover {color:var(--primary)}
 .rental-record-related {display:flex; justify-content:space-between; gap:12px; width:100%; min-height:40px; align-items:center; padding:8px 0; border:0; border-bottom:1px solid var(--border); background:transparent; font:inherit; color:var(--text); text-align:start; cursor:pointer}
 .rental-record-related small {color:var(--text-3)}
+.rental-record-related>span>small {display:block}
+.rental-record-body .rental-report-contracts {margin-top:20px}
+.rental-record-notice {margin:20px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--text-2);font-size:12px}
+.rental-template-status,.rental-payment-status {display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--text-3);font-size:12px}
+.rental-record-body .ro-paper,.ro-modal .ro-paper {margin:17px 0;padding:19px 18px;border-radius:10px;background:var(--surface-2);color:var(--text-2);font:400 12px/1.9 var(--fleet-font);max-height:55dvh;overflow:auto}
+.rental-money-block {margin:20px 0;padding:16px;border:1px solid var(--border);border-radius:11px}
+.rental-money-block .rental-record-fields>div {padding:9px 0}
+.rental-money-block .ro-actions {margin-top:13px;gap:7px}
+.rental-money-block .ro-actions button {min-height:32px;font:400 12px/1.55 var(--fleet-font);white-space:normal}
 @media(max-width:760px) {
+  .rental-money-block {padding:13px}
+  .rental-record-body .ro-paper,.ro-modal .ro-paper {padding:14px}
   .business-drawer-backdrop .business-drawer:has(.rental-record-drawer) {--record-inset:20px}
   .business-drawer:has(.rental-record-drawer)>header {padding:22px var(--record-inset) 18px}
   .rental-record-body {padding:20px var(--record-inset)}

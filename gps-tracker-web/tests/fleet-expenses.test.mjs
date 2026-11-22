@@ -23,6 +23,8 @@ test('expense search precedes status counts and selected rows define both totals
  const report=expenseReport(selected.rows,{from:'2026-10-01',to:'2026-10-31'});
  assert.equal(report.rows.length,1);assert.equal(report.rows[0].status,'승인대기');assert.match(report.summary,/승인 합계 0원/);
  assert.equal(expenseList(rows,{query:'업무차 김기사'}).rows[0].id,5);
+ assert.deepEqual(expenseList(rows,{query:'여비교통비 유류비 김기사'}).rows.map(r=>r.id),[5]);
+ assert.equal(expenseList(rows,{query:'숙박비',status:'approved'}).counts.all,4);
  assert.equal(expenseList(rows,{query:'없는 차량'}).counts.all,0);
 });
 test('vehicle and staff search tolerates empty snapshots and case differences',()=>{

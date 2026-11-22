@@ -20,6 +20,7 @@ import {WorkspaceHeaderContext} from '../components/business/WorkspaceHeader';
 import DeviceServiceSettings from '../components/portal/DeviceServiceSettings';
 import { rememberFleetOwner } from '../lib/fleetSession';
 import { ownerServices, businessServices, rememberView, classifyOwnedDevices } from '../lib/platformNavigation';
+import { validPosition } from '../lib/businessWorkspace';
 import DeviceDetail from '../components/DeviceDetail';
 import {DeviceTechnicalInfo} from '../components/DeviceCardSummary';
 import PortalTerminalDetails from '../components/portal/PortalTerminalDetails';
@@ -874,6 +875,9 @@ export default function Dashboard({ onLogout }) {
   const routeProblem = !view ? 'missing' : specialized && (accessQuery.isPending ? 'loading' : accessQuery.isError ? 'error'
     : !(view === 'admin' ? routeAccess(view, me, accountType) : businessAllowed) ? 'denied' : null);
   const mapVisible = !routeProblem && (view === 'home' || view === 'devices');
+  const positionedCount = portalDevices.filter(validPosition).length;
+  const scopeCountReady = deviceQuery.isSuccess && !loadingScopeDevices &&
+    !(companyMap && ((corporateOwner && vehiclesForScope.isError) || (cargoOwner && cargoForScope.isError)));
   useEffect(() => {
     if (!routeProblem && accountQuery.isSuccess) rememberView(me?.id, location.pathname, location.search);
   }, [routeProblem, accountQuery.isSuccess, me?.id, location.pathname, location.search]);
@@ -1236,6 +1240,12 @@ export default function Dashboard({ onLogout }) {
             )}
           </div>
 
+          {mapVisible && !fullToolOpen && !showMiniSeeker && !pointInfo && <div className="pt-map-footer">
+            <span>{scopeCountReady && <>위치 {positionedCount}개 · 등록 {portalDevices.length}개</>}</span>
+            <button type="button" disabled={!scopeCountReady || !mapReady || !positionedCount}
+              title="현재 조회 범위의 단말기 위치에 맞춰 지도 범위를 복원합니다."
+              onClick={() => {if (mapRef.current?.fitDeviceScope(portalDevices)) setUserTrackPref(false);}}>지도 원래대로</button>
+          </div>}
           {/* 모바일/태블릿: 홈 지도 외 탭은 전체 화면 패널로 표시. */}
           {!routeProblem && !isDesktop && view === 'profile' && (
             <div style={{

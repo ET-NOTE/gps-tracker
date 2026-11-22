@@ -1,12 +1,14 @@
 import React,{useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {Button,Modal} from '../ui';
+import {Button} from '../ui';
 import {api} from '../../api';
 import {Field,FormModal,Metrics,Options,Search,Table,Toolbar} from './RentalOfficeKit';
 import {costKinds,entryKinds,kstDay,kstInput,matchOfficeCustomer,methods,outstandingReturns,readTime,recordLimit,suggestedRecordAmount,won} from '../../lib/rentalOffice';
 import ExportButtons from './ExportButtons';
 import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
 import Figures from './RentalOfficeFigures';
+import RentalRecordDrawer, {RecordFields} from './RentalRecordDrawer';
+import RentalPaymentDrawer, {RentalEntryDrawer} from './RentalPaymentDrawer';
 import {matchesVehicle} from '../../lib/rentalInventory';
 
 const sum=(rows,fn)=>rows.reduce((n,row)=>n+fn(row),0);
@@ -59,11 +61,10 @@ function CostEditor({devices,row,close}) {
     <Field label="메모" wide><textarea rows="3" value={form.memo} onChange={e=>set('memo',e.target.value)} maxLength={500}/></Field>
   </FormModal>;
 }
-const entryCols=[['거래 일시',e=>readTime(e.recorded_at)],['예약·계약',e=>'#'+e.contract_id+' · '+e.renter_name],['구분',e=>entryKinds[e.kind]],
-  ['수단',e=>methods[e.method]],['금액',e=><strong>{won(e.amount_krw)}</strong>],['메모',e=>e.memo||'—']];
 export default function RentalOfficeBook({kind,book,catalog,devices,period,dates,pending,onResetPeriod}) {
   const [query,setQuery]=useState(''),[filter,setFilter]=useState('all'),[device,setDevice]=useState('all'),[account,setAccount]=useState('all'),[branch,setBranch]=useState('');
-  const [editing,setEditing]=useState(undefined),[detail,setDetail]=useState(null),[costDetail,setCostDetail]=useState(null);
+  const [editing,setEditing]=useState(undefined),[detail,setDetail]=useState(null),[costId,setCostId]=useState(null);
+  const [entry,setEntry]=useState(null);
   const [method,setMethod]=useState('all');
   const matches=(...values)=>values.some(v=>String(v??'').toLowerCase().includes(query.trim().toLowerCase()));
   if (kind==='reports'||kind==='utilization') return <Figures book={book} devices={devices} period={period} dates={dates} onResetPeriod={onResetPeriod} pending={pending} usage={kind==='utilization'}/>;
@@ -78,11 +79,16 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
   const returns=isRefunds?outstandingReturns(book.contracts.filter(c=>matches(c.id,c.renter_name))):[];
   const costs=book.costs.filter(c=>(filter==='all'||c.category===filter)&&(device==='all'||matchesVehicle(c,devices.find(v=>String(v.id)===device)))&&
     (!branch||devices.some(v=>v.branch===branch&&matchesVehicle(c,v)))&&matches(c.vehicle_name,c.vendor,c.memo));
-  const cols=isCost?[['지출일',k=>k.occurred_on],['차량',k=><button type="button" className="ro-contract-link" onClick={()=>setCostDetail(k)}><strong>{k.vehicle_name||'차량 상세'}</strong></button>],
+  const costDetail=book.costs.find(row=>row.id===costId);
+  const openCost=row=>setCostId(row.id);
+  const cols=isCost?[['지출일',k=>k.occurred_on],['차량',k=><button type="button" className="ro-contract-link ro-detail-link" onClick={()=>openCost(k)}><strong>{k.vehicle_name||'차량 상세'}</strong></button>],
     ['항목',k=>costKinds[k.category]],['거래처 / 사용처',k=>k.vendor||'—'],['금액',k=>won(k.amount_krw)]]
-    :isPayments?[['계약 / 고객',c=><button type="button" className="ro-contract-link" onClick={()=>setDetail(c)}><strong>#{c.id}</strong><span>{c.renter_name} · {c.vehicle_name||'차량 미배정'}</span></button>],
+    :isPayments?[['계약 / 고객',c=><button type="button" className="ro-contract-link ro-detail-link" onClick={()=>setDetail(c)}><strong>#{c.id}</strong><span>{c.renter_name} · {c.vehicle_name||'차량 미배정'}</span></button>],
       ['대여 기간',c=><>{kstDay(c.starts_at)}<span className="ro-secondary">~ {kstDay(c.ends_at)}</span></>],['청구액',c=>won(c.billed_krw)],['순수납액',c=>won(c.paid_krw)],
-      ['미수금',c=>won(Math.max(0,balance(c)))],['보유 보증금',c=>won(c.held_krw)],['수납 상태',c=><span className={'ro-status'+(balance(c)>0?' amber':'')}>{balance(c)<0?'초과 수납':balance(c)>0?(c.paid_krw?'부분 수납':'수납 전'):'미수금 없음'}</span>]]:entryCols;
+      ['미수금',c=>won(Math.max(0,balance(c)))],['보유 보증금',c=>won(c.held_krw)],['수납 상태',c=><span className={'ro-status'+(balance(c)>0?' amber':'')}>{balance(c)<0?'초과 수납':balance(c)>0?(c.paid_krw?'부분 수납':'수납 전'):'미수금 없음'}</span>]]:[
+      ['거래 일시',e=><button type="button" className="ro-detail-link" onClick={()=>setEntry(e)}>{readTime(e.recorded_at)}</button>],['기록 구분',e=>entryKinds[e.kind]],
+      ['계약 / 고객',e=>'#'+e.contract_id+' · '+e.renter_name],['금액',e=><strong>{won(e.amount_krw)}</strong>],['거래 수단',e=>methods[e.method]],['메모',e=>e.memo||'—'],
+    ];
   const rows=isCost?costs:isPayments?contracts:entries;
   const csvTitle=isCost?'차량 운영비':isPayments?'청구·수납':'환불·보증금';
   const csvLabels=isCost?['지출일','차량','비용 구분','거래처','금액(원)','메모']:isPayments?
@@ -114,21 +120,25 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
     {isRefunds&&<>
       <div className="ro-refund-actions"><span>보증금은 이용료 수납액과 별도로 집계합니다.</span><div>{actions}</div></div>
       <section className="ro-panel"><header className="ro-section-heading"><div><h2>현재 환불·반환 대기</h2><p>조회 기간에 포함된 계약의 현재 잔액입니다.</p></div><span>{returns.length}건</span></header>
-        <Table rows={returns} columns={[
-          ['계약 / 고객',r=><button type="button" className="ro-contract-link" onClick={()=>setDetail(r.contract)}><strong>#{r.id}</strong><span>{r.contract.renter_name}</span></button>],
+        <Table rows={returns} onRecord={row=>setDetail(row.contract)} columns={[
+          ['계약 / 고객',r=><button type="button" className="ro-contract-link ro-detail-link" onClick={()=>setDetail(r.contract)}><strong>#{r.id}</strong><span>{r.contract.renter_name}</span></button>],
           ['계약 상태',r=>r.contract.cancel_outcome==='no_show'?'미방문':r.contract.settlement_finalized?'정산 완료':({draft:'예약 접수',active:'대여 중',overdue:'반납 지연',returned:'반납 완료',cancelled:'취소'})[r.contract.status]||'—'],
           ['이용료 초과수납',r=>won(r.excess)],['반환 대상 보증금',r=>won(r.deposit)]
         ]} empty="환불·반환 대기 항목이 없습니다."/>
       </section></>}
     <section className="ro-panel">{isRefunds?<header className="ro-section-heading"><h2>거래 기록</h2><span>{rows.length}건</span></header>:<Toolbar count={rows.length}>{actions}</Toolbar>}
-      <Table columns={cols} rows={rows} empty={isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
-    {costDetail&&<Modal open title="운영비 상세" onClose={()=>setCostDetail(null)}><div className="rental-office"><dl className="ro-cost-details">
-      {[['차량',costDetail.vehicle_name],['지출일',costDetail.occurred_on],['항목',costKinds[costDetail.category]],['금액',won(costDetail.amount_krw)],['거래처 / 사용처',costDetail.vendor],['메모',costDetail.memo]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value||'—'}</dd></div>)}</dl>
-      <div className="ro-actions"><Button onClick={()=>{setEditing(costDetail);setCostDetail(null);}}>운영비 수정</Button></div></div></Modal>}
-    {liveDetail&&<Modal open size="xl" title={label(liveDetail)} subtitle="결제 상세" onClose={()=>setDetail(null)}>
-      <div className="rental-office"><Metrics items={[['약정·정산액',won(liveDetail.billed_krw)],['순수납',won(liveDetail.paid_krw)],['보증금 잔액',won(liveDetail.held_krw)]]}/>
-        <h3>조회 기간의 거래</h3><Table columns={entryCols} rows={book.entries.filter(e=>e.contract_id===liveDetail.id)} empty="조회 기간에 기록된 거래가 없습니다."/>
-        <div className="ro-actions"><Button onClick={()=>{setDetail(null);setEditing({contract:liveDetail,kind:isRefunds?(liveDetail.paid_krw>liveDetail.billed_krw?'refund':'deposit_out'):'payment'});}}>결제 기록</Button></div></div></Modal>}
+      <Table columns={cols} rows={rows} onRecord={isCost?openCost:isPayments?setDetail:setEntry} empty={isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
+    {costDetail&&<RentalRecordDrawer title="운영비 상세" subtitle={costKinds[costDetail.category]+' · '+won(costDetail.amount_krw)} onClose={()=>setCostId(null)}
+      footer={<Button variant="primary" onClick={()=>setEditing(costDetail)}>운영비 수정</Button>}>
+      <RecordFields rows={[[ '차량',costDetail.vehicle_name],['차량 지점',devices.find(v=>matchesVehicle(costDetail,v))?.branch],
+        ['지출일',costDetail.occurred_on],['항목',costKinds[costDetail.category]],['금액',won(costDetail.amount_krw)],['거래처',costDetail.vendor]]}/>
+      <section><h3>메모</h3><p className="rental-record-text">{costDetail.memo||'등록된 메모가 없습니다.'}</p></section>
+    </RentalRecordDrawer>}
+    {liveDetail&&<RentalPaymentDrawer contract={liveDetail} entries={book.entries.filter(e=>e.contract_id===liveDetail.id)}
+      onClose={()=>setDetail(null)} onRecord={setEditing} onEntry={setEntry}/>}
+    {entry&&<RentalEntryDrawer entry={entry} onClose={()=>setEntry(null)} onContract={()=>{
+      setDetail(book.contracts.find(c=>c.id===entry.contract_id));setEntry(null);
+    }}/>}
     {editing!==undefined&&(isCost?<CostEditor devices={devices} row={editing} close={()=>setEditing(undefined)}/>:<LedgerEditor initial={editing} book={book} close={()=>setEditing(undefined)}/>)}
   </>;
 }

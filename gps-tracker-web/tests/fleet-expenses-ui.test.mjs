@@ -36,7 +36,7 @@ test('approval inbox shows only reviewable requests and keeps the same scope on 
  }finally{await close();}
 });
 
-async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=false,approvalsOnly=false,assetQuery,detail={},api:apiOverrides={}}={}){
+async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=false,approvalsOnly=false,initialScope,assetQuery,detail={},api:apiOverrides={}}={}){
  const requests=[],state={fail:false,limit};
  const qc=new query.QueryClient({defaultOptions:{queries:{retry:false,staleTime:Infinity,gcTime:Infinity}}});
  const api={expenseCategories:async()=>[{id:1,kind:'group',name:'차량유지비'},{id:2,kind:'fuel',parent_id:1,name:'유류비'},{id:3,kind:'expense',parent_id:1,name:'숙박비'}],listExpenses:async filters=>{
@@ -66,7 +66,7 @@ async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=fals
  await mod.link(name=>moduleOf(real[name]||(name==='./ExportButtons'?{default:props=>React.createElement('export-preview',props)}:name==='./BusinessDrawer'?{default:({children,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title,'data-view':'drawer',onClose},children)}:common)));
  await mod.evaluate();
  let r;
- await act(async()=>{r=create(React.createElement(query.QueryClientProvider,{client:qc},React.createElement(mod.namespace.default,{onOpenCategories,categoriesOnly,approvalsOnly})));await settle();});
+ await act(async()=>{r=create(React.createElement(query.QueryClientProvider,{client:qc},React.createElement(mod.namespace.default,{onOpenCategories,categoriesOnly,approvalsOnly,initialScope})));await settle();});
  await act(settle);
  return {r,requests,state,qc,close:async()=>{await act(async()=>r.unmount());qc.clear();}};
 }
@@ -80,6 +80,24 @@ test('expense category management remains available when vehicles cannot be load
   await act(async()=>settings.props.onEdit(settings.props.categories[0]));
   assert.equal(r.root.findByProps({role:'dialog'}).props['aria-label'],'대분류 수정');
   assert.deepEqual(requests,[]);
+ }finally{await close();}
+});
+
+test('analytics drilldown preserves the status, general expenses and historical department in the ledger and download',async()=>{
+ const data=[...rows, {...rows[1],id:4,status:'approved',department_id:null,department_name:'이전 부서'},
+   {...rows[1],id:5,status:'pending',department_id:null,department_name:'이전 부서'}];
+ const initialScope={filters:{from:'2026-11-01',to:'2026-11-30',vehicle_id:'general',department_id:'name:이전 부서',category_id:'3'},status:'approved'};
+ const {r,requests,close}=await mount(data,{initialScope});
+ try {
+   assert.deepEqual(requests[0],{from:'2026-11-01',to:'2026-11-30',category_id:'3'});
+   assert.equal(r.root.findByProps({'aria-label':'조회 부서'}).props.value,'name:이전 부서');
+   assert.equal(button(r,'승인 (1)').props['aria-pressed'],true);
+   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,1);
+   await act(async()=>button(r,'다운로드').props.onClick());
+   const report=r.root.findByType('export-preview').props.report;
+   assert.equal(report.rows.length,1);
+   assert.equal(report.rows[0].department,'이전 부서');
+   assert.equal(report.rows[0].status,'승인');
  }finally{await close();}
 });
 
@@ -98,7 +116,7 @@ test('expense status and search controls share the displayed rows with download 
   await act(async()=>button(r,'지출 설정').props.onClick());
   await act(async()=>button(r,'비용 집계').props.onClick());
   assert.match(text(r.toJSON()),/승인된 지출이 없습니다/);
-  await act(async()=>r.root.findByProps({'aria-label':'차량 및 사용자 검색'}).props.onChange({target:{value:'관리 차량'}}));
+  await act(async()=>r.root.findByProps({'aria-label':'차량, 지출 항목, 요청자 검색'}).props.onChange({target:{value:'관리 차량'}}));
   assert.ok(button(r,'전체 (1)'));assert.ok(button(r,'승인대기 (0)'));assert.ok(button(r,'반려 (1)'));
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,0);
   assert.equal(r.root.findAllByType('export-preview').length,0);
@@ -191,7 +209,7 @@ test('search and status changes reset pagination and exports include the full fi
   await act(async()=>button(r,'다운로드').props.onClick());
   assert.equal(r.root.findByType('export-preview').props.report.rows.length,29);
   await act(async()=>r.root.findByProps({'aria-label':'다음 페이지'}).props.onClick());
-  await act(async()=>r.root.findByProps({'aria-label':'차량 및 사용자 검색'}).props.onChange({target:{value:'업무 차량'}}));
+  await act(async()=>r.root.findByProps({'aria-label':'차량, 지출 항목, 요청자 검색'}).props.onChange({target:{value:'업무 차량'}}));
   assert.equal(r.root.findByProps({'aria-label':'이전 페이지'}).props.disabled,true);
  }finally{await close();}
 });

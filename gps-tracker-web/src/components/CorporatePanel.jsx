@@ -120,8 +120,10 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
   const sectionNavigation = corporateSections(access.manage_team);
   const routeSection = params?.get('section') || (!params?.has('page') && restored?.section);
   const sectionTabs = onRoute ? {...lastSections,[tab]:sectionNavigation[tab]?.some(([id])=>id===routeSection) ? routeSection : defaults[tab]} : lastSections;
-  function setTab(page, requestedSection) {
+  const [expenseDrill,setExpenseDrill]=useState(null);
+  function setTab(page, requestedSection, expenseSelection=null) {
     if (!visibleTabs.some(item=>item.id===page)) return;
+    if (page!=='analytics') setExpenseDrill(expenseSelection);
     const value = requestedSection || lastSections[page];
     const section = sectionNavigation[page]?.some(([id])=>id===value) ? value : defaults[page];
     if (section) setLastSections(previous=>previous[page]===section ? previous : {...previous,[page]:section});
@@ -161,9 +163,9 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
     {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} hideNavigation />{access.manage_team&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
     {tab === 'sites' && <FleetSites activeTab={sectionTabs.sites} onTab={selectSection} hideNavigation />}
-    {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'} onOpenCategories={()=>setTab('expense-categories')}/>}
+    {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'} initialScope={expenseDrill?.ledger} onOpenCategories={()=>setTab('expense-categories')}/>}
     {tab==='approvals'&&canReview&&<FleetExpenses approvalsOnly reservationInbox={canReviewReservations ? <ReservationsTab devices={devices} requestsOnly/> : null}/>}
-    {tab==='analytics'&&sectionTabs.analytics==='costs'&&<FleetAnalytics key="costs" section="costs" devices={devices}/>}
+    {tab==='analytics'&&sectionTabs.analytics==='costs'&&<FleetAnalytics key="costs" section="costs" devices={devices} initialView={expenseDrill?.view} onExpenses={selection=>setTab('expenses',undefined,selection)}/>}
     {(['report','monthly'].includes(tab)||(tab==='analytics' && sectionTabs.analytics==='trips')) && <>
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
@@ -289,7 +291,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const [to,   setTo]   = useState(initialFilter?.to||today);
   const [datesOpen,setDatesOpen]=useState(false);
   const [onlyIncomplete,setOnlyIncomplete]=useState(Boolean(initialFilter?.incomplete));
-  const [tripView,setTripView]=useState('all');
+  const [tripView,setTripView]=useState(initialFilter?.confirmed?'confirmed':'all');
   const [trips, setTrips] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -299,7 +301,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const [printing, setPrinting] = useState(false);
   const printRequest = useRef(false);
   // 추가 필터 — 운전자별 / 용무별 / 최소 운행 시간(시간). all/'' 이면 미적용. AND.
-  const [driverFilter,  setDriverFilter]  = useState('all');
+  const [driverFilter,  setDriverFilter]  = useState(initialFilter?.driver||'all');
   const [purposeFilter, setPurposeFilter] = useState('all');
   const [minHours,      setMinHours]      = useState('');
   const [vehicleSearch,setVehicleSearch]=useState('');
@@ -346,7 +348,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const toggleTrip=t=>{setAssignmentStatus('');setSelected(previous=>{const next=new Set(previous),key=tripAssignmentKey(t);if(next.has(key))next.delete(key);else if(next.size<100)next.add(key);return next;});};
   const completeness = trips ? tripCompleteness(trips) : null;
   const exportData = filteredTrips ? tripReport(filteredTrips, {device,info,from,to,
-    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter} · 용무: ${companyPurposes.get(purposeFilter) || purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}${onlyIncomplete?' · 미작성만':''}${currentTripView?' · '+currentTripView.label:''}`,
+    filterText: `운전자: ${driverFilter==='all'?'전체':driverFilter==='unassigned'?'미지정':staff.find(s=>String(s.id)===driverFilter)?.name || driverFilter.replace(/^name:/,'')} · 용무: ${companyPurposes.get(purposeFilter) || purposeLabel[purposeFilter] || '전체'} · 최소 운행: ${Number(minHours) || 0}시간${onlyReview?' · 미확정만':''}${onlyIncomplete?' · 미작성만':''}${currentTripView?' · '+currentTripView.label:''}`,
   }) : null;
   const csvData = filteredTrips ? ntsTripReport(filteredTrips, {device,info,from,to,
     filtered: tripView!=='all' || onlyIncomplete || onlyReview || driverFilter !== 'all' || purposeFilter !== 'all' || Number(minHours) > 0,
@@ -440,6 +442,7 @@ function ReportTab({ devices, initialDeviceId, initialFilter }) {
           <div className="corporate-report-filter-dialog">
             <label>운전자<select aria-label="운전자 필터" value={filterDraft.driver} onChange={e => setFilterDraft(d=>({...d,driver:e.target.value}))}>
               <option value="all">운전자 전체</option><option value="unassigned">미지정</option>
+              {filterDraft.driver.startsWith('name:')&&<option value={filterDraft.driver}>{filterDraft.driver.slice(5)}</option>}
               {staff.map(s => <option key={s.id} value={String(s.id)}>{s.name}{s.active === false ? ' (비활성)' : ''}</option>)}
             </select></label>
             <label>용무<select aria-label="용무 필터" value={filterDraft.purpose} onChange={e => setFilterDraft(d=>({...d,purpose:e.target.value}))}>

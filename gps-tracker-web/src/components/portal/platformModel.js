@@ -19,10 +19,14 @@ export const CORE_LINKS = [
   { view: 'profile', path: '/profile', label: '내정보', icon: 'users' },
 ];
 
+export function searchKey(value) {
+  return String(value ?? '').toLocaleLowerCase().replace(/\s+/g,'');
+}
+
 export function deviceMatches(device, search) {
-  const query = search.trim().toLocaleLowerCase();
-  return !query || [device.display_name, device.device_uid, device.car_plate, device.license_plate]
-    .some(value => value != null && String(value).toLocaleLowerCase().includes(query));
+  const query = searchKey(search);
+  return !query || [device.display_name || device.device_uid || `단말 ${device.id}`, device.device_uid, device.car_plate, device.license_plate]
+    .some(value => searchKey(value).includes(query));
 }
 
 export function deviceBucket(status) {

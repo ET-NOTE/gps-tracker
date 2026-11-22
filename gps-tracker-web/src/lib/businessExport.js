@@ -14,11 +14,16 @@ export const kstDateTime = value => {
 };
 const column = (key, label, numeric = false) => ({ key, label, numeric });
 
+export function tripDriverKey(annotation) {
+  if (annotation?.driver_staff_id != null) return String(annotation.driver_staff_id);
+  const name=annotation?.driver_name?.trim();
+  return name ? 'name:'+name : 'unassigned';
+}
+
 // Shared by the visible table and every export; exporting cannot silently drop a filter.
 export function filterTrips(trips, { driver = 'all', purpose = 'all', minHours = '' } = {}) {
   const minutes = Math.max(0, num(minHours) * 60);
-  return trips.filter(t => (driver === 'all' || (driver === 'unassigned'
-    ? t.annotation?.driver_staff_id == null && !t.annotation?.driver_name?.trim() : String(t.annotation?.driver_staff_id) === String(driver)))
+  return trips.filter(t => (driver === 'all' || tripDriverKey(t.annotation) === String(driver))
     && (purpose === 'all' || (t.annotation?.purpose || 'unspecified') === purpose
       || (t.annotation?.company_purpose_id!=null && purpose==='company:'+t.annotation.company_purpose_id))
     && num(t.duration_min) >= minutes);

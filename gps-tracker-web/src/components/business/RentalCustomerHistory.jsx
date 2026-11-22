@@ -13,16 +13,19 @@ import { useBusinessClock } from './useBusinessData';
 
 const roles = {customer:'계약 고객', driver:'실운전자', both:'계약 고객 · 실운전자'};
 
-function HistoryContract({id,onClose}) {
-  const now=useBusinessClock();
-  const [section,setSection]=useState(null);
-  const contract=useQuery({
+export function useRentalContractDetail(id) {
+  return useQuery({
     queryKey:[authScope(),'rental-contract-detail',id],
     queryFn:({signal})=>api.getRentalContract(id,signal),
     gcTime:0, retry:false,
   });
+}
+export function HistoryContract({id,onClose,returnLabel='대여 이력으로'}) {
+  const now=useBusinessClock();
+  const [section,setSection]=useState(null);
+  const contract=useRentalContractDetail(id);
   return <RentalRecordDrawer title="대여 계약 상세" subtitle={'예약 R-'+id} onClose={onClose}
-    footer={<BusinessButton onClick={onClose}>대여 이력으로</BusinessButton>}>
+    footer={<BusinessButton onClick={onClose}>{returnLabel}</BusinessButton>}>
     {contract.isError?<BusinessError onRetry={contract.refetch}>계약 상세를 불러오지 못했습니다.</BusinessError>
       :contract.isPending?<p role="status">계약을 불러오는 중…</p>
       :<RentalContractDetails contract={contract.data} now={now}

@@ -34,6 +34,8 @@ export function FreightStats({items,unit}){
 export function FreightBadge({children,tone='neutral'}) {
   return <span className={'fr-badge is-'+tone}>{children}</span>;
 }
+export const tone=k=>({open:'amber',requested:'amber',loading:'amber',assigned:'blue',confirmed:'blue',in_transit:'blue',submitted:'blue',approved:'green',delivered:'green',completed:'green',cancelled:'red',rework:'red'}[k]||'neutral');
+export function Status({value,labels}){return <FreightBadge tone={tone(value)}>{labels[value]||'—'}</FreightBadge>;}
 export function FreightFacts({items}){
   return <dl className="fr-facts">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value??'—'}</dd></div>)}</dl>;
 }

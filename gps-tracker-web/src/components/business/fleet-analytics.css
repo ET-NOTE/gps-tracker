@@ -9,8 +9,11 @@
 .fleet-analytics-tabs {gap:3px; padding:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px}
 .fleet-analytics-tabs button {background:transparent; color:var(--text-2); border:0; padding:8px 13px; border-radius:7px; font:inherit; font-size:14px; cursor:pointer}
 .fleet-analytics-tabs button[aria-pressed=true] {background:var(--surface); color:var(--text); font-weight:700; box-shadow:0 1px 4px #2436531c}
-.fleet-analytics-filters {display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; padding:15px 18px; background:var(--surface); border:1px solid var(--border); border-radius:14px}
-.fleet-analytics-filters label {display:grid; gap:5px; min-width:0; max-width:100%; color:var(--text-2); font-size:13px; font-weight:600}
+.fleet-analytics-filters {display:flex;align-items:flex-end;gap:14px;min-width:0}
+.fleet-analytics-controls {display:flex;flex:1;flex-wrap:wrap;align-items:flex-end;gap:12px;min-width:0}
+.fleet-analytics-controls>label,.fleet-analytics-dates {display:grid;flex:0 1 158px;gap:6px;min-width:min(138px,100%);max-width:100%;color:var(--text-2);font-size:12px;font-weight:400}
+.fleet-analytics-dates {flex-basis:286px;min-width:min(266px,100%)}
+.fleet-analytics-dates>div {display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px}
 .fleet-analytics-filters :is(input,select) {width:100%; min-width:0; max-width:290px; min-height:38px; border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--surface); color:var(--text); font:inherit; font-size:15px}
 .fleet-analytics-note {margin:0; font-size:14px; color:var(--text-2)}
 .fleet-analytics-charts {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:16px}
@@ -26,10 +29,11 @@
 .fleet-analytics-trend dl {max-height:210px; overflow:auto; padding:0 8px 0 0}
 .fleet-analytics-trend dl>div {display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border)}
 .fleet-analytics-trend dd {margin:0; font-variant-numeric:tabular-nums}
-.fleet-analytics-bars {margin:0; padding:18px 20px; display:grid; gap:15px; list-style:none; max-height:340px; overflow:auto}
+.fleet-analytics-bars {margin:0;padding:8px 20px 18px;display:grid;grid-auto-rows:minmax(35px,1fr);gap:13px;list-style:none;overflow:auto}
+.fleet-analytics-bars li {display:flex;min-width:0;flex-direction:column;justify-content:center}
 .fleet-analytics-bars li>div {display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:6px; font-size:14px}
 .fleet-analytics-bars span {overflow-wrap:anywhere}
-.fleet-analytics-bars strong {white-space:nowrap; font-variant-numeric:tabular-nums}
+.fleet-analytics-bars strong {white-space:nowrap;font-weight:400;font-variant-numeric:tabular-nums}
 .fleet-analytics-bars i, .fleet-analytics-bars b {display:block; height:7px; border-radius:8px; background:var(--surface-2)}
 .fleet-analytics-bars b {background:#5689df}
 .fleet-analytics-table {overflow:auto}
@@ -39,6 +43,11 @@
 .fleet-analytics-table th:first-child {text-align:left}
 .fleet-analytics-table tbody th {font-weight:600}
 .fleet-analytics-table button {font:inherit; border:0; padding:3px 0; background:none; color:var(--accent); cursor:pointer}
+.fleet-analytics-table tr.has-detail {cursor:pointer}
+.fleet-analytics-table tr.has-detail:is(:hover,:focus-within) {background:var(--surface-2)}
+.fleet-analytics-share {display:inline-flex;justify-content:flex-end;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.fleet-analytics-share i {display:block;width:clamp(35px,6vw,90px);height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.fleet-analytics-share b {display:block;height:100%;background:#3676e5}
 .business-workspace--corporate .fleet-analytics-toolbar>.fleet-analytics-tabs{
   flex-wrap:nowrap;max-width:100%;overflow-x:auto;gap:22px;padding:0;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;
 }
@@ -55,15 +64,24 @@
 .business-workspace--corporate .fleet-analytics-table thead th{font-size:11px;font-weight:500;height:42px}
 @media(max-width:860px) {
   .fleet-analytics-charts {grid-template-columns:minmax(0,1fr)}
-  .fleet-analytics-filters {display:grid; grid-template-columns:repeat(2,minmax(0,1fr))}
   .fleet-analytics-filters :is(input,select) {max-width:none}
+}
+@media(max-width:640px) {
+  .fleet-analytics-filters {flex-wrap:wrap;gap:10px}
+  .fleet-analytics-controls {flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+  .fleet-analytics-controls>label,.fleet-analytics-dates {min-width:0}
+  .fleet-analytics-dates {grid-column:1/-1}
+  .fleet-analytics-filters>.business-button {margin-left:auto}
 }
 @media(max-width:480px) {
   .fleet-analytics {gap:12px}
-  .fleet-analytics-filters {padding:12px; gap:10px}
   .fleet-analytics-filters :is(input,select) {font-size:16px}
   .fleet-analytics-toolbar {align-items:stretch}
   .fleet-analytics-tabs button {padding:8px 10px}
   .fleet-analytics-trend,.fleet-analytics-bars {padding:12px}
   .fleet-analytics .business-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:380px) {
+  .fleet-analytics-dates>div {grid-template-columns:minmax(0,1fr)}
+  .fleet-analytics-dates>div>span {display:none}
 }

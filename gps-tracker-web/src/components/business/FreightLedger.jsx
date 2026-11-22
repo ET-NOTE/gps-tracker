@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import {Modal} from '../ui';
+import FreightChargeDialogs,{tones as chargeTones} from './FreightChargeDialogs';
 import { FreightDrawer } from './FreightKit';
-import { FreightBadge, FreightButton, FreightFacts, FreightField, FreightFilters, FreightForm, FreightStats, FreightTable } from './FreightKit';
+import { FreightBadge, FreightButton, FreightFacts, FreightField, FreightFilters, FreightForm, FreightStats, FreightTable, Status } from './FreightKit';
 import { choices, choicesFrom, downloadRows, FormField, OfficeFilter } from './FreightOfficeFields';
 import { costLabel, getRow, inputTime, nameOf, shipStates, stamp, timeLabel, vehicleName } from '../../lib/freightWorkflow';
-import { addPayment, confirmFinance, paymentLimit, paymentMethods, paymentNames, setAgreement, shipmentFinance } from '../../lib/freightFinance';
+import { addPayment, chargeStates, confirmFinance, paymentLimit, paymentMethods, paymentNames, setAgreement, shipmentFinance } from '../../lib/freightFinance';
 
 export function PeriodFilter({period,setPeriod,label}) {
   const inputs=[['from','조회 시작일'],['to','조회 종료일']].map(([key,name])=><input key={key} aria-label={name} type="date" value={period[key]} min={key==='to'?period.from:undefined} max={key==='from'?period.to:undefined} onChange={e=>setPeriod({...period,[key]:e.target.value})}/>);
@@ -43,11 +45,11 @@ function matchesStatus(r,state) {
     default:return true;
   }
 }
-function TransactionForm({r,billing,onClose,onSubmit,candidates,onSelect}) {
-  const sideBase=billing?'receipt':'payout', [side,setSide]=useState(sideBase);
+function TransactionForm({r,billing,initialSide,onClose,onSubmit,candidates,onSelect}) {
+  const sideBase=billing?'receipt':'payout', [side,setSide]=useState(initialSide||sideBase);
   const limit=paymentLimit(r.fin,side);
   const excess=r.excess;
-  return <FreightForm title={billing?'수납·환불 기록':'지급·환수 기록'} subtitle={r.s.number} onClose={onClose} onSubmit={onSubmit} submitLabel="거래 기록">
+  return <FreightForm size={720} title={billing?'수납·환불 기록':'지급·환수 기록'} subtitle={r.s.number} onClose={onClose} onSubmit={onSubmit} submitLabel="거래 기록">
     {candidates&&<FreightField label="운송 건" wide><select value={r.id} onChange={e=>onSelect(e.target.value)}>{candidates.map(item=><option key={item.id} value={item.id}>{item.s.number} · {item.party}</option>)}</select></FreightField>}
     <FreightField label="거래 구분"><select name="side" value={side} onChange={e=>setSide(e.target.value)}>
       {[sideBase,sideBase+'_refund'].map(v=><option value={v} key={v}>{paymentNames[v]}</option>)}</select></FreightField>
@@ -58,7 +60,7 @@ function TransactionForm({r,billing,onClose,onSubmit,candidates,onSelect}) {
     <p className="fr-note">기록 가능 금액 {costLabel(limit)}</p>
   </FreightForm>;
 }
-export default function FreightLedger({kind,data,save,onPage}) {
+export default function FreightLedger({kind,data,save,onOpenShipment}) {
   const billing=kind==='billing', partyLabel=billing?'화주':'지급 대상',totalLabel=billing?'청구액':'지급 대상액',netLabel=billing?'순수납액':'순지급액',balanceLabel=billing?'미수금':'미지급금';
   const [query,setQuery]=useState(''),[period,setPeriod]=useState(currentPeriod),[branch,setBranch]=useState(''),[party,setParty]=useState(''),[state,setState]=useState(''),[view,setView]=useState(null);
   const all=useMemo(()=>data.shipments.map(s=>financeRow(data,s,billing,shipmentFinance(data,s))),[data,billing]);
@@ -85,48 +87,82 @@ export default function FreightLedger({kind,data,save,onPage}) {
       cells[0]=<button className="fr-link" onClick={()=>setView({id:r.id,action:'detail'})}>{r.s.number}</button>;
       cells[cells.length-1]=<FreightBadge tone={tone}>{label}</FreightBadge>; return {id:r.id,onOpen:()=>setView({id:r.id,action:'detail'}),cells};
     })} empty="조회 조건에 해당하는 운송 건이 없습니다."/>
-    {r&&<FreightLedgerDialogs {...{billing,data,save,onPage,view,setView,eligible,r}}/>}
+    {r&&<FreightLedgerDialogs {...{billing,data,save,onOpenShipment,view,setView,eligible,r}}/>}
   </section>;
 }
 
-export function FreightLedgerDialogs({billing,data,save,onPage,view,setView,eligible,r,onSideChange}) {
-  const partyLabel=billing?'화주':'지급 대상',totalLabel=billing?'청구액':'지급 대상액',netLabel=billing?'순수납액':'순지급액',balanceLabel=billing?'미수금':'미지급금';
-  const toDetail=()=>setView({id:r.id,action:'detail'}),open=action=>setView({id:r.id,action}),close=()=>setView(null);
+function FinanceSide({r,billing,requiresProof,onConfirm,onPayment}) {
+  const {s,fin}=r;
+  const [label,tone]=describe(r,billing);
+  const side=billing?'receipt':'payout';
+  const allowedStage=!billing||s.status==='delivered'||s.status==='cancelled';
+  const awaitingProof=billing&&requiresProof&&s.status!=='cancelled'&&s.proof?.status!=='approved';
+  const canConfirm=!r.confirmed&&r.total!=null&&allowedStage&&!awaitingProof;
+  return <section className="fr-record-block fr-money-card">
+    <h3>{billing?'화주 청구·수납':'운송비 정산·지급'}</h3>
+    <FreightFacts items={[[billing?'화주':'지급 대상',r.party],
+      [billing?'기본 합의 운임':'기본 합의 운송비',costLabel(billing?s.sellAmount:s.buyAmount)],
+      [billing?'현재 청구액':'현재 지급 대상액',costLabel(r.total)],[billing?'순수납액':'순지급액',costLabel(r.net)],
+      [billing?'미수금':'미지급금',costLabel(r.balance)],[billing?'초과수납액':'환수 확인 금액',costLabel(r.excess)],
+      [billing?'청구 확인':'지급 대상 확인',r.confirmed?'확인 완료':'확인 전'],
+      ...(r.confirmed?[['확인 일시',timeLabel(billing?s.invoiceAt:s.payableAt)]]:[]),
+      [billing?'수납 상태':'지급 상태',<FreightBadge tone={tone}>{label}</FreightBadge>]]}/>
+    <div className="fr-actions">
+      <FreightButton icon="check" disabled={!canConfirm} onClick={onConfirm}>{billing?'청구 확인':'지급 대상 확인'}</FreightButton>
+      <FreightButton primary={billing} disabled={!(paymentLimit(fin,side)>0)} onClick={()=>onPayment(side)}>{billing?'수납 기록':'지급 기록'}</FreightButton>
+      <FreightButton disabled={!(paymentLimit(fin,side+'_refund')>0)} onClick={()=>onPayment(side+'_refund')}>{billing?'환불 기록':'환수 기록'}</FreightButton>
+    </div>
+    {billing&&!r.confirmed&&!canConfirm&&<p className="fr-record-note">{r.total==null?'합의 운임을 입력해 주세요.':!allowedStage?'하차 완료 후 청구를 확인할 수 있습니다.':'인수증 확인 후 청구할 수 있습니다.'}</p>}
+  </section>;
+}
+
+export function FreightLedgerDialogs({billing,data,save,onOpenShipment,view,setView,eligible,r}) {
+  const [chargeView,setChargeView]=useState(null),[paymentId,setPaymentId]=useState(null);
+  const {s,fin}=r;
+  const activeBilling=view.billing??billing;
+  const sideRows=[financeRow(data,s,true,fin),financeRow(data,s,false,fin)];
+  const activeRow=sideRows[activeBilling?0:1];
+  const charges=data.charges.filter(x=>x.shipmentId===s.id);
+  const payments=[...fin.receipts].sort((a,b)=>b.at.localeCompare(a.at));
+  const payment=payments.find(x=>x.id===paymentId);
+  const toDetail=()=>setView({id:r.id,action:'detail'}),close=()=>setView(null);
+  function open(action,isBilling,side){setView({id:r.id,action,billing:isBilling,side});}
   async function submit(form) {
-    const next=structuredClone(data), s=getRow(next,'shipments',r.id),values=Object.fromEntries(form);
-    if (view.action==='agreement')setAgreement(next,s,values);
-    if (view.action==='confirm')confirmFinance(next,s,billing,(values.note||'').trim());
-    if (view.action==='payment')addPayment(next,s,values);
+    const next=structuredClone(data), shipment=getRow(next,'shipments',r.id),values=Object.fromEntries(form);
+    if (view.action==='agreement')setAgreement(next,shipment,values);
+    if (view.action==='confirm')confirmFinance(next,shipment,activeBilling,(values.note||'').trim());
+    if (view.action==='payment')addPayment(next,shipment,values);
     await save(next);toDetail();
   }
-  const receipts=r?.fin.receipts.filter(x=>x.side.startsWith(billing?'receipt':'payout')).sort((a,b)=>b.at.localeCompare(a.at));
-  const awaitingProof=r&&billing&&r.s.status!=='cancelled'&&data.policies.requireProofForBilling&&r.s.proof?.status!=='approved';
-  const canConfirm=r&&!r.confirmed&&r.total!=null&&(!billing||['cancelled','delivered'].includes(r.s.status))&&!awaitingProof;
+  const defaultSide=(billing?['receipt','receipt_refund','payout','payout_refund']:['payout','payout_refund','receipt','receipt_refund']).find(side=>paymentLimit(fin,side)>0);
   return <>
-    {(!view.fromList||view.action==='detail')&&<FreightDrawer title={onSideChange?'운임·정산 상세':'운송 정산 상세'} subtitle={r.s.number+' · '+r.party} onClose={close} footer={<div className="fr-actions">
-      <FreightButton onClick={close}>닫기</FreightButton><FreightButton onClick={()=>open('agreement')}>합의 운임</FreightButton>
-      {!r.confirmed&&<FreightButton disabled={!canConfirm} onClick={()=>open('confirm')}>{billing?'청구 확인':'지급 대상 확인'}</FreightButton>}
-      <FreightButton primary disabled={!(r.balance>0||r.net>0)} onClick={()=>open('payment')}>{billing?'수납·환불 기록':'지급·환수 기록'}</FreightButton></div>}>
-      {onSideChange&&<div className="fr-tabs" role="group" aria-label="정산 구분"><button type="button" className="fr-tab" aria-pressed={billing} onClick={()=>onSideChange(true)}>화주 청구·수납</button>
-        <button type="button" className="fr-tab" aria-pressed={!billing} onClick={()=>onSideChange(false)}>운송비 정산·지급</button></div>}
-      <section className="fr-section"><FreightFacts items={[[partyLabel,r.party],['운송 상태',shipStates[r.s.status]],['기본 합의액',costLabel(billing?r.s.sellAmount:r.s.buyAmount)],
-        [totalLabel,costLabel(r.total)],[netLabel,costLabel(r.net)],[balanceLabel,costLabel(r.balance)],['초과 거래액',costLabel(r.excess)],
-        ['회사 부담 추가 비용',costLabel(r.fin.cost)],['운송 손익',costLabel(r.fin.margin)],['확인 일시',timeLabel(billing?r.s.invoiceAt:r.s.payableAt)]]}/>
-        {billing&&!r.confirmed&&!canConfirm&&<p className="fr-note">{r.total==null?'합의 운임을 입력해 주세요.':!['delivered','cancelled'].includes(r.s.status)?'하차 완료 후 청구를 확인할 수 있습니다.':'인수증 확인 후 청구할 수 있습니다.'}</p>}
-        <section><h3>승인된 추가 비용</h3><FreightTable columns={['항목','반영액','발생 일시']} rows={r.fin.approved.map(x=>({id:x.id,cells:[x.kind,costLabel(billing?x.sellAmount:x.buyAmount),timeLabel(x.at)]}))} empty="승인된 추가 비용이 없습니다."/></section>
-        <section><h3>거래 기록</h3><FreightTable columns={['거래 구분','금액','일시','방식','메모']} rows={receipts.map(p=>({id:p.id,cells:[paymentNames[p.side],costLabel(p.amount),timeLabel(p.at),p.method,p.note||'—']}))} empty="기록된 거래가 없습니다."/></section>
-        <div className="fr-actions"><FreightButton onClick={()=>onPage('cargo-charges')}>추가 비용 관리</FreightButton></div>
-      </section>
+    {(!view.fromList||view.action==='detail')&&<FreightDrawer title="운임·정산 상세" subtitle={s.number} onClose={close} footer={<div className="fr-actions">
+      <FreightButton icon="edit" onClick={()=>open('agreement',billing)}>합의 운임</FreightButton>
+      <FreightButton icon="plus" disabled={!data.codes.chargeTypes.length} onClick={()=>setChargeView({action:'form'})}>추가 비용</FreightButton>
+      <FreightButton primary disabled={!defaultSide} onClick={()=>open('payment',defaultSide.startsWith('receipt'),defaultSide)}>거래 기록</FreightButton></div>}>
+      <div className="fr-record-heading"><Status value={s.status} labels={shipStates}/>
+        <FreightButton icon="file" onClick={()=>onOpenShipment(s.id)}>운송 상세</FreightButton></div>
+      {sideRows.map((sideRow,i)=><FinanceSide key={i} r={sideRow} billing={i===0} requiresProof={data.policies.requireProofForBilling}
+        onConfirm={()=>open('confirm',i===0)} onPayment={side=>open('payment',i===0,side)}/>)}
+      <section className="fr-record-block"><h3>운임 차익</h3><FreightFacts items={[[ '회사 부담 추가비용',costLabel(fin.cost)],['운임 차익',costLabel(fin.margin)]]}/></section>
+      <section className="fr-record-block"><h3>추가 비용 · {charges.length}건</h3>{charges.length?charges.map(x=><button key={x.id} type="button" className="fr-record-link" onClick={()=>setChargeView({id:x.id,action:'detail'})}>
+        <span>{x.kind}<small>화주 {costLabel(x.sellAmount)} · 운송비 {costLabel(x.buyAmount)}</small></span><FreightBadge tone={chargeTones[x.status]}>{chargeStates[x.status]}</FreightBadge></button>):<p className="fr-record-note">등록된 추가 비용이 없습니다.</p>}</section>
+      <section className="fr-record-block"><h3>거래 기록 · {payments.length}건</h3>{payments.length?payments.map(p=><button key={p.id} type="button" className="fr-record-link" onClick={()=>setPaymentId(p.id)}>
+        <span>{paymentNames[p.side]} · {costLabel(p.amount)}<small>{timeLabel(p.at)} · {p.method}</small></span></button>):<p className="fr-record-note">등록된 거래 기록이 없습니다.</p>}</section>
     </FreightDrawer>}
-    {r&&view.action==='payment'&&<TransactionForm key={r.id} r={r} billing={billing} onClose={view.fromList?close:toDetail} onSubmit={submit}
+    {chargeView&&<FreightChargeDialogs data={data} save={save} shipmentId={s.id} view={chargeView} setView={setChargeView}/>}
+    {payment&&<Modal open title="거래 기록 상세" subtitle={s.number} size={530} onClose={()=>setPaymentId(null)} footer={<div className="service-form-actions"><FreightButton primary onClick={()=>setPaymentId(null)}>닫기</FreightButton></div>}>
+      <FreightFacts items={[[ '구분',paymentNames[payment.side]],['금액',costLabel(payment.amount)],['거래 수단',payment.method],['거래 일시',timeLabel(payment.at)],['메모',payment.note||'—']]}/>
+    </Modal>}
+    {r&&view.action==='payment'&&<TransactionForm key={r.id} r={activeRow} billing={activeBilling} initialSide={view.side} onClose={view.fromList?close:toDetail} onSubmit={submit}
       candidates={view.fromList?eligible:undefined} onSelect={id=>setView({id,action:'payment',fromList:true})}/>}
-    {r&&view.action==='agreement'&&<FreightForm title="합의 운임 확인" subtitle={r.s.number} onClose={toDetail} onSubmit={submit}>
+    {r&&view.action==='agreement'&&<FreightForm size={530} title="합의 운임 확인" subtitle={r.s.number} onClose={toDetail} onSubmit={submit}>
       <FormField field={{key:'sellAmount',label:'화주 합의 운임 (원)',type:'number',min:0,max:1e9,readOnly:r.s.invoiceStatus==='issued'||r.fin.received!==0}} initial={r.s}/>
       <FormField field={{key:'buyAmount',label:'운송사·자사 운송비 (원)',type:'number',min:0,max:1e9,readOnly:r.s.payableStatus==='confirmed'||r.fin.paid!==0}} initial={r.s}/>
       <FormField field={{key:'reason',label:'확인·변경 사유',type:'textarea',required:true,maxLength:500}}/>
     </FreightForm>}
-    {r&&view.action==='confirm'&&<FreightForm title={billing?'청구 확인 기록':'지급 대상 확인 기록'} subtitle={r.s.number} onClose={toDetail} onSubmit={submit} submitLabel="확인 기록">
-      <p className="fr-note">{r.party} · {totalLabel} {costLabel(r.total)}</p><FormField field={{key:'note',label:'확인 메모',type:'textarea',maxLength:500}}/>
+    {r&&view.action==='confirm'&&<FreightForm size={530} title={activeBilling?'청구 확인 기록':'지급 대상 확인 기록'} subtitle={r.s.number} onClose={toDetail} onSubmit={submit} submitLabel="확인 기록">
+      <p className="fr-note">{activeRow.party} · {activeBilling?'청구액':'지급 대상액'} {costLabel(activeRow.total)}</p><FormField field={{key:'note',label:'확인 메모',type:'textarea',maxLength:500}}/>
     </FreightForm>}
   </>;
 }

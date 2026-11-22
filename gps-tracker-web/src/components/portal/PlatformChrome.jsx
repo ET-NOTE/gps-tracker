@@ -9,7 +9,7 @@ import { corporateTabs, corporateSections } from '../../lib/corporateNavigation'
 import { freightMenu } from '../../lib/freightMenu';
 import { rentalMenu } from '../../lib/rentalMenu';
 import TerminalAlerts from './TerminalAlerts';
-import { CORE_LINKS, SERVICES, deviceMatches, ownerServices } from './platformModel';
+import { CORE_LINKS, SERVICES, deviceMatches, ownerServices, searchKey } from './platformModel';
 
 const SETTINGS_PATH = '/profile?tab=services';
 const ADMIN = { view: 'admin', path: '/admin', label: '관리자', icon: 'settings' };
@@ -41,10 +41,11 @@ export function PlatformRail({ view, availableServices = [], servicePaths = {}, 
       <button type="button" className="pt-rail-link" onClick={() => setHelp(true)}><Icon name="info"/><span>도움말</span></button>
       {onLogout && <button type="button" className="pt-rail-link" onClick={() => { clearTokens(); onLogout(); }}><Icon name="logout"/><span>로그아웃</span></button>}
     </div>
-    <Modal open={help} onClose={() => setHelp(false)} title="이용 도움말">
+    <Modal open={help} className="pt-standard-dialog" size={530} onClose={() => setHelp(false)} title="이용 도움말"
+      footer={<div className="pt-dialog-actions"><button type="button" className="pt-button" onClick={() => setHelp(false)}>닫기</button>
+        {onShowGuide && <button type="button" className="pt-button pt-primary" onClick={() => {setHelp(false); onShowGuide();}}>기본 사용법</button>}</div>}>
       <dl className="pt-help"><dt>지도 홈</dt><dd>단말기를 선택해 마지막 위치와 이동 기록을 확인하세요.</dd><dt>단말기</dt><dd>단말기를 등록하고 통신 상태와 배터리를 확인하세요.</dd><dt>이용 서비스</dt><dd>내정보에서 업무 서비스와 로그인 후 시작 화면을 설정하세요.</dd></dl>
-      <Link className="pt-button" to={SETTINGS_PATH} onClick={() => setHelp(false)}>이용 서비스 열기</Link>
-      {onShowGuide && <button type="button" className="pt-button" onClick={() => {setHelp(false); onShowGuide();}}>기본 사용법</button>}
+      <Link className="pt-button pt-help-services" to={SETTINGS_PATH} onClick={() => setHelp(false)}>이용 서비스 열기</Link>
     </Modal>
   </aside>;
 }
@@ -72,10 +73,12 @@ export function ScopeSelect({ scope, scopeOptions = [], onScopeChange, labelled 
 
 function GlobalSearch({ services, owned, devices, isAdmin, onDevice, onClose }) {
   const [text, setText] = useState('');
-  const query = text.trim().toLocaleLowerCase();
-  const shortcuts = [...CORE_LINKS.map(item=>({...item,context:item.view==='profile'?'내 계정':'위치관리'})),
-    { label: '이용 서비스 설정', path: SETTINGS_PATH, icon: 'settings',context:'내 계정' },
-    ...services.map(item=>({...item,context:'업무 공간'})), ...(isAdmin ? [ADMIN] : [])];
+  const query = searchKey(text);
+  const shortcuts = [
+    {label:'지도 홈', path:'/', context:'위치관리'},
+    {label:'단말기', path:'/devices', context:'위치관리'},
+    {label:'내정보 · 이용 서비스', path:SETTINGS_PATH, context:'내 계정', alias:'이용 서비스 설정'},
+  ];
   for (const service of services) {
     if (!owned.includes(service.key) || service.path.includes('?')) continue;
     for (const [page, label, section] of OWNER_PAGES[service.key]) {
@@ -84,13 +87,15 @@ function GlobalSearch({ services, owned, devices, isAdmin, onDevice, onClose }) 
       shortcuts.push({ label, context: service.label, icon: service.icon, path: service.path + '?' + params });
     }
   }
-  const links = query ? shortcuts.filter(s=>[s.label,s.context].filter(Boolean).join(' ').toLocaleLowerCase().includes(query)) : shortcuts.slice(0,9);
+  shortcuts.push(...services.map(item=>({...item,context:'업무 공간'})),
+    {label:'내 계정 정보', path:'/profile?tab=account', context:'내정보'}, ...(isAdmin ? [ADMIN] : []));
+  const links = query ? shortcuts.filter(s=>searchKey([s.label,s.context,s.alias].join(' ')).includes(query)) : shortcuts.slice(0,9);
   const matches = query ? devices.filter(device => deviceMatches(device, text)) : [];
-  return <Modal open className="pt-standard-dialog" title="통합 검색" subtitle="메뉴와 현재 조회 범위의 단말기를 찾습니다." onClose={onClose} size={530}
+  return <Modal open className="pt-standard-dialog" title="빠른 검색" subtitle="메뉴와 현재 조회 범위의 단말기를 찾습니다." onClose={onClose} size={530}
     footer={<div className="pt-dialog-actions"><button className="pt-button" type="button" aria-label="통합 검색 닫기" onClick={onClose}>닫기</button></div>}>
     <label className="pt-search-field"><Icon name="search" size={17}/><input type="search" value={text} onChange={e => setText(e.target.value)} autoComplete="off" placeholder="메뉴, 단말기 이름 또는 차량번호" aria-label="단말기와 메뉴 검색"/></label>
     <div className="pt-search-results">
-      {links.map(item => <Link key={item.path} to={item.path} onClick={onClose}><Icon name={item.icon}/><span>{item.label}</span>{item.context && <small>{item.context}</small>}</Link>)}
+      {links.map(item => <Link key={item.path} to={item.path} onClick={onClose}><Icon name="file" size={16}/><span>{item.label}</span>{item.context && <small>{item.context}</small>}</Link>)}
       {matches.map(device => <button type="button" key={device.id} onClick={() => { onClose(); onDevice(device.id); }}>
         <Icon name="antenna"/><span>{terminalName(device)}</span><small>{device.license_plate || device.car_plate || device.device_uid}</small>
       </button>)}

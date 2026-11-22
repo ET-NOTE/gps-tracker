@@ -185,6 +185,10 @@
 .pt-device-note svg {flex:none}
 
 .pt-member-shell .map-top-overlay {inset:24px 25px auto;display:block}
+.pt-map-footer {display:flex;flex:none;align-items:center;justify-content:space-between;gap:8px;padding:2px clamp(12px,2vw,24px);background:var(--surface-2);color:var(--pt-muted);font:400 11px/1.5 var(--fleet-font)}
+.pt-map-footer button {border:1px solid var(--pt-line);border-radius:6px;padding:3px 8px;background:var(--surface);color:var(--pt-label);font:inherit;cursor:pointer}
+.pt-map-footer button:disabled {opacity:.55;cursor:default}
+@media(pointer:coarse) {.pt-map-footer button {min-height:34px}}
 .pt-member-shell .map-top-main {width:296px;max-width:calc(100% - 25px)}
 .pt-member-shell .map-device-card {padding:9px 10px 10px 12px;min-height:69px}
 .pt-map-selector-row > div > button[aria-label] {font:400 12px/1.5 var(--fleet-font)!important;min-height:29px!important;padding:3px 4px!important}

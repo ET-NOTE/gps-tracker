@@ -3,6 +3,7 @@ export const expenseStatus={pending:'승인대기',approved:'승인',rejected:'�
 export const paymentMethods={company_card:'법인카드',personal_card:'개인카드',cash:'현금',transfer:'계좌이체',other:'기타'};
 export const expenseActions={created:'등록',updated:'수정·재제출',approved:'승인',rejected:'반려',cancelled:'취소',receipt_added:'영수증 추가',receipt_removed:'영수증 제외'};
 export const expenseMoney=value=>Number(value||0).toLocaleString('ko-KR');
+export const expenseDepartmentKey=row=>row.department_id!=null?String(row.department_id):row.department_name?'name:'+row.department_name:'unassigned';
 export const expenseTripOptions=(trips,kind)=>trips.filter(t=>t.ended_at&&t.allocation_status==='assigned'&&(kind!=='fuel'||!t.annotation?.fuel_expense_id));
 export const expenseTripAmount=(trip,kind)=>kind==='fuel'&&trip?.annotation?.fuel_cost!=null?{amount_krw:trip.annotation.fuel_cost}:{};
 // Counts describe the search results before selecting a status. Every output then
@@ -10,7 +11,7 @@ export const expenseTripAmount=(trip,kind)=>kind==='fuel'&&trip?.annotation?.fue
 export function expenseList(rows,{query='',status=''}={}){
  const terms=query.trim().toLocaleLowerCase('ko-KR').split(/\s+/).filter(Boolean);
  const searched=rows.filter(r=>{
-  const text=[r.vehicle_name,r.staff_name].filter(Boolean).join(' ').toLocaleLowerCase('ko-KR');
+  const text=[r.vehicle_name,r.staff_name,r.group_name,r.category_name].filter(Boolean).join(' ').toLocaleLowerCase('ko-KR');
   return terms.every(term=>text.includes(term));
  });
  const counts={all:searched.length,pending:0,approved:0,rejected:0,cancelled:0};

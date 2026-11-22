@@ -8,7 +8,6 @@ export default function FreightOffice({page,...props}) {
   const name=page.replace(/^cargo-/,'');
   if (name==='devices')return <FreightDevices {...props}/>;
   if (name==='charges')return <FreightCharges {...props}/>;
-  if (['billing','payables'].includes(name))return <FreightLedger key={name} kind={name} {...props}/>;
-  if (name==='drivers')return <FreightRecordActions {...props}>{({open})=><FreightCatalog kind={name} {...props} onOpenShipment={id=>open('shipments',id)}/>}</FreightRecordActions>;
-  return <FreightCatalog key={name} kind={name==='maintenance'?'services':name} {...props}/>;
+  if (['billing','payables'].includes(name))return <FreightRecordActions key={name} {...props}>{({open})=><FreightLedger kind={name} {...props} onOpenShipment={id=>open('shipments',id)}/>}</FreightRecordActions>;
+  return <FreightRecordActions key={name} {...props}>{({open})=><FreightCatalog kind={name==='maintenance'?'services':name} {...props} onOpenRecord={open}/>}</FreightRecordActions>;
 }

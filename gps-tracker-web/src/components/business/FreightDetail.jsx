@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import Icon from '../Icon';
 import truckArt from './freight-truck.svg';
-import {FreightBadge,FreightButton,FreightDrawer,FreightFacts} from './FreightKit';
+import {FreightBadge,FreightButton,FreightDrawer,FreightFacts,Status} from './FreightKit';
 import {FreightCatalogDialogs} from './FreightCatalog';
 import {financeRow,FreightLedgerDialogs} from './FreightLedger';
 import {FreightPhotos} from './FreightShipmentForms';
@@ -11,8 +11,7 @@ import {shipmentFinance} from '../../lib/freightFinance';
 
 const eventLabels={requested:'배차 요청',confirmed:'배차 확정',arrived:'상차지 도착',loaded:'상차 완료',delivered:'하차 완료',reassigned:'배차 변경',cancelled:'배차 취소',declined:'배차 거절'};
 
-export const tone=k=>({open:'amber',requested:'amber',loading:'amber',assigned:'blue',confirmed:'blue',in_transit:'blue',submitted:'blue',approved:'green',delivered:'green',completed:'green',cancelled:'red',rework:'red'}[k]||'neutral');
-export function Status({value,labels}){return <FreightBadge tone={tone(value)}>{labels[value]||'—'}</FreightBadge>;}
+export {Status,tone} from './FreightKit';
 export function nextAction(s){
   if(s.status==='requested')return ['accept','배차 수락'];
   if(stepMap[s.status])return [stepMap[s.status].type,stepMap[s.status].label];
@@ -105,16 +104,17 @@ export default function FreightDetail({data,kind,row:r,onClose,form,open,onPage,
             ['확인 상태',<Status value={r.proof.status} labels={proofStates}/>],['수령인',r.proof.receiver||'—'],['수령 확인',timeLabel(r.proof.at)],['수령 메모',r.proof.note||'—'],
             ...(r.proof.reviewedAt?[['검토 일시',timeLabel(r.proof.reviewedAt)],['검토 메모',r.proof.reviewNote||'—']]:[]),
           ]}/><FreightPhotos files={r.proof.files}/></Block>
+          <Block title="배차 전달사항"><p className="fr-record-note">{r.note||'등록된 전달사항이 없습니다.'}</p></Block>
           <details className="fr-record-more"><summary>주문 조건·요청사항</summary><FreightFacts items={[[ '배차 담당자',staffName]]}/>{orderExtras}</details></>}
         {!!generated.length&&<Block title="생성한 주문">{generated.map(o=><button type="button" className="fr-record-link" key={o.id} onClick={()=>open('orders',o.id)}>{o.number}<Status value={o.status} labels={orderStates}/></button>)}</Block>}
         <Block title="처리 이력">{r.history?.length?<ul className="fr-record-history">{r.history.map((h,i)=><li key={i}>{h.text}<small>{timeLabel(h.at)}</small></li>)}</ul>:<p className="fr-record-note">등록된 이력이 없습니다.</p>}</Block>
       </>}
     </FreightDrawer>
-    {related&&(related.kind==='finance'?<FreightLedgerDialogs data={data} save={save} onPage={onPage}
+    {related&&(related.kind==='finance'?<FreightLedgerDialogs data={data} save={save}
       billing={related.billing} view={related} setView={setRelatedView}
       r={financeRow(data,r,related.billing,finance)}
-      onSideChange={billing=>setRelated({...related,billing})}/>
+      onOpenShipment={()=>setRelated(null)}/>
     :<FreightCatalogDialogs kind={related.kind} data={data} save={save} view={related} setView={setRelatedView}
-      onOpenShipment={id=>{setRelated(null);open('shipments',id);}}/>)}
+      onOpenRecord={(kind,id)=>{setRelated(null);open(kind,id);}}/>)}
   </>;
 }

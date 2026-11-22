@@ -57,6 +57,7 @@
 .pt-standard-dialog .pt-status-list button {border:1px solid var(--pt-dialog-border);border-radius:9px}
 .pt-standard-dialog .pt-status-list .pt-state {flex:none;margin-inline-start:auto;font-size:10px}
 .pt-standard-dialog .pt-status-settings {align-self:flex-start;margin-top:12px}
+.pt-standard-dialog .pt-help-services {align-self:flex-start}
 @media(max-width:760px) {
   .gps-modal-backdrop.pt-standard-dialog {padding:12px!important}
   .pt-standard-dialog .gps-modal>div:first-child,.pt-standard-dialog .gps-modal>.gps-modal-body {padding:19px}

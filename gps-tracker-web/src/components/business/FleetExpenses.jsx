@@ -5,7 +5,7 @@ import {useStaff} from '../../state';
 import {businessDate} from '../../lib/business';
 import {kstDateTime} from '../../lib/businessExport';
 import {downloadReceipt} from '../../lib/downloadReport';
-import {expenseTripOptions,expenseTripAmount,expenseStatus,paymentMethods,expenseActions,expenseMoney,expenseList,expenseTotals,expenseGroups,expenseReport} from '../../lib/fleetExpenses';
+import {expenseTripOptions,expenseTripAmount,expenseStatus,paymentMethods,expenseActions,expenseMoney,expenseDepartmentKey,expenseList,expenseTotals,expenseGroups,expenseReport} from '../../lib/fleetExpenses';
 import {siteVehicleLabel} from '../../lib/fleetSites';
 import {useFleetAccess,useFleetOrganization} from './FleetAccess';
 import {useFleetAssets} from './FleetAssets';
@@ -57,10 +57,10 @@ function CombinedApprovals({onOpen}) {
     <ul>{rows.map(r=><li key={r.type+r.id}><button type="button" onClick={()=>onOpen(r.type,r.row)}><span className="business-badge">{r.type==='reservation'?'차량 예약':'지출'}</span><span><strong>{r.title||'미지정'}</strong><small>{[r.person,r.detail].filter(Boolean).join(' · ')}</small></span><time>{r.date}</time><Icon name="chevron-right" size={16}/></button></li>)}</ul>}
  </section>;
 }
-function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories,initialDetail=null}){
+function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories,initialDetail=null,initialScope}){
  const access=useFleetAccess(),qc=useQueryClient(),cats=useQuery({queryKey:['expense-categories'],queryFn:()=>api.expenseCategories()}),assets=useFleetAssets(),staff=useStaff(),org=useFleetOrganization();
- const today=businessDate(),[filters,setFilters]=useState({from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(initialDetail),[category,setCategory]=useState(null);
- const [query,setQuery]=useState(''),[status,setStatus]=useState(approvalsOnly?'pending':''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
+ const today=businessDate(),[filters,setFilters]=useState(()=>initialScope?.filters||{from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(initialDetail),[category,setCategory]=useState(null);
+ const [query,setQuery]=useState(''),[status,setStatus]=useState(approvalsOnly?'pending':initialScope?.status||''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
  const [memo,setMemo]=useState(null),[settingsOpen,setSettingsOpen]=useState(false);
  const [picked,setPicked]=useState(new Map()),[batch,setBatch]=useState(null),[batchResult,setBatchResult]=useState(null);
  const outputRef=useRef(null),settingsRef=useRef(null),downloadRef=useRef(null);
@@ -73,15 +73,21 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
   return()=>{document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',escape);};
  },[downloadsOpen,settingsOpen]);
  const valid=filters.from&&filters.to&&filters.from<=filters.to;
- const allEntries=useQuery({queryKey:['fleet-expenses',filters],queryFn:()=>api.listExpenses(filters),enabled:!categoriesOnly&&!!valid});
+ const generalOnly=filters.vehicle_id==='general';
+ const snapshotDepartment=filters.department_id==='unassigned'||filters.department_id?.startsWith('name:');
+ const apiFilters={...filters};
+ if(generalOnly)delete apiFilters.vehicle_id;
+ if(snapshotDepartment)delete apiFilters.department_id;
+ const allEntries=useQuery({queryKey:['fleet-expenses',apiFilters],queryFn:()=>api.listExpenses(apiFilters),enabled:!categoriesOnly&&!!valid});
  // The API rejects (rather than truncates) results above 1,000. Preserve its
  // status filter as a way to narrow that scope, without inventing other counts.
  const limited=allEntries.error?.status===400&&allEntries.error.message?.includes('조회 결과가 1,000건을 넘습니다.');
- const statusFilters={...filters,status};
+ const statusFilters={...apiFilters,status};
  const statusEntries=useQuery({queryKey:['fleet-expenses',statusFilters],queryFn:()=>api.listExpenses(statusFilters),enabled:!categoriesOnly&&!!valid&&!!limited&&!!status});
  const entries=limited&&status?statusEntries:allEntries;
  const ready=!!valid&&!!entries.data&&!entries.error&&!entries.isPending&&!entries.isFetching&&!allEntries.isFetching;
- const visibleItems=ready?(approvalsOnly?entries.data.items.filter(r=>access.review_expenses!==false&&r.can_review):entries.data.items):[];
+ const visibleItems=ready?entries.data.items.filter(r=>(!approvalsOnly||access.review_expenses!==false&&r.can_review)
+   && (!generalOnly||r.vehicle_id==null) && (!snapshotDepartment||expenseDepartmentKey(r)===filters.department_id)):[];
  const {rows,counts}=expenseList(visibleItems,{query,status}),total=expenseTotals(rows),groups=expenseGroups(rows,groupBy);
  const pageRows=rows.slice(page*25,(page+1)*25);
  const selectable=approvalsOnly&&status==='pending'?pageRows.filter(r=>r.can_review&&r.status==='pending'&&r.updated_at):[];
@@ -113,13 +119,16 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
  if(!cats.data||!assets.data||!staff.data||!org.data)return <p className="expense-note">지출 정보 불러오는 중…</p>;
  const departments=org.data.filter(i=>i.kind==='department');
  const filterFields=(values,change,dialog)=><>
-   <FormField label="차량"><Select aria-label={dialog?'지출 차량 필터':'조회 차량'} value={values.vehicle_id||''} onChange={e=>change('vehicle_id',e.target.value)}><option value="">전체 차량·일반 지출</option>{assets.data.map(v=><option key={v.id} value={v.id}>{siteVehicleLabel(v)}</option>)}</Select></FormField>
+   <FormField label="차량"><Select aria-label={dialog?'지출 차량 필터':'조회 차량'} value={values.vehicle_id||''} onChange={e=>change('vehicle_id',e.target.value)}><option value="">전체 차량·일반 지출</option><option value="general">일반 지출</option>{assets.data.map(v=><option key={v.id} value={v.id}>{siteVehicleLabel(v)}</option>)}</Select></FormField>
   <FormField label="사용자"><Select aria-label={dialog?'지출 사용자 필터':'조회 사용자'} value={values.staff_id||''} onChange={e=>change('staff_id',e.target.value)}><option value="">전체 사용자</option>{staff.data.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Select></FormField>
-  <FormField label="부서"><Select aria-label={dialog?'지출 부서 필터':'조회 부서'} value={values.department_id||''} onChange={e=>change('department_id',e.target.value)}><option value="">전체 부서</option>{departments.filter(d=>access.manage_team||d.id===access.department_id).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</Select></FormField>
+  <FormField label="부서"><Select aria-label={dialog?'지출 부서 필터':'조회 부서'} value={values.department_id||''} onChange={e=>change('department_id',e.target.value)}><option value="">전체 부서</option><option value="unassigned">부서 미지정</option>{values.department_id?.startsWith('name:')&&<option value={values.department_id}>{values.department_id.slice(5)}</option>}{departments.filter(d=>access.manage_team||d.id===access.department_id).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</Select></FormField>
   <FormField label="지출 항목"><Select aria-label={dialog?'지출 항목 필터':'조회 항목'} value={values.category_id||''} onChange={e=>change('category_id',e.target.value)}><option value="">전체 항목</option>{cats.data.filter(c=>c.kind!=='group').map(c=><option key={c.id} value={c.id}>{cats.data.find(g=>g.id===c.parent_id)?.name} · {c.name}</option>)}</Select></FormField>
  </>;
  const refreshButton=<BusinessButton icon="refresh" aria-label="지출 새로고침" title="새로고침" disabled={!valid||entries.isFetching} onClick={refresh}/>;
- const selectedNames=[assets.data.find(v=>String(v.id)===filters.vehicle_id)&&siteVehicleLabel(assets.data.find(v=>String(v.id)===filters.vehicle_id)),staff.data.find(s=>String(s.id)===filters.staff_id)?.name,departments.find(d=>String(d.id)===filters.department_id)?.name,cats.data.find(c=>String(c.id)===filters.category_id)?.name,expenseStatus[status],query.trim()&&`차량·사용자 검색: ${query.trim()}`].filter(Boolean).join(' · ')||'전체 조회';
+ const selectedAsset=assets.data.find(v=>String(v.id)===filters.vehicle_id);
+ const selectedNames=[generalOnly?'일반 지출':selectedAsset&&siteVehicleLabel(selectedAsset),staff.data.find(s=>String(s.id)===filters.staff_id)?.name,
+   snapshotDepartment?(filters.department_id==='unassigned'?'부서 미지정':filters.department_id.slice(5)):departments.find(d=>String(d.id)===filters.department_id)?.name,
+   cats.data.find(c=>String(c.id)===filters.category_id)?.name,expenseStatus[status],query.trim()&&`검색어 ${query.trim()}`].filter(Boolean).join(' · ')||'전체 조회';
  return <div className="fleet-expenses">
  <FleetRecordMetrics label={approvalsOnly?'승인 관리 조회 요약':'조회된 지출 요약'} items={[
   {name:'조회 지출 합계',value:ready?rows.reduce((sum,row)=>sum+row.amount_krw,0):null,unit:'원',icon:'bar'},
@@ -147,7 +156,7 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
    {filterFields(filters,filter,false)}
   </div>
   <div className="fleet-record-filterfoot">
-   <label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="차량 및 사용자 검색" placeholder="차량, 지출 항목, 요청자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}}/></label>
+   <label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="차량, 지출 항목, 요청자 검색" placeholder="차량, 지출 항목, 요청자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}}/></label>
    <div>{refreshButton}<BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>필터{advancedCount>0&&<span className="expense-filter-count">{advancedCount}</span>}</BusinessButton>
     <BusinessButton onClick={()=>{setFilters({from:today.slice(0,7)+'-01',to:today});setQuery('');setStatus(approvalsOnly?'pending':'');setPage(0);}}>조건 초기화</BusinessButton></div>
   </div>
