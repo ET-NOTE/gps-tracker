@@ -750,12 +750,35 @@ body[data-area="business"] .page-heading h1{font-weight:400}
   .pt-map-tool>span{white-space:nowrap;word-break:keep-all}
   .topbar .avatar{padding:0;display:inline-grid;place-items:center}
 }
+@media(max-width:480px){
+  .stats-row>.stat-item:has(.long-reading){container-type:inline-size}
+  .stats-row .stat-value.long-reading{font-size:clamp(16px,21cqi,26px);white-space:normal;overflow-wrap:anywhere;flex-wrap:wrap}
+}
+@media(max-width:400px){
+  .topbar .mobile-menu{flex-shrink:0}
+  .topbar .breadcrumb{display:block;overflow:hidden;min-width:0;white-space:nowrap;text-overflow:ellipsis}
+  .topbar .breadcrumb>:not(:last-child){display:none}
+}
 @media(max-width:380px){
+  .topbar-inner{gap:5px}
+  .topbar-inner>.row{gap:4px}
+  .topbar .mobile-menu{width:28px;height:34px;padding:0}
+  .topbar .topbar-right{flex:none;gap:5px}
+  .topbar .platform-scope{max-width:77px;padding-inline:4px}
+  .topbar .platform-scope select{width:100%;padding-inline:1px}
+  :is(.ops-date-filter,.ro-date-filter,.rent-admin-dates,.cargo-admin-dates,.co-date-filter)>.row{gap:3px}
+  :is(.ops-date-filter,.ro-date-filter,.rent-admin-dates,.cargo-admin-dates,.co-date-filter)>.row>input.input[type=date]{font-size:11px;padding-inline:3px}
+  .stats-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .stats-row>.stat-item{min-width:0;container-type:inline-size}
+  .stats-row .stat-value{white-space:normal;overflow-wrap:anywhere;flex-wrap:wrap}
+  .stats-row .stat-value.long-reading{line-height:26px}
+  .stats-row .stat-value>*{max-width:100%}
+  .toolbar-left>.segmented{flex-wrap:nowrap;min-width:0;max-width:100%;overflow-x:auto}
+  .toolbar-left>.segmented button{flex:none;padding-inline:6px}
+}
+@media(max-width:310px){
   :is(.ops-date-filter,.ro-date-filter,.rent-admin-dates,.cargo-admin-dates,.co-date-filter)>.row{grid-template-columns:minmax(0,1fr)}
   :is(.ops-date-filter,.ro-date-filter,.rent-admin-dates,.cargo-admin-dates,.co-date-filter)>.row>.muted{display:none}
-  .stats-row{display:flex;flex-wrap:wrap}
-  .stats-row>.stat-item{flex:1 0 44%;min-width:max-content}
-  .toolbar-left>.segmented{flex-wrap:wrap;max-width:100%}
 }
 </style></head><body data-view-width="normal" data-auth="signed-in" data-area="core">
 <div class="mobile-scrim" data-action="mobile-menu"></div>
@@ -814,7 +837,7 @@ const paths={dashboard:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x
 F.icon=(name,size=18)=>`<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||paths.file}</svg>`;
 F.badge=(label,tone='neutral')=>`<span class="badge ${F.esc(tone)}">${F.esc(label)}</span>`;
 F.empty=(title='결과가 없습니다',description='검색 조건을 변경해 보세요.')=>`<div class="empty-state">${F.icon('search',31)}<div class="empty-title">${F.esc(title)}</div><div class="empty-description">${F.esc(description)}</div></div>`;
-F.stats=items=>`<div class="stats-row" style="grid-template-columns:repeat(${Math.min(items.length,4)},1fr)">${items.map(s=>`<div class="stat-item"><div class="stat-top">${s.icon?`<span class="stat-icon">${F.icon(s.icon,15)}</span>`:''}<span class="stat-label">${F.esc(s.label)}</span>${s.moreAction?`<button type="button" class="dashboard-more" data-action="${F.esc(s.moreAction)}" aria-label="${F.esc(s.label)} 더보기">더보기 ${F.icon('chevron',12)}</button>`:''}</div><div class="stat-value">${F.esc(s.value)}${s.unit?`<span class="stat-unit">${F.esc(s.unit)}</span>`:''}</div>${s.change?`<div class="stat-change ${F.esc(s.tone||'')}">${F.esc(s.change)}</div>`:''}</div>`).join('')}</div>`;
+F.stats=items=>`<div class="stats-row" style="grid-template-columns:repeat(${Math.min(items.length,4)},1fr)">${items.map(s=>`<div class="stat-item"><div class="stat-top">${s.icon?`<span class="stat-icon">${F.icon(s.icon,15)}</span>`:''}<span class="stat-label">${F.esc(s.label)}</span>${s.moreAction?`<button type="button" class="dashboard-more" data-action="${F.esc(s.moreAction)}" aria-label="${F.esc(s.label)} 더보기">더보기 ${F.icon('chevron',12)}</button>`:''}</div><div class="stat-value${/[0-9][0-9,.]{7,}/.test(String(s.value)) ? ' long-reading' : ''}">${F.esc(s.value)}${s.unit?`<span class="stat-unit">${F.esc(s.unit)}</span>`:''}</div>${s.change?`<div class="stat-change ${F.esc(s.tone||'')}">${F.esc(s.change)}</div>`:''}</div>`).join('')}</div>`;
 F.toast=(message,tone='success')=>{const t=document.createElement('div');t.className='toast '+(tone==='error'?'error':tone==='info'?'info':'');t.setAttribute('role',tone==='error'?'alert':'status');t.innerHTML=F.icon(tone==='error'?'warning':tone==='info'?'info':'checkCircle',18)+`<span>${F.esc(message)}</span>`;document.getElementById('toast-stack').append(t);setTimeout(()=>t.remove(),4200);};
 F.formData=form=>Object.fromEntries(new FormData(form).entries());
 F.downloadCSV=(filename,headers,rows)=>{const cell=v=>{let s=String(v==null?'':v);if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};const csv='\ufeff'+[headers,...rows].map(r=>r.map(cell).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download=filename.endsWith('.csv')?filename:filename+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);F.toast('CSV 파일을 다운로드했습니다.');};

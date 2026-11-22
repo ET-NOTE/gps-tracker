@@ -89,12 +89,12 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
     templates:[['양식 이름',recordLink],['내용',c=><span className="ro-excerpt">{c.body.slice(0,80)}</span>],['미리보기',c=><Button variant="ghost" size="sm" onClick={()=>setPreview(c)}>미리보기</Button>]]
   }[kind];
   const filter=(label,selected,onChange,items)=><Field label={label}><select value={selected} onChange={e=>onChange(e.target.value)}><Options items={items}/></select></Field>;
-  const directory=kind==='accounts'||kind==='templates';
+  const foldUsage=kind==='accounts'||kind==='customers';
+  const directory=foldUsage||kind==='templates';
   const usage=filter('사용 여부',status,setStatus,{all:kind==='templates'?'전체 양식':'전체',active:'사용 중',inactive:'사용 중지'});
   const clearFilters=()=>{setQuery('');setStatus('all');setType('all');setAccount('all');setLicense('all');};
-  const toolbar=<Toolbar count={rows.length} unit={kind==='accounts'?'개 거래처 조회':kind==='templates'?'개 양식 조회':'건'}>
-    {kind==='customers'&&<Button variant="ghost" onClick={()=>setHistory(true)}>계약 이력·경고 관리</Button>}
-    {directory ? <BusinessButton primary icon="plus" onClick={()=>setEdit(null)}>{kind==='templates'?'양식 추가':'거래처 등록'}</BusinessButton> :
+  const toolbar=<Toolbar count={rows.length} unit={kind==='accounts'?'개 거래처 조회':kind==='templates'?'개 양식 조회':kind==='customers'?'명 조회':'건'}>
+    {directory ? <BusinessButton primary icon="plus" onClick={()=>setEdit(null)}>{kind==='templates'?'양식 추가':kind==='customers'?'고객 등록':'거래처 등록'}</BusinessButton> :
       <Button onClick={()=>setEdit(null)}>{titles[kind]} 등록</Button>}</Toolbar>;
   return <div className={'rental-office'+(directory?' rental-directory':'')}>
     {history&&<div className="ro-tabs"><button onClick={()=>setHistory(false)}>고객 명부</button><button aria-pressed="true" onClick={()=>setHistory(true)}>계약 이력·경고 관리</button></div>}
@@ -105,11 +105,13 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
           {filter('거래처',account,setAccount,{all:'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
           {filter('면허 확인',license,setLicense,{all:'전체',yes:'확인 완료',no:'미확인'})}</>}
         {kind==='accounts'&&filter('정산 방식',type,setType,{all:'전체 방식',...billing})}
-        {kind!=='accounts'&&usage}
+        {!foldUsage&&usage}
         <Search value={query} setValue={setQuery} label={kind==='accounts'?'거래처, 담당자, 등록번호 검색':kind==='templates'?'양식 이름, 내용 검색':titles[kind]+' 검색'}/>
-        {directory ? <div className="rental-extra-actions">{kind==='accounts'&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>추가 조건{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton icon="refresh" onClick={clearFilters}>초기화</BusinessButton></div> :
+        {directory ? <div className="rental-extra-actions">{foldUsage&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton icon="refresh" onClick={clearFilters}>초기화</BusinessButton></div> :
           (query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<Button variant="ghost" size="sm" onClick={clearFilters}>초기화</Button>}
-        {kind==='accounts'&&<div className="rental-extra-filters" id="rental-directory-extra" hidden={!extraOpen}>{usage}</div>}
+        {foldUsage&&<div className="rental-extra-filters" id="rental-directory-extra" hidden={!extraOpen}>{usage}
+          {kind==='customers'&&<BusinessButton onClick={()=>setHistory(true)}>계약 이력·경고 관리</BusinessButton>}
+        </div>}
       </div>
       {directory&&toolbar}
       <section className="ro-panel">{!directory&&toolbar}

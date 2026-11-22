@@ -52,7 +52,26 @@ export function FreightTable({columns,rows,empty='조회된 내역이 없습니�
     {!rows.length&&<p className="fr-empty">{empty}</p>}
   </div>;
 }
-export function FreightFilters({query,onQuery,placeholder,children,onReset}){
+export function FleetResourceFilters({query,onQuery,placeholder,children,onReset,total,count,extraFilter,extraLabel}){
+  const [expanded,setExpanded]=useState(false);
+  const extraId=useId();
+  return <div className="fr-filters fr-resource-filters">
+    <div className="fr-resource-fields">
+      <label className="fr-resource-search"><Icon name="search" size={15}/><input type="search" aria-label={placeholder} placeholder={placeholder} value={query} onChange={e=>onQuery(e.target.value)}/></label>
+      {children}
+    </div>
+    <div className="fr-resource-filter-meta"><span>{extraFilter?'전체 '+total.toLocaleString('ko-KR')+' · 조회 '+count.toLocaleString('ko-KR'):'전체 '+total.toLocaleString('ko-KR')+'건 중 '+count.toLocaleString('ko-KR')+'건 조회'}</span>
+      {extraFilter&&<button type="button" aria-controls={extraId} aria-expanded={expanded} onClick={()=>setExpanded(!expanded)}>{extraLabel}</button>}
+      <button type="button" onClick={()=>{onReset();setExpanded(false);}}>조건 초기화</button>
+    </div>
+    {extraFilter&&<div id={extraId} className="fr-resource-extra" hidden={!expanded}>{extraFilter}</div>}
+  </div>;
+}
+export function FreightFilters({query,onQuery,placeholder,children,onReset,admin=false}){
+  if(admin)return <div className="fr-filters"><div className="fr-admin-fields">
+    {children}
+    <FreightField label="검색" wide><span className="fr-resource-search"><Icon name="search" size={15}/><input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></span></FreightField>
+  </div><FreightButton icon="refresh" onClick={onReset}>초기화</FreightButton></div>;
   return <div className="fr-filters">{children}<FreightField label="검색" wide>
     <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton icon="refresh" onClick={onReset}>조회 조건 초기화</FreightButton>}</div>;
 }

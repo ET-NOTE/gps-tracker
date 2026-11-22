@@ -174,19 +174,22 @@
 .fr-setting-row { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;padding:4px 0;border-bottom:1px solid var(--border,#e7eaf0);cursor:pointer; }
 .fr-setting-row input { width:18px;height:18px;accent-color:var(--primary,#3676e5); }
 .fr-toolbar-caption {margin:0;font:400 12px/1.55 var(--fleet-font);color:var(--fleet-caption,var(--text-2));}
-.pt-member-shell .rnt-shell :is(.fr-incidents,.fr-ledger,.fr-codes) {gap:17px;}
-.pt-member-shell .rnt-shell .rnt-content .fr-page:is(.fr-incidents,.fr-codes)>.fr-filters {
+.pt-member-shell .rnt-shell :is(.fr-incidents,.fr-ledger,.fr-codes,.fr-resource-list,.fr-admin-list) {gap:17px;}
+.pt-member-shell .rnt-shell .rnt-content :is(.fr-page.fr-incidents,.fr-page.fr-codes,.fr-section.fr-resource-list,.fr-section.fr-admin-list)>.fr-filters {
   display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:14px 16px;
   border:1px solid var(--border);border-radius:11px;background:var(--fleet-filter-bg);
 }
-.fr-incidents .fr-incident-fields {display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;width:100%;}
-.fr-incident-fields>.fr-field {flex:1 1 140px;}
-.fr-incident-search {display:flex;align-items:center;gap:8px;min-width:0;flex:1.5 1 190px;height:37px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-2);}
-.fr-incident-search:focus-within {outline:2px solid var(--primary);outline-offset:1px;}
-.fr-incident-search svg {flex:none;}
-.fr-incidents .fr-incident-search input {border:0;background:none;padding:0;min-width:0;width:100%;height:100%;font:400 12px/1.55 var(--fleet-font);color:var(--text);outline:0;}
-.fr-incident-filter-meta {width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--fleet-faint);font-size:11px;}
-.fr-incidents .fr-incident-filter-meta button {min-height:24px;border:0;padding:0;background:none;font:inherit;color:var(--primary);cursor:pointer;}
+.fr-resource-filters .fr-resource-fields {display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;width:100%;}
+.fr-resource-fields>.fr-field {flex:1 1 140px;}
+.fr-resource-search {display:flex;align-items:center;gap:8px;min-width:0;flex:1.5 1 190px;height:37px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-2);}
+.fr-resource-search:focus-within {outline:2px solid var(--primary);outline-offset:1px;}
+.fr-resource-search svg {flex:none;}
+.pt-member-shell .rnt-shell .rnt-content .fr-resource-search input[type=search] {border:0;background:none;padding:0;min-width:0;width:100%;min-height:0;height:35px;font:400 12px/1.55 var(--fleet-font);color:var(--text);outline:0;box-shadow:none;}
+.fr-resource-filter-meta {width:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px 8px;color:var(--fleet-faint);font-size:11px;}
+.fr-resource-filter-meta>span {margin-right:auto;}
+.pt-member-shell .rnt-shell .rnt-content .fr-resource-filter-meta button {min-height:24px;min-width:0;margin-block:-3px;border:0;padding:0;background:none;font:inherit;color:var(--primary);cursor:pointer;box-shadow:none;}
+.fr-resource-extra {flex-basis:100%;max-width:245px;}
+.fr-catalog-export {display:flex;justify-content:flex-end;}
 .fr-codes .fr-filters>.fr-field {flex:1 1 210px;max-width:320px;}
 .pt-member-shell .rnt-shell :is(.fr-ledger,.fr-codes,.fr-incidents)>.fr-filters>.fr-btn {margin-left:auto;min-height:29px;padding:5px 10px;align-self:flex-end;}
 .fr-ledger .fr-table th {white-space:nowrap;}
@@ -224,10 +227,10 @@
   .pt-member-shell .rnt-shell .rnt-content :is(.fr-section.fr-ledger,.fr-page.fr-incidents,.fr-page.fr-codes)>.fr-filters {
     display:grid;grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr));padding:12px;gap:10px;
   }
-  .pt-member-shell .rnt-shell .rnt-content .fr-page.fr-incidents>.fr-incident-filters {display:flex;}
-  .fr-incidents .fr-incident-fields {gap:10px;}
-  .fr-incident-fields>.fr-field {flex:1 1 130px;}
-  .fr-incident-fields>.fr-incident-search {flex:1 1 124px;}
+  .pt-member-shell .rnt-shell .rnt-content :is(.fr-page.fr-incidents,.fr-section.fr-resource-list)>.fr-resource-filters {display:flex;}
+  .fr-resource-filters .fr-resource-fields {gap:10px;}
+  .fr-resource-fields>.fr-field {flex:1 1 130px;}
+  .fr-resource-fields>.fr-resource-search {flex:1 1 124px;}
   .pt-member-shell .rnt-shell :is(.fr-codes,.fr-incidents)>.fr-filters>.is-wide {max-width:none;width:100%;grid-column:1/-1;}
   .pt-member-shell .rnt-shell :is(.fr-ledger,.fr-incidents,.fr-codes)>.fr-filters>.fr-btn {grid-column:1/-1;justify-self:end;}
   .fr-ledger .fr-table {min-width:680px;}
@@ -251,4 +254,29 @@
 @media (max-width:760px) {
   .fr-workflow .fr-table th,
   .fr-workflow .fr-table td:first-child .fr-link {white-space:nowrap}
+}
+
+.fr-admin-fields {display:flex;flex:1;min-width:0;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+.fr-admin-fields>.fr-field {flex:1 1 125px;min-width:0;}
+.fr-admin-fields>.fr-field select {max-width:245px;}
+.fr-admin-fields>.is-wide {flex:1.4 1 195px;}
+.pt-member-shell .rnt-shell .fr-admin-fields .fr-field>.fr-resource-search {display:flex;align-items:center;gap:8px;color:var(--fleet-caption);height:37px;flex:none;}
+.fr-charge-list .rental-stage-period {flex:1.4 1 250px;min-width:0;}
+.pt-member-shell .rnt-shell .fr-charge-list .rental-stage-period input {height:37px;min-width:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fleet-caption);font:400 12px/1.55 var(--fleet-font);}
+.pt-member-shell .rnt-shell .fr-admin-list>.fr-filters>.fr-btn {min-height:29px;padding:5px 10px;margin-left:auto;}
+:is(.fr-resource-list,.fr-admin-list) .fr-table th {white-space:nowrap;}
+@media(max-width:899px) {
+  .pt-member-shell .rnt-shell[data-workspace="cargo.area.width"] .rnt-title-actions:has(>time:only-child) {display:none;}
+}
+@media(max-width:760px) {
+  .pt-member-shell .rnt-shell .rnt-content .fr-admin-list .fr-stats:not(.fr-summary)>div {padding:12px 16px;}
+  .pt-member-shell .rnt-shell :is(.fr-resource-list,.fr-admin-list)>.fr-toolbar {align-items:flex-start;row-gap:10px;}
+  .pt-member-shell .rnt-shell .fr-resource-list>.fr-toolbar {row-gap:12px;}
+  .fr-resource-list>.fr-toolbar>.fr-toolbar-caption {font-size:14px;}
+  :is(.fr-resource-list,.fr-admin-list)>.fr-toolbar>.fr-toolbar-caption {flex-basis:100%;}
+  :is(.fr-resource-list,.fr-admin-list)>.fr-toolbar>:is(.fr-actions,.fr-btn) {margin-left:auto;}
+  .pt-member-shell .rnt-shell .rnt-content :is(.fr-section.fr-resource-list,.fr-section.fr-admin-list)>.fr-filters {display:flex;padding:12px;gap:10px;}
+  .fr-admin-fields {flex-basis:100%;gap:10px;}
+  .fr-admin-fields>.fr-field {flex:1 1 130px;}
+  .fr-admin-fields>.is-wide,.fr-admin-fields>.rental-stage-period {flex-basis:100%;width:100%;}
 }

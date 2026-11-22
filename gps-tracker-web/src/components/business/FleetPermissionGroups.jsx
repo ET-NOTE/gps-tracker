@@ -51,7 +51,7 @@ export default function FleetPermissionGroups() {
     } finally {lock.current=false;setBusy(false);}
   }
   const deleting=dialog==='delete';
-  return <BusinessSection title="맞춤 권한 그룹" action={<BusinessButton primary icon="plus" disabled={groups.isPending||Boolean(groups.error)} onClick={()=>open('create')}>그룹 추가</BusinessButton>}>
+  return <BusinessSection className="fleet-custom-groups" title="맞춤 권한 그룹" action={<BusinessButton primary icon="plus" disabled={groups.isPending||Boolean(groups.error)} onClick={()=>open('create')}>그룹 추가</BusinessButton>}>
     {groups.error?<BusinessError onRetry={groups.refetch}>권한 그룹을 불러오지 못했습니다.</BusinessError>:groups.isPending?<p className="fleet-group-note" role="status">권한 그룹 조회 중…</p>:<>
       <p className="fleet-group-note">그룹에 허용한 작업도 사용자의 기본 역할과 조회 범위 안에서만 가능합니다. 그룹에 배정하면 사용자·조직·회사 설정 관리는 제한됩니다.</p>
       {current?<div className="fleet-group-layout"><div className="fleet-role-list" aria-label="맞춤 그룹 선택">{items.map(g=><button type="button" aria-pressed={current.id===g.id} key={g.id} onClick={()=>setSelected(g.id)}><span>{g.name}</span><small>{g.members}명</small></button>)}</div>

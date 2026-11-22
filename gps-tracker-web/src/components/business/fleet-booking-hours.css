@@ -17,3 +17,30 @@
 .fleet-hours-save {display:flex;justify-content:flex-end}
 .business-note.fleet-hours-warning {color:#934a0c}
 @media(max-width:599px){.fleet-operating-policy{gap:12px}.fleet-operating-policy .fleet-policy-controls,.fleet-hours{padding:4px 14px 14px}.fleet-hours-days label{padding:8px}.fleet-hours-form{gap:14px}}
+@media(max-width:767px){
+  .business-workspace--corporate .business-content .fleet-operating-policy {gap:18px}
+  .business-workspace--corporate .business-content .fleet-operating-policy .business-section-title {padding:15px 16px;border-bottom:1px solid var(--border)}
+  .business-workspace--corporate .business-content .fleet-operating-policy .business-section-title h3 {font-size:16px;line-height:1.5;font-weight:500}
+  .business-workspace--corporate .business-content .fleet-operating-policy :is(.fleet-policy-controls,.fleet-hours) {
+    padding:14px 16px 16px;min-width:0;font-size:13px;line-height:1.5;
+  }
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-hours-presets {
+    display:inline-flex;align-items:center;gap:3px;max-width:100%;background:var(--surface-2);padding:3px;border-radius:8px;
+  }
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-hours-presets button {
+    min-height:32px;padding:4px 7px;border-color:transparent;border-radius:6px;background:transparent;
+    font-size:12px;font-weight:400;white-space:nowrap;
+  }
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-hours-presets button[aria-pressed=true] {
+    background:var(--surface);border-color:var(--border);color:var(--primary);
+  }
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-hours-days {gap:5px}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-hours-days label {
+    position:relative;display:grid;place-items:center;flex:none;min-width:31px;min-height:34px;padding:0 7px;border-radius:7px;font-size:13px;
+  }
+  .fleet-operating-policy .fleet-hours-days label:has(input:checked) {background:color-mix(in srgb,var(--primary) 8%,var(--surface));color:var(--primary);border-color:color-mix(in srgb,var(--primary) 35%,var(--border))}
+  .fleet-operating-policy .fleet-hours-days label:has(input:focus-visible) {outline:2px solid var(--primary);outline-offset:2px}
+  .fleet-operating-policy .fleet-hours-days label input {position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+  .fleet-operating-policy .fleet-weekday-suffix {display:none}
+  .business-workspace--corporate .business-content .fleet-operating-policy .business-button {width:auto;min-height:36px;padding:6px 12px;font-size:13px}
+}

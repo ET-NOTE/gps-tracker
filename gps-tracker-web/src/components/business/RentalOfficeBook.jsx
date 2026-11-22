@@ -1,6 +1,7 @@
 import React,{useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Button} from '../ui';
+import {BusinessButton} from './BusinessWorkspace';
 import Icon from '../Icon';
 import RentalOfficeDelete from './RentalOfficeDelete';
 import {api} from '../../api';
@@ -107,7 +108,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
   const liveDetail=detail&&book.contracts.find(c=>c.id===detail.id);
   const actions=<>
     <ExportButtons csvOnly disabled={pending} report={{title:csvTitle,filename:csvTitle+'_'+period.from+'_'+period.to,columns:csvLabels.map((label,key)=>({key,label})),rows:csvRows}}/>
-    <Button disabled={pending||(isCost?!devices.length:!book.contracts.length)} onClick={()=>setEditing(isCost?null:{kind:isPayments?'payment':'refund'})}>{isCost?'운영비 등록':isRefunds?'환불·반환 기록':'결제 기록'}</Button>
+    <BusinessButton primary icon="plus" disabled={pending||(isCost?!devices.length:!book.contracts.length)} onClick={()=>setEditing(isCost?null:{kind:isPayments?'payment':'refund'})}>{isCost?'운영비 등록':isRefunds?'환불·반환 기록':'결제 기록'}</BusinessButton>
   </>;
   return <>
     <div className="ro-filters ro-finance-filters">{dates}
@@ -119,7 +120,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
       {isPayments&&<Field label="거래처"><select value={account} onChange={e=>setAccount(e.target.value)}><option value="all">전체 거래처</option><option value="">미연결</option>{catalog.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {isPayments&&<Field label="대여 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(book.contracts.map(c=>c.pickup_location).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
       <Search value={query} setValue={setQuery} label={isCost?'차량·거래처·메모 검색':isRefunds?'계약번호·고객·메모 검색':'계약번호·고객·차량 검색'}/>
-      <Button variant="ghost" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</Button>
+      <BusinessButton icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</BusinessButton>
     </div>
     <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw))],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
       isPayments?[['약정·정산액',won(sum(contracts,c=>c.billed_krw))],['순수납',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보증금 잔액',won(sum(contracts,c=>c.held_krw))]]:

@@ -8,6 +8,8 @@ import {scopedStaff} from '../../lib/fleetPeopleReport';
 import {useFleetAccess} from './FleetAccess';
 import {BusinessButton,BusinessEmpty,BusinessError} from './BusinessWorkspace';
 import ExportButtons from './ExportButtons';
+import FleetRecordMetrics from './FleetRecordMetrics';
+import Icon from '../Icon';
 import ExpenseBatchReview from './ExpenseBatchReview';
 import './combined-approvals.css';
 
@@ -35,6 +37,8 @@ export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
   const staffRows=staff.error?[]:scopedStaff(staff.data||[],access);
   const records=ready?approvalRecords(canReservations?bookings.data:[],canExpenses?expenses.data.items:[],staffRows):[];
   const rows=filterApprovals(records,filters),pending=rows.filter(row=>row.status==='pending'&&row.raw.updated_at);
+  const waiting=rows.filter(row=>row.status==='pending');
+  const waitingExpenses=waiting.filter(row=>row.type==='expense');
   const picked=pending.filter(row=>selection.get(row.key)===row.raw.updated_at);
   const error=(canExpenses&&expenses.error)||(canReservations&&bookings.error);
   const context=JSON.stringify([access.owner_id,access.role,canExpenses,canReservations,filters]),current=useRef(context);
@@ -63,20 +67,29 @@ export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
     return approvalReport(filterApprovals(approvalRecords(book?.data||[],spend?.data.items||[],scopedStaff(roster,latest)),filters),filters);
   }
   return <section className="fleet-combined-approvals" aria-label="전체 승인 요청">
+    <div className="fleet-approval-metrics"><FleetRecordMetrics label="조회 조건별 승인 요청 요약" items={[
+      {name:'조회된 요청',value:ready?rows.length:null,unit:'건'},
+      ...(canReservations?[{name:'예약 승인 대기',value:ready?waiting.length-waitingExpenses.length:null,unit:'건'}]:[]),
+      ...(canExpenses?[
+        {name:'지출 승인 대기',value:ready?waitingExpenses.length:null,unit:'건'},
+        {name:'대기 지출 금액',value:ready?waitingExpenses.reduce((sum,row)=>sum+Number(row.raw.amount_krw),0):null,unit:'원'},
+      ]:[]),
+    ]}/></div>
     <div className="fleet-approval-actions"><ExportButtons csvOnly disabled={!ready||!rows.length} report={approvalReport(rows,filters)} prepareExport={freshReport}/></div>
     <div className="fleet-approval-filters">
       <fieldset><legend>차량 이용일 · 지출일</legend><div><input type="date" aria-label="조회 시작일" value={from} max={to||undefined} onChange={e=>field('from',e.target.value)}/><span>~</span><input type="date" aria-label="조회 종료일" value={to} min={from||undefined} onChange={e=>field('to',e.target.value)}/></div></fieldset>
       <label>승인 상태<select value={status} onChange={e=>change({...filters,status:e.target.value,person:'',department:''})}>{Object.entries(approvalLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}<option value="">전체 상태</option></select></label>
       <label>담당자<select value={person} onChange={e=>field('person',e.target.value)}><option value="">전체 담당자</option>{options(records,'personKey','person','미지정')}</select></label>
       <label>담당자 부서<select value={department} onChange={e=>field('department',e.target.value)}><option value="">전체 부서</option>{options(records,'departmentKey','department','부서 미지정')}</select></label>
-      <label>검색<input type="search" aria-label="차량, 담당자, 내용 검색" placeholder="차량, 담당자, 내용 검색" value={query} onChange={e=>field('query',e.target.value)}/></label>
-      <BusinessButton onClick={()=>change(initialFilters())}>조건 초기화</BusinessButton>
+      <label>검색<span className="fleet-approval-search"><Icon name="search" size={15}/><input type="search" aria-label="차량, 담당자, 내용 검색" placeholder="차량, 담당자, 내용 검색" value={query} onChange={e=>field('query',e.target.value)}/></span></label>
+      <BusinessButton icon="refresh" onClick={()=>change(initialFilters())}>조건 초기화</BusinessButton>
     </div>
     <div className="fleet-approval-list-head"><strong>승인 요청 {ready?rows.length:'—'}건</strong><div><BusinessButton disabled={!picked.length} onClick={()=>setBatch({decision:'rejected',rows:picked})}>선택 반려</BusinessButton><BusinessButton primary disabled={!picked.length} onClick={()=>setBatch({decision:'approved',rows:picked})}>선택 승인</BusinessButton></div></div>
     {result&&<div role="status"><strong>{result.message}</strong>{result.failed.length>0&&<ul>{result.failed.map(item=><li key={item}>{item}</li>)}</ul>}</div>}
-    {!valid?<p role="status">조회 기간을 1년 이내로 선택해 주세요.</p>:error?<BusinessError onRetry={refresh}>{error.message||'승인 요청을 불러오지 못했습니다.'}</BusinessError>:!ready?<p role="status">승인 요청 조회 중…</p>:!rows.length?<BusinessEmpty compact title="조회 조건에 맞는 승인 요청이 없습니다."/>:
-      <div className="fleet-approval-table" role="region" aria-label="승인 요청 목록" tabIndex={0}><table><thead><tr><th scope="col"><input type="checkbox" aria-label="승인 대기 요청 전체 선택" disabled={!pending.length} checked={!!pending.length&&picked.length===pending.length} ref={node=>{if(node)node.indeterminate=picked.length>0&&picked.length<pending.length;}} onChange={e=>setSelection(new Map(e.target.checked?pending.map(row=>[row.key,row.raw.updated_at]):[]))}/></th>{['요청 구분','요청 내용','차량 / 요청자','요청일','금액 / 일정','상태','처리'].map(label=><th scope="col" key={label}>{label}</th>)}</tr></thead>
-      <tbody>{rows.map(row=><tr key={row.key}><td data-label="선택">{row.status==='pending'&&row.raw.updated_at&&<input type="checkbox" aria-label={row.kind+' #'+row.raw.id+' 선택'} checked={selection.get(row.key)===row.raw.updated_at} onChange={e=>pick(row,e.target.checked)}/>}</td><td data-label="요청 구분">{row.kind}</td><td data-label="요청 내용"><button type="button" className="fleet-approval-detail" onClick={()=>onOpen(row.type,row.raw)}>{row.title}</button></td><td data-label="차량 / 요청자">{row.vehicle||'—'}<small>{row.person||'미지정'}</small></td><td data-label="요청일">{row.date||'—'}</td><td data-label="금액 / 일정">{row.period}</td><td data-label="상태"><span className={'business-badge '+({approved:'good',pending:'info',rejected:'danger'}[row.status]||'')}>{approvalLabels[row.status]}</span></td><td data-label="처리">{row.status==='pending'&&row.raw.updated_at?<BusinessButton onClick={()=>setBatch({decision:'approved',rows:[row]})}>승인</BusinessButton>:'—'}</td></tr>)}</tbody></table></div>}
+    {!valid?<p role="status">조회 기간을 1년 이내로 선택해 주세요.</p>:error?<BusinessError onRetry={refresh}>{error.message||'승인 요청을 불러오지 못했습니다.'}</BusinessError>:!ready?<p role="status">승인 요청 조회 중…</p>:<>
+      <div className={rows.length?"fleet-approval-table":"fleet-approval-table is-empty"} role="region" aria-label="승인 요청 목록" tabIndex={0}><table><thead><tr><th scope="col"><input type="checkbox" aria-label="승인 대기 요청 전체 선택" disabled={!pending.length} checked={!!pending.length&&picked.length===pending.length} ref={node=>{if(node)node.indeterminate=picked.length>0&&picked.length<pending.length;}} onChange={e=>setSelection(new Map(e.target.checked?pending.map(row=>[row.key,row.raw.updated_at]):[]))}/></th>{['요청 구분','요청 내용','차량 / 요청자','요청일','금액 / 일정','상태','처리'].map(label=><th scope="col" key={label}>{label}</th>)}</tr></thead>
+      <tbody>{rows.map(row=><tr key={row.key}><td data-label="선택">{row.status==='pending'&&row.raw.updated_at&&<input type="checkbox" aria-label={row.kind+' #'+row.raw.id+' 선택'} checked={selection.get(row.key)===row.raw.updated_at} onChange={e=>pick(row,e.target.checked)}/>}</td><td data-label="요청 구분">{row.kind}</td><td data-label="요청 내용"><button type="button" className="fleet-approval-detail" onClick={()=>onOpen(row.type,row.raw)}>{row.title}</button></td><td data-label="차량 / 요청자">{row.vehicle||'—'}<small>{row.person||'미지정'}</small></td><td data-label="요청일">{row.date||'—'}</td><td data-label="금액 / 일정">{row.period}</td><td data-label="상태"><span className={'business-badge '+({approved:'good',pending:'info',rejected:'danger'}[row.status]||'')}>{approvalLabels[row.status]}</span></td><td data-label="처리">{row.status==='pending'&&row.raw.updated_at?<BusinessButton onClick={()=>setBatch({decision:'approved',rows:[row]})}>승인</BusinessButton>:'—'}</td></tr>)}</tbody></table></div>
+      {!rows.length&&<BusinessEmpty compact title="조회 조건에 맞는 승인 요청이 없습니다."/>}</>}
     {batch&&<ExpenseBatchReview combined rows={batch.rows} decision={batch.decision} onClose={()=>setBatch(null)} onDone={finish} onInterrupted={refresh}/>}
   </section>;
 }

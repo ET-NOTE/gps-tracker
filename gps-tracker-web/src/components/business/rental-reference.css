@@ -182,3 +182,40 @@
   .rnt-shell:is([data-page="rent-costs"],[data-page="rent-customers"]) .ro-filters .ro-field :is(input,select) {min-height:36px;height:36px}
   .rnt-shell:is([data-page="rent-costs"],[data-page="rent-customers"]) .ro-toolbar button {height:36px;min-height:36px}
 }
+.ro-period-title {display:none}
+@media(max-width:760px) {
+  .pt-member-shell .rnt-shell:is([data-page=service],[data-page=incidents]) .rfl-page {gap:16px}
+  .pt-member-shell .rnt-shell:is([data-page=service],[data-page=incidents]) .rfl-toolbar {display:grid;justify-content:stretch;gap:10px}
+  .pt-member-shell .rnt-shell:is([data-page=service],[data-page=incidents]) .rfl-toolbar>.business-button {justify-self:end}
+  .pt-member-shell .rnt-shell:is([data-page=service],[data-page=incidents]) .rfl-filters {grid-template-columns:repeat(auto-fit,minmax(min(100%,124px),1fr))}
+  .pt-member-shell .rnt-shell:is([data-page=service],[data-page=incidents]) .rfl-filter-summary {border:0;padding:0}
+  .pt-member-shell .rnt-shell[data-page=returns] .rental-workflow-toolbar>div:last-child {flex-basis:100%}
+  .pt-member-shell .rnt-shell[data-page=returns] .rental-workflow-filters>label {grid-column:1/-1}
+  .pt-member-shell .rnt-shell[data-page=rent-customers] .ro-metrics {margin-bottom:4px}
+  .pt-member-shell .rnt-shell .rental-office:has(>.ro-finance-filters) {gap:16px}
+  .pt-member-shell .rnt-shell .ro-finance-filters+.ro-metrics {margin-block-end:4px}
+  .pt-member-shell .rnt-shell .ro-finance-filters {gap:10px;padding:12px;background:var(--fleet-filter-bg)}
+  .pt-member-shell .rnt-shell .ro-finance-filters .ro-reference-period {display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 4px}
+  .ro-finance-filters .ro-period-title {display:block;grid-column:1/-1;grid-row:1;font:400 11px/17px var(--fleet-font);color:var(--fleet-caption)}
+  .ro-finance-filters .ro-reference-period>.ro-field {grid-row:2}
+  .ro-finance-filters .ro-reference-period>.ro-field:last-child {grid-column:3}
+  .ro-finance-filters .ro-reference-period>.ro-field>span {display:none}
+  .ro-finance-filters .ro-reference-period::after {content:"–";grid-area:2/2;align-self:center;font-size:11px;color:var(--fleet-caption)}
+  .pt-member-shell .rnt-shell .ro-finance-filters .ro-field {flex-basis:100%;gap:6px}
+  .pt-member-shell .rnt-shell .ro-finance-filters .ro-field>span:first-child {font:400 11px/17px var(--fleet-font);color:var(--fleet-caption)}
+  .pt-member-shell .rnt-shell .ro-finance-filters .ro-field :is(select,input) {font-size:12px;min-height:38px;height:38px}
+  .pt-member-shell .rnt-shell .ro-finance-filters .ro-field select {max-width:240px}
+  .pt-member-shell .rnt-shell :is(.ro-finance-filters,.rental-directory>.ro-filters) select {appearance:none;padding-inline:11px 30px;background-image:var(--fleet-select-chevron);background-position:right 10px center;background-repeat:no-repeat;background-size:14px}
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content :is(.ro-finance-filters,.rental-directory>.ro-filters) :is(input,select) {font-size:12px!important}
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content .ro-finance-filters .ro-reference-period input {padding-inline:3px;font-size:12px!important;height:40px}
+  .pt-member-shell .rnt-shell .ro-finance-filters>button {min-height:29px;height:29px;padding:5px 10px;margin-left:auto;border:0;background:transparent;font:400 11px/17px var(--fleet-font)}
+  .pt-member-shell .rnt-shell .ro-finance-filters~.ro-panel:has(>.ro-toolbar) {background:transparent;border:0}
+  .pt-member-shell .rnt-shell .ro-finance-filters~.ro-panel>.ro-toolbar {padding:0;gap:10px}
+  .pt-member-shell .rnt-shell .ro-finance-filters~.ro-panel>.ro-toolbar>strong {flex-basis:100%;font:400 12px/18px var(--fleet-font);color:var(--text-2)}
+  .pt-member-shell .rnt-shell .ro-finance-filters~.ro-panel>.ro-toolbar>div {margin-left:auto;justify-content:flex-end}
+  .pt-member-shell .rnt-shell :is(.ro-finance-filters~.ro-panel>.ro-toolbar,.ro-refund-actions) button {height:36px;min-height:36px;padding:7px 13px;font:400 12px/18px var(--fleet-font)}
+  .pt-member-shell .rnt-shell .ro-finance-filters~.ro-panel>.ro-toolbar+.ro-table-box {margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+}
+@media(max-width:380px) {
+  .pt-member-shell .gps-user-panel.rnt-shell .rnt-content .ro-finance-filters .ro-reference-period input {font-size:11px!important}
+}

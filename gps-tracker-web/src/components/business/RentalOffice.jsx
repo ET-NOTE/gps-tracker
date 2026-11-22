@@ -21,7 +21,7 @@ export default function RentalOffice({page,devices=[]}) {
   const fail=(query)=><BusinessError onRetry={query.refetch}>렌트카 관리 정보를 불러오지 못했습니다.</BusinessError>;
   const loading=<SkeletonList count={3} itemHeight={48}/>;
   if (catalogPage) return catalog.isError?fail(catalog):!catalog.data?loading:<RentalOfficeCatalog key={kind} kind={kind} catalog={catalog.data} devices={devices}/>;
-  const dates=<PeriodFields period={period} onChange={setPeriod}/>;
+  const dates=<PeriodFields period={period} onChange={setPeriod} label={({costs:'지출 기간',payments:'대여 기간',refunds:'거래 기간'})[kind]}/>;
   const issue=!periodOk(period)?<p className="ro-error" role="alert">조회 시작일과 종료일을 1년 이내로 선택해 주세요.</p>:
       book.isError?fail(book):kind==='payments'&&catalog.isError?fail(catalog):!book.data||(kind==='payments'&&!catalog.data)?loading:null;
   return <div className="rental-office" aria-busy={book.isFetching}>{issue?<><div className="ro-filters">{dates}</div>{issue}</>:

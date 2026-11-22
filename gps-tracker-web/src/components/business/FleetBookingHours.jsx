@@ -50,7 +50,7 @@ function Editor({hours, refresh}) {
   }}>
     <fieldset disabled={save.isPending}><legend>예약 가능 요일</legend>
       <div className="fleet-hours-presets">{presets.map(([text,v])=><button key={v} type="button" aria-pressed={mask===v} onClick={()=>setMask(v)}>{text}</button>)}</div>
-      <div className="fleet-hours-days">{days.map((day,i)=><label key={day}><input type="checkbox" checked={Boolean(mask & (1<<i))} onChange={()=>setMask(value=>value^(1<<i))}/>{day}요일</label>)}</div>
+      <div className="fleet-hours-days">{days.map((day,i)=><label key={day}><input type="checkbox" aria-label={day+'요일'} checked={Boolean(mask & (1<<i))} onChange={()=>setMask(value=>value^(1<<i))}/><span>{day}<span className="fleet-weekday-suffix">요일</span></span></label>)}</div>
     </fieldset>
     <fieldset disabled={save.isPending}><legend>예약 가능 시간 · 한국시간</legend>
       <label><input type="checkbox" checked={allDay} onChange={e=>setAllDay(e.target.checked)}/>하루 종일</label>

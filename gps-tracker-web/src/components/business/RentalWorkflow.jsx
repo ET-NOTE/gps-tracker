@@ -144,8 +144,9 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
     <BusinessButton onClick={()=>open('ledger',focused)}>결제·보증금 기록</BusinessButton>
   </>;
   const assignedVehicle=focused&&vehicles.find(v=>matchesVehicle(focused,v));
-  const compactFilters=stage==='active' || stage==='checkout';
-  const extraCount=[filters.from || filters.to,filters.model,filters.status].filter(Boolean).length;
+  const foldPeriod=stage==='active' || stage==='checkout';
+  const compactFilters=foldPeriod || stage==='returns';
+  const extraCount=[foldPeriod && (filters.from || filters.to),filters.model,filters.status].filter(Boolean).length;
   const periodField=<fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>;
   const modelAndStatus=<>
     <label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>
@@ -158,7 +159,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
       <div><ExportButtons grouped report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
         {["reservations","dispatch","contracts"].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open("edit",null)}>예약 등록</BusinessButton>}</div></div>
     <div className="rental-workflow-filters" data-compact={compactFilters || undefined}>
-      {!compactFilters && periodField}
+      {!foldPeriod && periodField}
       <label>인수 지점<select value={filters.branch} onChange={e=>change("branch",e.target.value)}><option value="">전체 지점</option>{branches.map(x=><option key={x}>{x}</option>)}</select></label>
       {!compactFilters && modelAndStatus}
       {stage==='contracts' && <label>계약 확인<select aria-label="계약 확인" value={filters.review} onChange={e=>change('review',e.target.value)}><option value="">전체</option><option value="yes">확인 완료</option><option value="no">확인 전</option></select></label>}
@@ -168,7 +169,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
       {compactFilters && <div className="rental-extra-actions"><BusinessButton aria-expanded={extraOpen} aria-controls="rental-extra-filters" onClick={()=>setExtraOpen(open=>!open)}>추가 조건{extraCount ? ' ('+extraCount+')' : ''}</BusinessButton>
         <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton></div>}
       {!compactFilters && <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>}
-      {compactFilters && <div id="rental-extra-filters" className="rental-extra-filters" hidden={!extraOpen}>{periodField}{modelAndStatus}</div>}
+      {compactFilters && <div id="rental-extra-filters" className="rental-extra-filters" hidden={!extraOpen}>{foldPeriod && periodField}{modelAndStatus}</div>}
     </div>
     <section className="rental-workflow-box">
       {invalid?<p className="business-error" role="alert">조회 종료일이 시작일보다 빠릅니다.</p>:result.error?<BusinessError onRetry={result.refetch}>대여 내역을 불러오지 못했습니다.</BusinessError>:readinessError?<BusinessError onRetry={()=>{if(policy.error)policy.refetch();if(book.error)book.refetch();}}>출고 요건을 불러오지 못했습니다.</BusinessError>:result.isLoading?<p role="status">대여 내역을 불러오는 중…</p>:

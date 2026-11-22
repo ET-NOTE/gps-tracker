@@ -1,9 +1,8 @@
 import {useState} from 'react';
 import {newId,getRow,stamp,timeLabel,record,vehicleName} from '../../lib/freightWorkflow';
 import {restoreVehicle} from '../../lib/freightCatalog';
-import {FreightButton,FreightField,FreightTable,FreightForm,FreightOptions,FreightBadge} from './FreightKit';
+import {FreightButton,FreightField,FreightTable,FreightForm,FreightOptions,FreightBadge,FleetResourceFilters} from './FreightKit';
 import {choices, choicesFrom, OfficeFilter} from './FreightOfficeFields';
-import Icon from '../Icon';
 
 const incidentTypes=['지연','사고','화물 손상','기타'];
 
@@ -33,18 +32,12 @@ export default function FreightIncidents({data,save,onPage}) {
   return <div className="fr-page fr-incidents">
     <div className="fr-toolbar"><span className="fr-toolbar-caption">차량 제한과 운송·정산 상태를 별도로 관리합니다.</span>
       {data.vehicles.length?<FreightButton primary icon="plus" onClick={()=>{setVehicle(data.vehicles[0].id);setEditor({});}}>발생 내역 등록</FreightButton>:<FreightButton onClick={()=>onPage('cargo-vehicles')}>차량 등록하기</FreightButton>}</div>
-    <div className="fr-filters fr-incident-filters">
-      <div className="fr-incident-fields">
-        <label className="fr-incident-search"><Icon name="search" size={15}/><input type="search" aria-label="차량번호, 운송번호, 내용 검색" placeholder="차량번호, 운송번호, 내용 검색" value={q} onChange={e=>search(e.target.value)}/></label>
+    <FleetResourceFilters query={q} onQuery={search} placeholder="차량번호, 운송번호, 내용 검색" total={data.incidents.length} count={list.length}
+      onReset={()=>{setBranch('');setType('');filter('');search('');}}>
         <OfficeFilter label="지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
         <OfficeFilter label="구분" options={choices(incidentTypes)} value={type} onChange={setType}/>
         <OfficeFilter label="상태" options={{open:'처리 중',resolved:'처리 완료'}} value={status} onChange={filter}/>
-      </div>
-      <div className="fr-incident-filter-meta">
-        <span>전체 {data.incidents.length}건 중 {list.length}건 조회</span>
-        <button type="button" onClick={()=>{setBranch('');setType('');filter('');search('');}}>조건 초기화</button>
-      </div>
-    </div>
+    </FleetResourceFilters>
     <FreightTable columns={['차량·운송','구분','발생 일시','발생 내용','처리 결과','상태']} rows={list.map(i=>({id:i.id,cells:[<>{vehicleName(data,i.vehicleId)}<small>{getRow(data,'shipments',i.shipmentId)?.number}</small></>,<>{i.type}{i.severity==='urgent'&&<small>우선 확인</small>}</>,timeLabel(i.at),i.note,i.resolution||'—',i.status==='open'?<FreightButton onClick={()=>setEditor(i)}>처리 결과 등록</FreightButton>:<FreightBadge tone="green">처리 완료</FreightBadge>]}))}/>
     {editor&&<FreightForm size={editor.id?530:720} title={editor.id?'처리 결과 등록':'지연·사고 등록'} onClose={()=>setEditor(null)} onSubmit={submit}>
       {editor.id?<><FreightField label="조치 내용" wide><textarea required name="resolution" maxLength={1500}/></FreightField>{editor.vehicleBlocked&&<label className="fr-checks"><input type="checkbox" required name="checked"/>차량 상태와 남은 제한 사유를 확인했습니다.</label>}</>:<>

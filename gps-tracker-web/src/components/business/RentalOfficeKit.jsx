@@ -30,8 +30,11 @@ export function Search({value,setValue,label}) {
     <input type="search" value={value} onChange={e=>setValue(e.target.value)} placeholder={label} aria-label={label}/>
   </span></Field>;
 }
-export function PeriodFields({period,onChange}) {
-  return <div className="ro-period">{[['from','조회 시작일'],['to','조회 종료일']].map(([key,label])=><Field label={label} key={key}><input type="date" value={period[key]} onChange={e=>onChange({...period,[key]:e.target.value})}/></Field>)}</div>;
+export function PeriodFields({period,onChange,label}) {
+  return <div className={'ro-period'+(label?' ro-reference-period':'')} role={label?'group':undefined} aria-label={label}>
+    {label&&<span className="ro-period-title" aria-hidden="true">{label}</span>}
+    {[['from','조회 시작일'],['to','조회 종료일']].map(([key,name])=><Field label={name} key={key}><input type="date" aria-label={name} value={period[key]} onChange={e=>onChange({...period,[key]:e.target.value})}/></Field>)}
+  </div>;
 }
 export function Metrics({items}) {
   return <dl className="ro-metrics">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;

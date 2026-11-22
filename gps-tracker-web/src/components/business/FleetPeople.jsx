@@ -3,6 +3,7 @@ import FleetStaffImport from './FleetStaffImport';
 import FleetOrganizationDirectory from './FleetOrganizationDirectory';
 import {DirectoryGroups} from './DirectoryLayout';
 import FleetPermissionGroups from './FleetPermissionGroups';
+import useBreakpoint from '../../useBreakpoint';
 import FleetGroupAssignment,{canAssignFleetMember,maxGroupMembers} from './FleetGroupAssignment';
 import {fleetAssetLabel} from '../../lib/fleetAssets';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -149,10 +150,7 @@ export default function FleetPeople({activeTab,onTab,onSites,hideNavigation=fals
      onApplied={({count,confirmed})=>{setCheckedIds([]);setNotice(confirmed+'명 확인 · '+count+'명의 권한 그룹을 변경했습니다.');}}/>}
   </>}
   {tab==='organization'&&(org.error?<BusinessError onRetry={org.refetch}/>:org.isPending?<p className="fleet-team-empty">부서·직책을 불러오는 중…</p>:<FleetOrganizationDirectory items={org.data||[]} roster={roster} ready={ready} onEdit={access.manage_team?setItem:undefined} onSites={onSites}/>)}
-  {tab==='permissions'&&<>
-    <RoleAccess access={access} onMembers={role=>{setRoleFilter(role);setDepartment('');setStatus('all');setQuery('');setTab('users');}}/>
-    {access.role==='owner'&&access.billing&&<FleetPermissionGroups/>}
-  </>}
+  {tab==='permissions'&&<PermissionPanels access={access} onMembers={role=>{setRoleFilter(role);setDepartment('');setStatus('all');setQuery('');setTab('users');}}/>}
   {tab==='audit'&&access.manage_team&&<section className="fleet-people-ledger" aria-label="변경 이력">{audit.error?<BusinessError onRetry={audit.refetch}/>:audit.isPending?<p className="fleet-team-empty">불러오는 중…</p>:<div className="fleet-asset-table-wrap" tabIndex={0} role="region" aria-label="변경 이력 표"><table className="fleet-asset-table"><thead><tr><th>시각</th><th>작업</th><th>작업자 계정</th><th>대상</th></tr></thead><tbody>{audit.data?.map(a=><tr key={a.id}><td>{kstDateTime(a.created_at)}</td><td>{{permission_group:'권한 그룹 변경',permission_assignment:'권한 그룹 배정',site:'지점 변경',site_group:'지점 그룹 변경',staff:'사용자 변경',staff_import:'사용자 일괄 등록',organization:'부서·직책 변경',invite_create:'초대 생성',invite_revoke:'초대 취소',invite_accept:'초대 수락',account_unlink:'계정 연결 해제',delegated_request:'직원 작업'}[a.action]||a.action}{a.action==='delegated_request'&&<small>{a.after_value?.method} · {a.after_value?.status}</small>}</td><td>{a.actor_id??'탈퇴 계정'}</td><td>{a.target_id||'—'}</td></tr>)}</tbody></table>{!audit.data?.length&&<p className="fleet-team-empty">변경 이력이 없습니다.</p>}</div>}</section>}
   {importing&&<FleetStaffImport onClose={()=>setImporting(false)} onSaved={refresh}/>}
   {tab==='users'&&selectedPerson&&<PersonDetails person={selectedPerson} vehicles={vehicles} groupName={groupName(selectedPerson)}
@@ -176,6 +174,13 @@ const roleCapabilities = [
  ['review_expenses','지출 승인·반려',['owner','admin','department_manager']],
  ['billing','이용권 결제',['owner']],
 ];
+function PermissionPanels({access,onMembers}) {
+ const mobile=useBreakpoint()==='mobile';
+ const roles=<RoleAccess key="roles" access={access} onMembers={onMembers}/>;
+ const groups=access.role==='owner'&&access.billing?<FleetPermissionGroups key="groups"/>:null;
+ return mobile?[groups,roles]:[roles,groups];
+}
+
 function RoleAccess({access,onMembers}) {
  const [selected,setSelected]=useState(access.role);
  const own=selected===access.role;

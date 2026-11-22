@@ -94,8 +94,8 @@ export default function RentalFleetWork({ incident, devices, branches=[], contra
     <div className="rfl-filters">
       <label>소속 지점<select aria-label="소속 지점" value={branch} onChange={e=>{setBranch(e.target.value);setDeviceId('');}}><option value="">전체 지점</option>{branchNames.map(name=><option key={name}>{name}</option>)}</select></label>
       <label>차량<select aria-label="차량" value={deviceId} onChange={e => setDeviceId(e.target.value)}><option value="">전체 차량</option>{eligible.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}</select></label>
-      <label>작업 구분<select value={kind} onChange={e => setKind(e.target.value)}><option value="">전체 구분</option>{Object.entries(repairNames).filter(([k]) => isIncident(k) === incident).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
-      <label>상태<select value={status} onChange={e => setStatus(e.target.value)}><option value="open">{incident ? '처리·점검 중' : '예정·진행'}</option><option value="done">완료</option><option value="all">전체 상태</option></select></label>
+      <label>{incident?'접수 구분':'작업 구분'}<select value={kind} onChange={e => setKind(e.target.value)}><option value="">전체 구분</option>{Object.entries(repairNames).filter(([k]) => isIncident(k) === incident).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+      <label>{incident?'처리 상태':'진행 상태'}<select value={status} onChange={e => setStatus(e.target.value)}><option value="open">{incident ? '처리·점검 중' : '예정·진행'}</option><option value="done">완료</option><option value="all">전체 상태</option></select></label>
       <div className="rfl-filter-summary"><span>전체 {matching.length}건 중 {rows.length}건 조회</span><BusinessButton onClick={()=>{setBranch('');setDeviceId('');setKind('');setStatus('open');}}>조건 초기화</BusinessButton></div>
     </div>
     <section className="rfl-card rfl-list-card" aria-label={incident ? '사고·고장 내역' : '세차·정비 내역'}>

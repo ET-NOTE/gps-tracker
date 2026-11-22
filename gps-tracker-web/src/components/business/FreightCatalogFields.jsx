@@ -61,7 +61,7 @@ export function catalogFilters(key,d) {
   const carrier=opt('carrierId','소속', {own:'자사 운영',...choicesFrom(d.carriers)},r=>r.carrierId||'own');
   const state=opt('active','사용 상태',{yes:'사용 중',no:'사용 중지'},r=>r.active!==false?'yes':'no');
   switch(key){
-    case 'vehicles':return [branch,carrier,opt('type','차량 형태',choices(d.codes.vehicleTypes)),opt('readiness','준비 상태',readinessLabels)];
+    case 'vehicles':return [branch,opt('type','차량 형태',choices(d.codes.vehicleTypes)),carrier,opt('readiness','준비 상태',readinessLabels)];
     case 'drivers':return [branch,carrier,opt('availability','배차 가능 여부',availabilityLabels),state];
     case 'services':return [branch,opt('type','일정 구분',choices(['정비','검사','보험'])),opt('status','작업 상태',serviceStates)];
     case 'locations':return [opt('region','지역',choices(regions))];
