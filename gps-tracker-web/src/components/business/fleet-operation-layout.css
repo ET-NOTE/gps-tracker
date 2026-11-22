@@ -65,7 +65,7 @@
 .fleet-terminal-detail header {display:flex;align-items:center;justify-content:space-between}
 .fleet-operations .fleet-care-card {border-radius:15px}
 .fleet-operations .fleet-care-card header {min-height:30px}
-.business-workspace--corporate .business-content .fleet-operations .fleet-care-card header .business-badge {padding:3px 7px;min-height:0;line-height:1.5}
+
 .fleet-operations .fleet-care-vehicle {margin:0 0 13px;min-height:37px}
 .fleet-operations .fleet-care-card footer {margin-top:34px}
 @media(max-width:1060px) {
@@ -82,4 +82,20 @@
   .business-workspace--corporate .fleet-operations .fleet-record-fields>.fleet-operation-search {flex-basis:100%}
   .fleet-operations .fleet-operations-cards,.fleet-operations .fleet-care-grid {grid-template-columns:minmax(0,1fr)}
   .fleet-operations .fleet-care-card {padding:20px}
+}
+.business-workspace--corporate .business-content .fleet-operations :is(.fleet-operations-card,.fleet-care-card) header .business-badge,.fleet-terminal-detail header .business-badge {
+  display:inline-flex;align-items:center;gap:5px;align-self:center;min-width:0;min-height:0;
+  padding:4px 7px;border-radius:5px;font:400 10px/1.4 var(--fleet-font);white-space:nowrap
+}
+.fleet-operations :is(.fleet-operations-card,.fleet-care-card) header .business-badge::before,.fleet-terminal-detail header .business-badge::before {
+  content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:currentColor
+}
+.business-workspace--corporate .fleet-operations .fleet-care-card footer {justify-content:flex-end}
+.business-workspace--corporate .business-content .fleet-operations .fleet-care-card footer .business-button {
+  width:auto;min-height:29px;padding:5px 9px;font:400 11px/1.55 var(--fleet-font)
+}
+.business-workspace--corporate .fleet-operations .fleet-record-filterfoot button:last-child {color:var(--primary)}
+@media(max-width:760px){
+  .business-workspace--corporate .fleet-operations .fleet-maintenance-actions {justify-content:flex-end}
+  .business-workspace--corporate .fleet-operations .fleet-maintenance-actions .business-button {flex:0 1 auto}
 }
