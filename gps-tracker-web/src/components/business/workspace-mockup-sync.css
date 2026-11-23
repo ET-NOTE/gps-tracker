@@ -15,7 +15,6 @@
 .rnt-shell .fleet-filter-reset-link svg {width:13px; height:13px}
 @media screen and (min-width:768px) {
   .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters,.fr-candidate-filters,.rfl-filters,.ops-filter-box,.rental-extra-filters,.ro-filters) label {font-size:11px!important}
-  .rnt-shell .rnt-content table th {font-size:11px!important}
 }
 /* rent-live (design): map left and wider, vehicle list right with state badges. */
 @media screen and (min-width:768px) {
