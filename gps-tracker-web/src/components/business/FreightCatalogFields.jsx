@@ -55,15 +55,15 @@ export function catalogTable(key,d,terminalLabel) {
     }
   }
 }
-export function catalogFilters(key,d) {
+export function catalogFilters(key,d,mockup=false) {
   const opt=(field,label,options,value=r=>r[field])=>({field,label,options,value});
-  const branch=opt('branchId','운영 지점',choicesFrom(d.branches),r=>key==='services'?d.vehicles.find(v=>v.id===r.vehicleId)?.branchId:r.branchId);
+  const branch=opt('branchId',mockup&&key!=='vehicles'?'지점':'운영 지점',choicesFrom(d.branches),r=>key==='services'?d.vehicles.find(v=>v.id===r.vehicleId)?.branchId:r.branchId);
   const carrier=opt('carrierId','소속', {own:'자사 운영',...choicesFrom(d.carriers)},r=>r.carrierId||'own');
   const state=opt('active','사용 상태',{yes:'사용 중',no:'사용 중지'},r=>r.active!==false?'yes':'no');
   switch(key){
-    case 'vehicles':return [branch,opt('type','차량 형태',choices(d.codes.vehicleTypes)),carrier,opt('readiness','준비 상태',readinessLabels)];
-    case 'drivers':return [branch,carrier,opt('availability','배차 가능 여부',availabilityLabels),state];
-    case 'services':return [branch,opt('type','일정 구분',choices(['정비','검사','보험'])),opt('status','작업 상태',serviceStates)];
+    case 'vehicles':return [branch,opt('type','차량 형태',choices(d.codes.vehicleTypes)),carrier,opt('readiness',mockup?'운영 상태':'준비 상태',readinessLabels)];
+    case 'drivers':return [branch,carrier,opt('availability',mockup?'상태':'배차 가능 여부',availabilityLabels),...(mockup?[]:[state])];
+    case 'services':return [branch,opt('type',mockup?'구분':'일정 구분',choices(['정비','검사','보험'])),opt('status',mockup?'상태':'작업 상태',serviceStates)];
     case 'locations':return [opt('region','지역',choices(regions))];
     case 'rates':return [opt('vehicleType','차량 형태',choices(d.codes.vehicleTypes)),state];
     default:return [state,opt(key==='shippers'?'billing':'settlement','정산 방식',choices(['건별','월합산']))];

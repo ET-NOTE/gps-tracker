@@ -7,6 +7,8 @@ import { linkTerminal } from '../../lib/freightCatalog';
 import { nameOf, timeLabel } from '../../lib/freightWorkflow';
 import { FleetResourceFilters, FreightBadge, FreightButton, FreightFacts, FreightForm, FreightField, FreightTable } from './FreightKit';
 import { choicesFrom, OfficeFilter } from './FreightOfficeFields';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 export function terminalState(device,policies) {
   const seen=Date.parse(device?.last_seen_at);
@@ -15,6 +17,7 @@ export function terminalState(device,policies) {
   return online?{state:'online',label:'정상 수신'}:{state:'offline',label:'수신 확인 필요'};
 }
 export default function FreightDevices({data,save,devices=[],onMap,onRegisterDevice}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [view,setView]=useState(null),[search,setSearch]=useState(''),[state,setState]=useState(''),[branch,setBranch]=useState('');
   const vehicleFor=id=>data.vehicles.find(v=>String(v.deviceId)===String(id));
   const list=devices.filter(item=>{
@@ -31,9 +34,9 @@ export default function FreightDevices({data,save,devices=[],onMap,onRegisterDev
     await save(next);detail();
   }
   return <section className="fr-section fr-resource-list"><div className="fr-toolbar"><span className="fr-toolbar-caption">수신 시각을 기준으로 통신 상태를 구분합니다.</span>{onRegisterDevice&&<FreightButton primary icon="plus" onClick={onRegisterDevice}>단말기 등록</FreightButton>}</div>
-    <FleetResourceFilters query={search} onQuery={setSearch} placeholder="단말기·차량번호 검색" count={list.length} total={devices.length} onReset={()=>{setBranch('');setState('');setSearch('');}}>
+    <FleetResourceFilters query={search} onQuery={setSearch} placeholder={mockup?'단말기, 차량번호 검색':'단말기·차량번호 검색'} count={list.length} total={devices.length} onReset={()=>{setBranch('');setState('');setSearch('');}}>
       <OfficeFilter label="운영 지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
-      <OfficeFilter label="수신·연결 상태" options={{online:'정상 수신',offline:'수신 확인 필요',unknown:'수신 전',unassigned:'차량 미연결'}} value={state} onChange={setState}/>
+      <OfficeFilter label={mockup?'수신 상태':'수신·연결 상태'} options={{online:'정상 수신',offline:'수신 확인 필요',unknown:'수신 전',unassigned:'차량 미연결'}} value={state} onChange={setState}/>
     </FleetResourceFilters>
     <FreightTable columns={['단말기','연결 차량','운영 지점','마지막 수신','수신 상태','배터리']} rows={list.map(item=>{
       const vehicle=vehicleFor(item.id);

@@ -105,13 +105,13 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
       {kind==='customers'&&<Metrics items={[['조회 고객',rows.length+'명'],['법인 고객',rows.filter(c=>c.kind==='business').length+'명'],['면허 확인 필요',rows.filter(c=>!c.license_checked).length+'명']]}/>}
       <div className="ro-filters">
         {kind==='customers'&&<>{filter('고객 구분',type,setType,{all:'전체',...kinds})}
-          {filter('거래처',account,setAccount,{all:'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
+          {filter('법인 거래처',account,setAccount,{all:'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
           {filter('면허 확인',license,setLicense,{all:'전체',yes:'확인 완료',no:'미확인'})}</>}
         {kind==='accounts'&&filter('정산 방식',type,setType,{all:'전체 방식',...billing})}
         {(!foldUsage||mockup)&&usage}
         <Search value={query} setValue={setQuery} label={kind==='accounts'?'거래처, 담당자, 등록번호 검색':kind==='templates'?'양식 이름, 내용 검색':titles[kind]+' 검색'}/>
-        {directory ? <div className="rental-extra-actions">{foldUsage&&!mockup&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={clearFilters}>조건 초기화</BusinessButton></div> :
-          (query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>조건 초기화</button>}
+        {directory ? <div className="rental-extra-actions">{foldUsage&&!mockup&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={clearFilters}>초기화</BusinessButton></div> :
+          (mockup||query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>초기화</button>}
         {foldUsage&&<div className="rental-extra-filters" id="rental-directory-extra" hidden={!extraOpen}>{usage}
           {kind==='customers'&&<BusinessButton onClick={()=>setHistory(true)}>계약 이력·경고 관리</BusinessButton>}
         </div>}

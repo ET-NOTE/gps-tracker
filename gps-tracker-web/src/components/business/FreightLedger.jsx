@@ -6,6 +6,8 @@ import { FreightBadge, FreightButton, FreightFacts, FreightField, FreightFilters
 import { choices, choicesFrom, downloadRows, FormField, OfficeFilter } from './FreightOfficeFields';
 import { costLabel, getRow, inputTime, nameOf, shipStates, stamp, timeLabel, vehicleName } from '../../lib/freightWorkflow';
 import { addPayment, chargeStates, confirmFinance, paymentLimit, paymentMethods, paymentNames, setAgreement, shipmentFinance } from '../../lib/freightFinance';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 export function PeriodFilter({period,setPeriod,label}) {
   const inputs=[['from','조회 시작일'],['to','조회 종료일']].map(([key,name])=><input key={key} aria-label={name} type="date" value={period[key]} min={key==='to'?period.from:undefined} max={key==='from'?period.to:undefined} onChange={e=>setPeriod({...period,[key]:e.target.value})}/>);
@@ -61,6 +63,7 @@ function TransactionForm({r,billing,initialSide,onClose,onSubmit,candidates,onSe
   </FreightForm>;
 }
 export default function FreightLedger({kind,data,save,onOpenShipment}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const billing=kind==='billing', partyLabel=billing?'화주':'지급 대상',totalLabel=billing?'청구액':'지급 대상액',netLabel=billing?'순수납액':'순지급액',balanceLabel=billing?'미수금':'미지급금';
   const [query,setQuery]=useState(''),[period,setPeriod]=useState(currentPeriod),[branch,setBranch]=useState(''),[party,setParty]=useState(''),[state,setState]=useState(''),[view,setView]=useState(null);
   const all=useMemo(()=>data.shipments.map(s=>financeRow(data,s,billing,shipmentFinance(data,s))),[data,billing]);
@@ -75,7 +78,7 @@ export default function FreightLedger({kind,data,save,onOpenShipment}) {
   const unknown=rows.filter(r=>r.total==null).length;
   return <section className="fr-section fr-ledger">
     <FreightStats items={[[billing?'조회 청구 대상액':'조회 지급 대상액',sum('total'),unknown?'운임 미정 '+unknown+'건 별도':'합의 운임과 승인 비용 기준'],[netLabel,sum('net')],[balanceLabel,sum('balance')],[billing?'환불 확인':'환수 확인',sum('excess')]]}/>
-    <FreightFilters query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색" onReset={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}><PeriodFilter label="운송 예정일" period={period} setPeriod={setPeriod}/>
+    <FreightFilters resetLabel={mockup?'초기화':undefined} query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색" onReset={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}><PeriodFilter label="운송 예정일" period={period} setPeriod={setPeriod}/>
       <OfficeFilter label="지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
       <OfficeFilter label={partyLabel} options={billing?choicesFrom(data.shippers):{own:'자사 운송',...choicesFrom(data.carriers)}} value={party} onChange={setParty}/>
       <OfficeFilter label="정산 상태" options={states} value={state} onChange={setState}/>

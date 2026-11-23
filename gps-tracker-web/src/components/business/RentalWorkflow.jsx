@@ -33,6 +33,8 @@ import { ContractPhotos } from './RentalPhotos';
 import './rental-workflow.css';
 
 const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:'',vehicle:'',model:'',channel:'',subset:'',review:'',readiness:''};
+// Desktop design: filters each stage does not show. Hidden filters always stay at "all".
+const mockupHiddenFilters = {contracts:['model'],checkout:['from','to','model','status'],active:['from','to','model','status'],returns:['model','status']};
 const stageTabs = {
   checkout:[['','전체 출고 예정'],['pickup','오늘 출고']],
   active:[['','전체 대여 중'],['due','오늘 반납'],['late','반납 지연']],
@@ -80,6 +82,10 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
   const mockup = !useCorporatePhone() && hideOutsideMockup;
   const now=useBusinessClock(), qc=useQueryClient();
   const [filters,setFilters]=useState(baseFilters), [detail,setDetail]=useState(null), [dialog,setDialog]=useState(null);
+  const hiddenKeys=mockup?(mockupHiddenFilters[stage]||[]):[];
+  useEffect(()=>{
+    if(hiddenKeys.some(key=>filters[key]!==baseFilters[key]))setFilters(f=>({...f,...Object.fromEntries(hiddenKeys.map(key=>[key,baseFilters[key]]))}));
+  },[stage,mockup,filters]); // eslint-disable-line react-hooks/exhaustive-deps
   const [extraOpen,setExtraOpen]=useState(false);
   const [reconfirmId,setReconfirmId]=useState(null);
   const invalid=filters.from && filters.to && filters.from>filters.to;
@@ -152,10 +158,9 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
   const compactFilters=!mockup && (foldPeriod || stage==='returns');
   const extraCount=[foldPeriod && (filters.from || filters.to),filters.model,filters.status].filter(Boolean).length;
   const periodField=<fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>;
-  const modelAndStatus=<>
-    <label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>
-    <label>진행 상태<select aria-label="진행 상태" value={filters.status} onChange={e=>change("status",e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>
-  </>;
+  const modelField=<label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>;
+  const statusField=<label>진행 상태<select aria-label="진행 상태" value={filters.status} onChange={e=>change("status",e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>;
+  const modelAndStatus=<>{!hiddenKeys.includes('model')&&modelField}{!hiddenKeys.includes('status')&&statusField}</>;
   return <div className="rental-workflow">
     <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
     <div className="rental-workflow-toolbar">
@@ -163,7 +168,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
       <div><ExportButtons grouped={!mockup} csvOnly={mockup} report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
         {["reservations","dispatch","contracts"].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open("edit",null)}>예약 등록</BusinessButton>}</div></div>
     <div className="rental-workflow-filters" data-compact={compactFilters || undefined}>
-      {!foldPeriod && periodField}
+      {!foldPeriod && !hiddenKeys.includes('from') && periodField}
       <label>인수 지점<select value={filters.branch} onChange={e=>change("branch",e.target.value)}><option value="">전체 지점</option>{branches.map(x=><option key={x}>{x}</option>)}</select></label>
       {!compactFilters && modelAndStatus}
       {stage==='contracts' && <label>계약 확인<select aria-label="계약 확인" value={filters.review} onChange={e=>change('review',e.target.value)}><option value="">전체</option><option value="yes">확인 완료</option><option value="no">확인 전</option></select></label>}

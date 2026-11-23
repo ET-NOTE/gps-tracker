@@ -83,7 +83,7 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
   const linkedContracts=!selected?[]:!usage?[...selected.related]:contracts.filter(c=>
     asset?matchesVehicle(c,asset):selected.id===(c.vehicle_id??('device:'+c.device_id)));
   return <div className="ops-report">
-    <div className="ops-tools"><p>{usage?'대여 중·반납·정산 완료 계약 기준':'금액은 등록된 계약·결제·지출 기록 기준입니다.'}</p><ExportButtons csvOnly csvLabel="CSV 다운로드" report={exportReport} disabled={pending||usage&&(distanceStatus==='조회 중'||workStatus==='조회 중')}/></div>
+    <div className="ops-tools"><p>{usage?'대여 중·반납·정산 완료 계약 기준':'금액은 등록된 계약·결제·지출 기록 기준입니다.'}</p><ExportButtons csvOnly csvLabel={usage?'운영 통계 다운로드':'통계 다운로드'} report={exportReport} disabled={pending||usage&&(distanceStatus==='조회 중'||workStatus==='조회 중')}/></div>
     <div className="ops-filter-box"><div className="ro-filters">{dates}
       <Field label="소속 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{branches.map(b=><option key={b}>{b}</option>)}</select></Field>
       <Field label="차종"><select value={model} onChange={e=>setModel(e.target.value)}><option value="">전체 차종</option>{models.map(m=><option key={m}>{m}</option>)}</select></Field></div>

@@ -9,6 +9,8 @@ import {epoch,firstOrder,getRow,inputTime,invoiceLabel,makeOrder,nameOf,orderSta
 import {freightHeaders,importOrders} from '../../lib/freightCsv';
 import {csvCell} from '../../lib/businessExport';
 import {saveBlob} from '../../lib/fileDownload';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 const allFilters={status:'',scope:'',branch:'',shipper:'',type:'',carrier:'',start:'',end:'',query:''};
 const names={orders:'운송 주문',recurring:'정기 주문',dispatch:'배차 관제',schedule:'배차 일정',shipments:'운송 현황',proofs:'인수증·완료 확인'};
 function downloadCsv(name,rows){
@@ -97,11 +99,12 @@ export default function FreightWorkflow({page,...props}) {
   return <FreightRecordActions key={key} {...props}>{actions=><WorkflowPage {...props} page={key} {...actions}/>}</FreightRecordActions>;
 }
 function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatchOrderId,setDispatchOrderId,requestedBranch,openRequested}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [filters,setFilters]=useState(()=>page==='shipments'&&requestedBranch!=null?{...allFilters,status:'requested',branch:requestedBranch}:allFilters);
   const isOrder=page==='orders'||page==='dispatch',recurring=page==='recurring',isShipment=!recurring&&!isOrder,proofs=page==='proofs',schedule=page==='schedule';
   const stateLabels=proofs?proofStates:recurring?{active:'사용 중',inactive:'사용 중지'}:isOrder?orderStates:shipStates;
   const shipList=page==='shipments';
-  const tabs=shipList?{today:'오늘 상차',active:'운송 진행',late:'하차 지연'}:stateLabels;
+  const tabs=shipList?{today:'오늘 상차',active:'운송 진행',late:'하차 지연'}:isOrder&&mockup?{...stateLabels,assigned:'배차 진행',cancelled:'취소'}:stateLabels;
   const tabKey=shipList?'scope':'status';
   const f=filters;
   const contains=(...parts)=>parts.some(v=>String(v||'').toLocaleLowerCase().includes(f.query.trim().toLocaleLowerCase()));
@@ -144,13 +147,15 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatc
     try{await downloadCsv(names[page]+'_'+stamp().slice(0,10),[header,...body]);}catch(e){setFeedback(e.message);}
   }
   const setup=(rows,key,label)=><FreightField label={label}><select value={f[key]} onChange={e=>change(key,e.target.value)}><FreightOptions rows={rows} blank={key==='branch'?'전체 지점':'전체 '+label}/></select></FreightField>;
+  const carrierField=<FreightField label="운송사"><select value={f.carrier} onChange={e=>change('carrier',e.target.value)}><option value="">전체</option><option value="own">직영</option><FreightOptions rows={data.carriers}/></select></FreightField>;
   const filterBar=<FreightFilters onReset={()=>setFilters(allFilters)} query={f.query} onQuery={q=>change('query',q)} placeholder={recurring?'정기 주문·화주·화물 검색':'주문·화주·차량·기사 검색'}>
       {!recurring&&!schedule&&page!=='dispatch'&&<fieldset className="rental-stage-period"><legend>{proofs?'하차 완료 기간':'상차 예정 기간'}</legend><div><input type="date" aria-label="조회 시작일" max={f.end||undefined} value={f.start} onChange={e=>change('start',e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" min={f.start||undefined} value={f.end} onChange={e=>change('end',e.target.value)}/></div></fieldset>}
       {setup(data.branches,'branch','담당 지점')}{(recurring||isOrder)&&setup(data.shippers,'shipper','화주')}
       {recurring&&<FreightField label="사용 여부"><select aria-label="사용 여부" value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체</option><option value="active">사용 중</option><option value="inactive">사용 중지</option></select></FreightField>}
       {isOrder&&<FreightField label="필요 차량"><select value={f.type} onChange={e=>change('type',e.target.value)}><option value="">전체 차량 형태</option>{data.codes.vehicleTypes.map(t=><option key={t}>{t}</option>)}</select></FreightField>}
-      {page==='shipments'&&<FreightField label="운송사"><select value={f.carrier} onChange={e=>change('carrier',e.target.value)}><option value="">전체</option><option value="own">직영</option><FreightOptions rows={data.carriers}/></select></FreightField>}
-      {(schedule||shipList)&&<FreightField label="운송 상태"><select value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체 상태</option>{Object.entries(shipStates).filter(([k])=>!schedule||k!=='cancelled').map(([key,val])=><option key={key} value={key}>{val}</option>)}</select></FreightField>}
+      {page==='shipments'&&!mockup&&carrierField}
+      {(schedule||shipList)&&<FreightField label={mockup&&page==='shipments'?'운송 단계':'운송 상태'}><select value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체 상태</option>{Object.entries(shipStates).filter(([k])=>!schedule||k!=='cancelled').map(([key,val])=><option key={key} value={key}>{val}</option>)}</select></FreightField>}
+      {page==='shipments'&&mockup&&carrierField}
     </FreightFilters>;
   return <div className="fr-page fr-workflow">
     {!schedule&&!recurring&&page!=='dispatch'&&<FreightStats items={summary} unit="건"/>}
@@ -162,6 +167,6 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatc
     {feedback&&<p role="status" className="fr-note">{feedback}</p>}
     {page==='dispatch'?<DispatchView data={data} orders={rows} requests={requests} form={form} open={open} orderId={dispatchOrderId} setOrderId={setDispatchOrderId} onAllRequests={()=>openRequested(f.branch)}/>:schedule?<ScheduleView filters={filterBar} data={data} rows={rows} services={services} open={open} onDispatch={()=>navigate('cargo-dispatch')} onExport={async(week,entries)=>{
       try{await downloadCsv('배차일정_'+week,[['구분','운송번호 / 작업','구간 / 차량','시작','종료'],...entries.map(e=>[e.kind==='services'?'정비·보험':'운송',e.title,e.info,timeLabel(e.row.start),timeLabel(e.row.end)])]);}catch(e){setFeedback(e.message);}
-    }}/>:<WorkflowTable page={page} data={data} rows={rows} open={open} form={form}/>}
+    }}/>:<WorkflowTable page={page} data={data} rows={rows} open={open} form={form} mockup={mockup}/>}
   </div>;
 }

@@ -5,8 +5,11 @@ import { choices, choicesFrom, downloadRows, OfficeFilter } from './FreightOffic
 import { currentPeriod, inPeriod, PeriodFilter } from './FreightLedger';
 import { chargeStates } from '../../lib/freightFinance';
 import { costLabel, timeLabel } from '../../lib/freightWorkflow';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 export default function FreightCharges({data,save,onPage,onOpenFinance}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [query,setQuery]=useState(''),[period,setPeriod]=useState(currentPeriod),[state,setState]=useState(''),[kind,setKind]=useState(''),[branch,setBranch]=useState(''),[view,setView]=useState(null);
   const shipments=new Map(data.shipments.map(s=>[s.id,s]));
   const orderShippers=new Map(data.orders.map(o=>[o.id,o.shipperId]));
@@ -28,10 +31,10 @@ export default function FreightCharges({data,save,onPage,onOpenFinance}) {
   const values=x=>[shipments.get(x.shipmentId)?.number||'—',x.kind,timeLabel(x.at),...amounts.map(([k])=>costLabel(x[k])),chargeStates[x.status]];
   return <section className="fr-section fr-admin-list fr-charge-list">
     <FreightStats items={[['확인 대기',<>{state&&state!=='pending'?0:counts.pending}<small className="fr-stat-unit">건</small></>],['승인 화주 추가액',costLabel(totals.sellAmount)],['승인 운송비 추가액',costLabel(totals.buyAmount)],['승인 회사 부담액',costLabel(totals.companyCost)]]}/>
-    <FreightFilters admin query={query} onQuery={setQuery} placeholder="운송번호·화주·비용 항목·사유 검색" onReset={reset}><PeriodFilter label="조회 기간" period={period} setPeriod={setPeriod}/>
+    <FreightFilters admin resetLabel={mockup?'초기화':undefined} query={query} onQuery={setQuery} placeholder="운송번호·화주·비용 항목·사유 검색" onReset={reset}><PeriodFilter label="조회 기간" period={period} setPeriod={setPeriod}/>
       <OfficeFilter label="지점" value={branch} onChange={setBranch} options={choicesFrom(data.branches)}/>
       <OfficeFilter label="비용 항목" value={kind} onChange={setKind} options={choices(data.codes.chargeTypes)}/>
-      <OfficeFilter label="상태" value={state} onChange={setState} options={statusOptions}/>
+      <OfficeFilter label={mockup?'확인 상태':'상태'} value={state} onChange={setState} options={statusOptions}/>
     </FreightFilters>
     <div className="fr-toolbar"><span className="fr-toolbar-caption">승인한 비용만 정산 합계에 포함됩니다.</span><div className="fr-actions"><FreightButton icon="download" onClick={()=>downloadRows('추가 비용',headings,rows.map(values))} disabled={!rows.length}>CSV 다운로드</FreightButton>
       <FreightButton primary icon="plus" disabled={!data.shipments.length||!data.codes.chargeTypes.length} onClick={()=>setView({action:'form'})}>추가 비용 등록</FreightButton></div></div>

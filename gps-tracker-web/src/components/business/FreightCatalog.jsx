@@ -7,12 +7,17 @@ import { availabilityLabels, catalogNames, catalogInUse, saveCatalog, removeCata
 import { costLabel, epoch, getRow, nameOf, orderStates, timeLabel, shipStates, vehicleName } from '../../lib/freightWorkflow';
 import { shipmentFinance } from '../../lib/freightFinance';
 import { terminalState } from './FreightDevices';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 const fleetLists={
   vehicles:['차량 이동 상태와 배차 준비 상태는 별도로 표시됩니다.','차량번호, 차량명, 기사 검색','차량 등록'],
   drivers:['운영 담당자의 계정은 사용자 관리에서 확인할 수 있습니다.','기사 이름, 연락처, 소속 검색','기사 등록'],
   services:['등록한 작업 시간은 배차 가능 시간 확인에 반영됩니다.','차량번호, 작업 내용 검색','일정 등록'],
 };
+// Desktop design: search wording per list, and lists that offer no CSV download.
+const mockupPlaceholders={vehicles:'차량번호, 기사, 소속 검색',drivers:'기사명, 연락처, 소속 검색',services:'차량번호, 메모 검색'};
+const mockupNoExport=['carriers','locations','services','rates','shippers'];
 
 function catalogRecords(data,kind,id) {
   const orders=data.orders.filter(o=>(kind==='shippers'&&o.shipperId===id)||(kind==='locations'&&(o.pickupLocationId===id||o.dropoffLocationId===id)));
@@ -53,7 +58,9 @@ function facts(fields,row) {
 }
 export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenRecord}) {
   const [query,setQuery]=useState(''),[filter,setFilter]=useState({}),[view,setView]=useState(null);
-  const filters=catalogFilters(kind,data),title=catalogNames[kind];
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
+  // Filters not shown on the desktop design never filter: only the shown fields are applied.
+  const filters=catalogFilters(kind,data,mockup),title=catalogNames[kind];
   const party=kind==='shippers'||kind==='carriers';
   const columns=catalogTable(kind,data,v=>{
     if(!v.deviceId)return '미연결';
@@ -115,7 +122,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   const fleet=fleetLists[kind];
   const caption=fleet?.[0]||(kind==='rates'?'기존 합의 금액은 요율 변경과 별도로 유지됩니다.':rows.length.toLocaleString('ko-KR')+'곳 조회');
   const prominentExport=kind==='vehicles'||kind==='drivers';
-  const exportButton=<FreightButton icon="download" onClick={download} disabled={!rows.length}>CSV 다운로드</FreightButton>;
+  const exportButton=mockup&&mockupNoExport.includes(kind)?null:<FreightButton icon="download" onClick={download} disabled={!rows.length}>CSV 다운로드</FreightButton>;
   const toolbar=<div className="fr-toolbar"><span className="fr-toolbar-caption">{caption}</span><div className="fr-actions">
     {prominentExport&&exportButton}
     <FreightButton icon="plus" primary onClick={()=>setView({action:'form'})} disabled={!!missing}>{fleet?.[2]||(kind==='rates'?'요율 등록':kind==='locations'?'장소 등록':title+' 등록')}</FreightButton></div></div>;
@@ -125,14 +132,14 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   return <section className={'fr-section fr-catalog '+(fleet?'fr-resource-list':'fr-admin-list')}>
     {party&&<FreightStats unit="곳" items={[[kind==='shippers'?'조회 화주':'조회 협력 운송사',rows.length],['사용 중',rows.filter(r=>r.active!==false).length],['월합산 정산',rows.filter(r=>(r.billing||r.settlement)==='월합산').length]]}/>}
     {fleet&&toolbar}
-    <FilterBar admin={!fleet} query={query} onQuery={setQuery} placeholder={fleet?.[1]||title+' 검색'} count={rows.length} total={data[kind].length}
+    <FilterBar admin={!fleet} resetLabel={mockup&&!fleet?'초기화':undefined} query={query} onQuery={setQuery} placeholder={(mockup&&mockupPlaceholders[kind])||fleet?.[1]||title+' 검색'} count={rows.length} total={data[kind].length}
       extraFilter={extraFilter&&filterControl(extraFilter)} extraLabel={extraFilter&&(extraFilter.options[filter.active]||extraFilter.label)} onReset={()=>{setFilter({});setQuery('');}}>
       {filters.filter(f=>f!==extraFilter).map(filterControl)}
     </FilterBar>
     {!fleet&&toolbar}
     {missing&&<div className="fr-setup-hint"><span>{missing}</span><FreightButton onClick={()=>onPage(!readyBranch?'organization':'cargo-vehicles')}>{!readyBranch?'지점 관리':'차량 목록'}</FreightButton></div>}
     <FreightTable columns={display?.headers||headings} rows={rows.map(row=>({id:row.id,onOpen:()=>toDetail(row.id),cells:display?display.cells(row):columns.map((column,i)=>tableCell(row,column,i))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
-    {!prominentExport&&<div className="fr-catalog-export">{exportButton}</div>}
+    {!prominentExport&&exportButton&&<div className="fr-catalog-export">{exportButton}</div>}
     {view&&<FreightCatalogDialogs {...{kind,data,save,view,setView,onOpenRecord}}/>}
   </section>;
 }

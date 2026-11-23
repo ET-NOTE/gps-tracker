@@ -67,13 +67,13 @@ export function FleetResourceFilters({query,onQuery,placeholder,children,onReset
     {extraFilter&&<div id={extraId} className="fr-resource-extra" hidden={!expanded}>{extraFilter}</div>}
   </div>;
 }
-export function FreightFilters({query,onQuery,placeholder,children,onReset,admin=false}){
+export function FreightFilters({query,onQuery,placeholder,children,onReset,admin=false,resetLabel='조건 초기화'}){
   if(admin)return <div className="fr-filters"><div className="fr-admin-fields">
     {children}
     <FreightField label="검색" wide><span className="fr-resource-search"><Icon name="search" size={15}/><input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></span></FreightField>
-  </div><FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>조건 초기화</FreightButton></div>;
+  </div><FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>{resetLabel}</FreightButton></div>;
   return <div className="fr-filters">{children}<FreightField label="검색" wide>
-    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>조건 초기화</FreightButton>}</div>;
+    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>{resetLabel}</FreightButton>}</div>;
 }
 export function FreightOptions({rows,blank,label='name'}){
   return <>{blank!==undefined&&<option value="">{blank}</option>}{rows.map(r=><option key={r.id} value={r.id}>{r[label]||r.id}</option>)}</>;

@@ -824,3 +824,9 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   .business-workspace--corporate .business-content .fleet-approval-filters>label:has(.fleet-approval-search) {flex:0 0 213px!important; width:213px!important}
   .business-workspace--corporate .business-content .fleet-booking-query-foot>label>select {-webkit-appearance:none; appearance:none; width:100%; padding-right:32px!important; background:var(--surface,#fff) var(--sync-chevron) no-repeat right 10px center/14px 14px!important}
 }
+/* ── Round 12: corporate devices (1.48fr/1fr/1fr) and maintenance (thirds) filters ── */
+@media screen and (min-width: 768px) {
+  .business-workspace--corporate .business-content .fleet-operations:is([data-mode="devices"], [data-mode="maintenance"]) > .fleet-operations-query > .fleet-record-fields { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .business-workspace--corporate .business-content .fleet-operations[data-mode="devices"] > .fleet-operations-query > .fleet-record-fields { grid-template-columns: minmax(0, 1.48fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .business-workspace--corporate .business-content .fleet-operations:is([data-mode="devices"], [data-mode="maintenance"]) > .fleet-operations-query > .fleet-record-fields > * { flex: none; width: auto; min-width: 0; }
+}

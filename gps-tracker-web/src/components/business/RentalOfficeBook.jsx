@@ -120,7 +120,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
       {isPayments&&<Field label="거래처"><select value={account} onChange={e=>setAccount(e.target.value)}><option value="all">전체 거래처</option><option value="">미연결</option>{catalog.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {isPayments&&<Field label="대여 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(book.contracts.map(c=>c.pickup_location).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
       <Search value={query} setValue={setQuery} label={isCost?'차량·거래처·메모 검색':isRefunds?'계약번호·고객·메모 검색':'계약번호·고객·차량 검색'}/>
-      <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>조건 초기화</BusinessButton>
+      <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</BusinessButton>
     </div>
     <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw))],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
       isPayments?[['조회 청구액',won(sum(contracts,c=>c.billed_krw))],['이용료 순수납액',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보유 보증금',won(sum(contracts,c=>c.held_krw))]]:

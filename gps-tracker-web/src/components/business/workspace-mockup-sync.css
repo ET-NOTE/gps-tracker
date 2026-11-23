@@ -15,7 +15,7 @@
 .rnt-shell .fleet-filter-reset-link svg {width:13px; height:13px}
 @media screen and (min-width:768px) {
   .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters,.fr-candidate-filters,.rfl-filters,.ops-filter-box,.rental-extra-filters,.ro-filters) label {font-size:11px!important}
-  .rnt-shell .rnt-content table th {font-size:12px!important}
+  .rnt-shell .rnt-content table th {font-size:11px!important}
 }
 /* rent-live (design): map left and wider, vehicle list right with state badges. */
 @media screen and (min-width:768px) {
@@ -119,4 +119,84 @@
   .rt-role-fields,.rt-facts {grid-template-columns:minmax(0,1fr)}
   .rt-matrix-row {grid-template-columns:minmax(0,1fr)}
   .rt-search {width:100%}
+}
+/* ── Round 12: full-width children inside the 1240px column, measured type sizes ── */
+@media screen and (min-width: 768px) {
+  .rnt-shell:not([data-wide="true"]) .rnt-content > * { width: 100%; box-sizing: border-box; }
+  .rnt-shell .rnt-content table th { font-size: 11px !important; }
+  .rnt-shell[data-page^="cargo-"]:not([data-page="cargo-dashboard"]) .rnt-content :is(.ro-metrics, .fr-stats) > div > dd,
+  .rnt-shell:is([data-page="rent-reports"], [data-page="rent-utilization"]) .rnt-content :is(.ro-metrics, .fr-stats) > div > dd { font-size: 25px !important; }
+  .rnt-shell .rnt-content .fr-metric-note { font-size: 10px; }
+  .rnt-shell .rnt-content :is(.ro-filters, .ops-filter-box) label.ro-field > span { font-size: 11px !important; }
+  .rnt-shell .rnt-content .ops-report > .ops-tools > p,
+  .rnt-shell .rnt-content .ro-refund-actions > span { font-size: 11px; }
+  .rnt-shell:is([data-page="cargo-charges"], [data-page="cargo-rates"]) .rnt-content .fr-toolbar-caption { font-size: 11px; }
+  .rnt-shell:is([data-page="cargo-devices"], [data-page="cargo-drivers"], [data-page="cargo-vehicles"], [data-page="cargo-maintenance"]) .rnt-content .fr-toolbar-caption { font-size: 14px; }
+  .rnt-shell .rnt-content .fr-dashboard-guide { font-size: 14px; }
+  .rnt-shell .rnt-content .ro-section-heading h2 { font-size: 15px; font-weight: 400; }
+  .rnt-shell .rnt-content .ro-section-heading p { font-size: 11px; }
+  .rnt-shell .rnt-content .business-button { font-size: 12px; font-weight: 400; }
+  .rnt-shell .rnt-content :is(.fr-week-controls, .fr-report-cost) .fr-btn { font-size: 11px; }
+  .rnt-shell .rnt-content .fr-dispatch-requests header .fr-link { font-size: 12px; }
+  .rnt-shell .rnt-content table :is(.rfl-badge, .fr-badge) { font-size: 10px; line-height: 1.4; }
+  .rnt-shell:is([data-page="fleet"], [data-page="cargo-dashboard"], [data-page="cargo-reports"]) .rnt-content :is(.ops-bars > li > div > span, .fr-stage-chart > li > span) { font-size: 13px; }
+  .rnt-shell .rnt-content form.rnt-policy > section > h2 { font-size: 15px; }
+  .rnt-shell .rnt-content form.rnt-policy > section > label { font-size: 12px; }
+  .rnt-shell .rnt-content .rnt-policy-note { font-size: 11px; }
+  .rnt-shell .rnt-content .fr-settings > label.fr-field > span { font-size: 12px; }
+  .rnt-shell .rnt-content .fr-settings > label.fr-setting-row > span { font-size: 13px; }
+  .rnt-shell .rnt-content .fr-settings > p.fr-note { font-size: 11px; }
+  .rnt-shell .rnt-content .rt-role-list > h3 { font-size: 15px; font-weight: 400; }
+  .rnt-shell .rnt-content .fleet-company-profile .business-section-title h3 { font-size: 15px; font-weight: 400; }
+  .rnt-shell .rnt-content .fleet-company-profile .fleet-company-facts :is(dt, dd) { font-size: 12px; line-height: 1.55; }
+}
+/* Round 12 rental filter widths (2000px viewport, 1240px body) */
+@media screen and (min-width: 768px) {
+  .rnt-shell .rnt-content .rental-workflow-filters { flex-wrap: nowrap; }
+  .rnt-shell .rnt-content .rental-workflow-filters > .rental-stage-period { flex: 0 0 auto; }
+  .rnt-shell .rnt-content .rental-workflow-filters > .rental-stage-period > div { grid-template-columns: 145px auto 145px !important; }
+  .rnt-shell .rnt-content .rental-workflow-filters > label:not(.rental-stage-search) { flex: 0 0 165px; width: 165px; min-width: 0; }
+  .rnt-shell .rnt-content .rental-workflow-filters > .rental-stage-search { flex: 0 0 305px; width: 305px; max-width: 305px; }
+  .rnt-shell[data-page="contracts"] .rnt-content .rental-workflow-filters > .rental-stage-search { flex-basis: 255px; width: 255px; max-width: 255px; }
+  .rnt-shell .rnt-content .rental-workflow-filters > .fleet-filter-reset-link { margin-left: auto; align-self: flex-end; }
+}
+@media screen and (min-width: 768px) {
+  .rnt-shell[data-page="vehicles"] .rnt-content .rfl-filters { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .rnt-shell[data-page="devices"] .rnt-content .rfl-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .rnt-shell:is([data-page="service"], [data-page="incidents"]) .rnt-content .rfl-filters { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .rnt-shell .rnt-content .rfl-filters > .rfl-filter-summary { grid-column: 1 / -1; }
+}
+@media screen and (min-width: 768px) {
+  .rnt-shell .rnt-content .ro-filters:not(.ops-filter-box > .ro-filters) { flex-wrap: nowrap; }
+  .rnt-shell .rnt-content .ro-filters:not(.ops-filter-box > .ro-filters) > label.ro-field { flex: 0 0 128px; width: 128px; min-width: 0; max-width: none; }
+  .rnt-shell .rnt-content .ro-filters:not(.ops-filter-box > .ro-filters) > label.ro-field:has(.ro-search-control) { flex: 0 0 265px; width: 265px; }
+  .rnt-shell .rnt-content .ro-filters:not(.ops-filter-box > .ro-filters) .ro-period { display: flex; gap: 12px; flex: 0 0 auto; }
+  .rnt-shell .rnt-content .ro-filters:not(.ops-filter-box > .ro-filters) .ro-period > label.ro-field { flex: 0 0 145px; width: 145px; min-width: 0; }
+  .rnt-shell[data-page="rent-costs"] .rnt-content .ro-filters > label.ro-field:has(select):first-of-type { flex-basis: 206px; width: 206px; }
+  .rnt-shell[data-page="rent-costs"] .rnt-content .ro-filters > label.ro-field:has(.ro-search-control) { flex-basis: 255px; width: 255px; }
+  .rnt-shell .rnt-content .ro-filters > .fleet-filter-reset-link { margin-left: auto; align-self: flex-end; }
+}
+/* Round 12 cargo filter widths (2000px viewport, 1240px body) */
+@media screen and (min-width: 768px) {
+  /* Order, dispatch and shipment lists: dates 128, selects 155, search 295, reset at the end. */
+  .rnt-shell .rnt-content .fr-workflow > .fr-filters { display: flex !important; flex-wrap: nowrap; align-items: flex-end; gap: 12px; }
+  .rnt-shell .rnt-content .fr-workflow > .fr-filters > .rental-stage-period { flex: 0 0 auto; }
+  .rnt-shell .rnt-content .fr-workflow > .fr-filters > .rental-stage-period > div { grid-template-columns: 128px auto 128px !important; }
+  .rnt-shell .rnt-content .fr-workflow > .fr-filters > .fr-field:not(.is-wide) { flex: 0 0 155px; width: 155px; min-width: 0; max-width: none; }
+  .rnt-shell .rnt-content .fr-workflow > .fr-filters > .fr-field.is-wide { flex: 0 0 295px; width: 295px; max-width: 295px; grid-column: auto; }
+  .rnt-shell .rnt-content :is(.fr-workflow, .fr-ledger, .fr-codes, .fr-admin-list, .fr-charge-list) > .fr-filters > .fleet-filter-reset-link { margin-left: auto; align-self: flex-end; }
+  /* Partner, location, rate and code lists, billing, payables and charges: selects 125, search 265, dates 145. */
+  .rnt-shell .rnt-content :is(.fr-ledger, .fr-codes) > .fr-filters,
+  .rnt-shell .rnt-content .fr-admin-list > .fr-filters,
+  .rnt-shell .rnt-content .fr-admin-list > .fr-filters > .fr-admin-fields { display: flex !important; flex-wrap: nowrap; align-items: flex-end; gap: 12px; }
+  .rnt-shell .rnt-content .fr-admin-list > .fr-filters > .fr-admin-fields { flex: 1 1 auto; min-width: 0; }
+  .rnt-shell .rnt-content :is(.fr-ledger > .fr-filters, .fr-codes > .fr-filters, .fr-admin-list > .fr-filters > .fr-admin-fields) > .fr-field:not(.is-wide) { flex: 0 0 125px; width: 125px; min-width: 0; max-width: none; }
+  .rnt-shell .rnt-content :is(.fr-ledger > .fr-filters, .fr-codes > .fr-filters, .fr-admin-list > .fr-filters > .fr-admin-fields) > .fr-field.is-wide { flex: 0 0 265px; width: 265px; max-width: 265px; grid-column: auto; }
+  .rnt-shell .rnt-content :is(.fr-ledger > .fr-filters, .fr-admin-list > .fr-filters > .fr-admin-fields) > .rental-stage-period { flex: 0 0 auto; }
+  .rnt-shell .rnt-content :is(.fr-ledger > .fr-filters, .fr-admin-list > .fr-filters > .fr-admin-fields) > .rental-stage-period > div { grid-template-columns: 145px auto 145px !important; }
+  /* Vehicle, driver, maintenance, terminal and incident lists: 190px search, then equal selects. */
+  .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields { display: grid !important; grid-template-columns: 190px repeat(3, minmax(0, 1fr)); }
+  .rnt-shell[data-page="cargo-vehicles"] .rnt-content .fr-resource-filters > .fr-resource-fields { grid-template-columns: 190px repeat(4, minmax(0, 1fr)); }
+  .rnt-shell[data-page="cargo-devices"] .rnt-content .fr-resource-filters > .fr-resource-fields { grid-template-columns: 190px repeat(2, minmax(0, 1fr)); }
+  .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields > * { width: auto; min-width: 0; max-width: none; }
 }

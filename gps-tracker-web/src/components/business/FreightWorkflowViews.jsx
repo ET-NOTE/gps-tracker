@@ -7,15 +7,15 @@ const num=n=>Number(n).toLocaleString('ko-KR');
 const mainCell=(main,detail)=><>{main}<small>{detail}</small></>;
 function detailLink(label,click){return <button className="fr-link" onClick={click}>{label}</button>;}
 
-export function WorkflowTable({page,data,rows,open,form}){
+export function WorkflowTable({page,data,rows,open,form,mockup=false}){
   const orders=page==='orders',recurring=page==='recurring',proofs=page==='proofs';
-  if(orders||recurring)return <FreightTable columns={recurring?['정기 주문 / 화주','상·하차 구간','반복 요일','상차 / 하차 시간','차량·화물','사용 여부','주문 생성']:['주문 / 화주','상·하차 구간','상차 / 하차 예정','화물 / 요청 차량','청구 / 지급 운임','상태','업무 처리']} empty={recurring?'조회된 정기 주문이 없습니다.':'조회된 운송 주문이 없습니다.'} rows={rows.map(o=>({
+  if(orders||recurring)return <FreightTable columns={recurring?['정기 주문 / 화주','상·하차 구간','반복 요일','상차 / 하차 시간','차량·화물','사용 여부','주문 생성']:(mockup?['주문 / 화주','상·하차 구간','상차 / 하차 예정','화물 / 요청 차량','합의 운임','상태']:['주문 / 화주','상·하차 구간','상차 / 하차 예정','화물 / 요청 차량','청구 / 지급 운임','상태','업무 처리'])} empty={recurring?'조회된 정기 주문이 없습니다.':'조회된 운송 주문이 없습니다.'} rows={rows.map(o=>({
     id:o.id,onOpen:()=>open(page,o.id),cells:[mainCell(detailLink(recurring?o.name:o.number,()=>open(page,o.id)),nameOf(data,'shippers',o.shipperId)),routeName(data,o),
       ...(recurring?[o.weekdays.map(d=>weekdays[d]).join(' · '),o.startTime+' / '+o.endTime]:[mainCell(timeLabel(o.start),timeLabel(o.end))]),
-      mainCell(o.cargoName,o.vehicleType+' · '+num(o.weightKg)+' kg'),...(!recurring?[mainCell(costLabel(o.sellAmount),costLabel(o.buyAmount))]:[]),
+      mainCell(o.cargoName,o.vehicleType+' · '+num(o.weightKg)+' kg'),...(!recurring?[mockup?costLabel(o.sellAmount):mainCell(costLabel(o.sellAmount),costLabel(o.buyAmount))]:[]),
       recurring?<FreightBadge tone={o.active?'blue':'neutral'}>{o.active?'사용 중':'중지'}</FreightBadge>:<Status value={o.status} labels={orderStates}/>,
-      <div className="fr-actions">{recurring?<FreightButton disabled={!o.active} onClick={()=>form('generate',page,o.id)}>주문 생성</FreightButton>:
-        o.status==='open'?<FreightButton onClick={()=>form('assign',page,o.id)}>배차 등록</FreightButton>:<FreightButton onClick={()=>open(page,o.id)}>상세</FreightButton>}</div>]
+      ...(mockup&&orders?[]:[<div className="fr-actions">{recurring?<FreightButton disabled={!o.active} onClick={()=>form('generate',page,o.id)}>주문 생성</FreightButton>:
+        o.status==='open'?<FreightButton onClick={()=>form('assign',page,o.id)}>배차 등록</FreightButton>:<FreightButton onClick={()=>open(page,o.id)}>상세</FreightButton>}</div>])]
   }))}/>;
   return <FreightTable columns={proofs?['운송 / 화주','운송 구간','차량 / 기사','수령 확인','증빙 상태','청구 상태','업무 처리']:['운송 / 화주','운송 구간','차량 / 기사','상차 / 하차 예정','운송 단계','인수증','업무 처리']} empty={proofs?'하차를 완료한 운송이 없습니다.':'조회된 운송이 없습니다.'} rows={rows.map(s=>{
     const o=firstOrder(data,s),next=nextAction(s);
