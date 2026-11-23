@@ -13,7 +13,7 @@ import BusinessMap from './BusinessMap';
 import BusinessVehicleDetail from './BusinessVehicleDetail';
 import useCorporatePhone from '../../useCorporatePhone';
 import CorporateMobileHeader from './CorporateMobileHeader';
-import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceHeaderActions,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import FleetQuickPanel from './FleetQuickPanel';
 import './business.css';
 
@@ -122,10 +122,10 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
         onTab={visit} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick} wide={wide} onWidth={chooseWidth}/>
       : corporate ? <header className="business-topbar ws-member-top no-print">
         <div className="fleet-topbar-inner"><WorkspaceBreadcrumb service="법인운행" group={groupLabel} page={pageLabel}/>
-        <WorkspaceScope fallback={toolbar}/>
-        <WorkspaceWidthControl className="fleet-width" wide={wide} onChange={chooseWidth}/>
-        <button className="ws-wide-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
-        <button className="ws-icon" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={17}/></button>
+        <WorkspaceHeaderActions scope={<WorkspaceScope fallback={toolbar}/>}
+          widthControl={<WorkspaceWidthControl className="fleet-width" wide={wide} onChange={chooseWidth}/>}
+          search={<button className="ws-wide-search" type="button" onClick={()=>setQuick('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>}
+          alerts={<button className="ws-icon" type="button" onClick={()=>setQuick('alerts')} aria-label="운영 알림"><Icon name="bell" size={17}/></button>}/>
         {onNavigate&&<WorkspaceAvatar label="회사 및 계정 메뉴" expanded={accountMenu} onClick={()=>setAccountMenu(true)}/>}</div>
       </header> : subNavigation}
       <div className="business-content" key={tab}>

@@ -755,9 +755,20 @@ body[data-area="business"] .page-heading h1{font-weight:400}
   .stats-row .stat-value.long-reading{font-size:clamp(16px,21cqi,26px);white-space:normal;overflow-wrap:anywhere;flex-wrap:wrap}
 }
 @media(max-width:400px){
+  .topbar-inner>.row{container:demo-nav-slot / inline-size}
   .topbar .mobile-menu{flex-shrink:0}
   .topbar .breadcrumb{display:block;overflow:hidden;min-width:0;white-space:nowrap;text-overflow:ellipsis}
   .topbar .breadcrumb>:not(:last-child){display:none}
+}
+.topbar .avatar{padding:0;white-space:nowrap;line-height:1.2;letter-spacing:-.4px;font-size:10px}
+@container demo-nav-slot (min-width:104px){
+  .topbar .breadcrumb{display:flex;flex:1;gap:4px;white-space:normal}
+  .topbar .breadcrumb>span:not(:first-child){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-width:0;overflow:hidden;word-break:keep-all;overflow-wrap:anywhere}
+  .topbar .breadcrumb>svg:not(:first-of-type){display:block;flex:none}
+}
+@media(pointer:coarse){
+  .topbar .demo-tag,.topbar .avatar,.topbar .mobile-menu{position:relative}
+  .topbar .demo-tag::before,.topbar .avatar::before,.topbar .mobile-menu::before{content:'';position:absolute;inset-block:50% auto;inset-inline:-2px;height:44px;transform:translateY(-50%)}
 }
 @media(max-width:380px){
   .topbar-inner{gap:5px}
@@ -785,13 +796,13 @@ body[data-area="business"] .page-heading h1{font-weight:400}
 <div class="mobile-scrim" data-action="mobile-menu"></div>
 <div class="app-shell" id="app-shell">
 <aside id="platform-rail" class="platform-rail" aria-label="전체 서비스"></aside>
-<aside class="sidebar" aria-label="업무 메뉴" hidden>
+<aside id="business-sidebar" class="sidebar" aria-label="업무 메뉴" hidden>
   <a href="#dashboard" class="brand" data-action="service-home" aria-label="업무 운영현황"><span class="brand-symbol" aria-hidden="true"><span data-icon="car"></span></span><span><span class="brand-name" id="workspace-service-title">법인운행</span></span></a>
   <div class="business-context">시리얼링크 · 업무 공간</div>
   <nav id="nav-main" class="nav-main" aria-label="운영 메뉴"></nav>
   <div class="sidebar-bottom"><div class="workspace-card"><div class="workspace-title"><span class="workspace-dot"></span>체험 업무 공간</div><div class="workspace-note">예시 데이터로 살펴보세요.</div></div><div class="sidebar-account"><button type="button" data-action="platform-services"><span data-icon="settings"></span>이용 서비스 설정</button></div><div class="sidebar-version">시리얼링크 © 2026</div></div>
 </aside>
-<header class="topbar"><div class="topbar-inner"><div class="row"><button type="button" class="icon-btn mobile-menu" data-action="mobile-menu" aria-label="업무 메뉴 열기"><span data-icon="menu"></span></button><div id="breadcrumb" class="breadcrumb"></div></div><div class="topbar-right"><div id="platform-scope" class="platform-scope"></div><span id="company-name" hidden>시리얼링크</span><div class="view-width-control" role="group" aria-label="화면 폭 선택"><span class="view-width-label">화면 폭</span><button type="button" data-action="set-view-width" data-value="normal" aria-pressed="true">기본</button><button type="button" data-action="set-view-width" data-value="wide" aria-pressed="false">넓게</button></div><button type="button" class="global-search" data-action="open-search" aria-label="빠른 검색"><span data-icon="search"></span><span class="search-text">메뉴·단말기 검색</span></button><button type="button" class="demo-tag" data-action="open-help">체험</button><button type="button" class="icon-btn" data-action="platform-notifications" aria-label="알림"><span data-icon="bell"></span></button><button type="button" class="avatar" data-route="platform-account" aria-label="내 정보" title="내 정보"><span data-icon="users"></span></button></div></div></header>
+<header class="topbar"><div class="topbar-inner"><div class="row"><button type="button" class="icon-btn mobile-menu" data-action="mobile-menu" aria-controls="business-sidebar" aria-expanded="false" aria-label="업무 메뉴 열기"><span data-icon="menu"></span></button><div id="breadcrumb" class="breadcrumb"></div></div><div class="topbar-right"><div id="platform-scope" class="platform-scope"></div><span id="company-name" hidden>시리얼링크</span><div class="view-width-control" role="group" aria-label="화면 폭 선택"><span class="view-width-label">화면 폭</span><button type="button" data-action="set-view-width" data-value="normal" aria-pressed="true">기본</button><button type="button" data-action="set-view-width" data-value="wide" aria-pressed="false">넓게</button></div><button type="button" class="global-search" data-action="open-search" aria-label="빠른 검색"><span data-icon="search"></span><span class="search-text">메뉴·단말기 검색</span></button><button type="button" class="demo-tag" data-action="open-help" aria-haspopup="dialog" aria-label="체험 안내" title="체험 안내">체험</button><button type="button" class="icon-btn" data-action="platform-notifications" aria-label="알림"><span data-icon="bell"></span></button><button type="button" class="avatar" data-route="platform-account" aria-label="내 정보" title="내 정보">내정보</button></div></div></header>
 <main class="content" id="main-content" tabindex="-1"><div class="page-heading" id="page-heading"></div><div id="page-content"></div><footer class="screen-footer"><span>시리얼링크 · 차량 운영 관리</span><button class="link-button" style="font-size:10px;color:#98a4b4" data-action="open-help">체험 안내 · 데이터 초기화</button></footer></main>
 </div>
 <div id="drawer-root"></div><div id="modal-root"></div><div id="toast-stack" class="toast-stack" aria-live="polite"></div>
@@ -873,7 +884,7 @@ F.action('switch-service',el=>{const service=el.dataset.value;if(!['corporate','
 F.renderNav=function(){document.body.dataset.service=F.ui.service;document.querySelectorAll('[data-action="switch-service"]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.value===F.ui.service)));document.getElementById('nav-main').innerHTML=F.getNav().map(n=>{const active=n.route===F.ui.route||n.children?.some(x=>x[0]===F.ui.route);const expanded=F.ui.expanded.has(n.key);return `<div class="nav-group"><button type="button" class="nav-item ${active?(n.children?'parent-active':'active'):''} ${expanded?'expanded':''}" ${n.route?`data-route="${n.route}"`:`data-nav-group="${n.key}" aria-expanded="${expanded}"`} ${active?'aria-current="page"':''}>${F.icon(n.icon,18)}<span>${n.label}</span>${n.children?`<span class="nav-chevron">${F.icon('chevron',13)}</span>`:''}</button>${n.children&&expanded?`<div class="nav-sub">${n.children.map(([r,l])=>`<button type="button" data-route="${r}" class="${F.ui.route===r?'active':''}" ${F.ui.route===r?'aria-current="page"':''}>${l}</button>`).join('')}</div>`:''}</div>`;}).join('');};
 F.refreshDerived=function(){for(const v of F.db.vehicles){v.monthDistance=Math.round(F.db.trips.filter(t=>t.vehicleId===v.id&&String(t.date).startsWith(F.today.slice(0,7))).reduce((n,t)=>n+Number(t.distance||0),0)*10)/10;}for(const d of F.db.devices.concat(F.db.rental?.devices||[])){const elapsed=(new Date('2026-11-20T10:42:16')-new Date(d.lastSeen))/60000;d.online=Boolean(d.lastSeen)&&Number.isFinite(elapsed)&&elapsed>=0&&elapsed<=Number(F.db.policies.offlineMinutes||10);}};
 F.render=function(){document.getElementById('main-content')?.classList.toggle('dashboard-page',['dashboard','rent-dashboard','cargo-dashboard'].includes(F.ui.route));document.getElementById('main-content')?.classList.toggle('rental-page',F.ui.service==='rental');document.getElementById('main-content')?.classList.toggle('cargo-page',F.ui.service==='cargo');F.refreshDerived();let page=F.routes[F.ui.route];if(!page){F.ui.route=F.homeRoute();page=F.routes[F.ui.route];}if(!page)return;F.renderNav();const parent=F.getNav().find(n=>n.route===F.ui.route||n.children?.some(c=>c[0]===F.ui.route));document.getElementById('breadcrumb').innerHTML=`<span>${F.serviceLabel()}</span>${F.icon('chevron',11)}<span>${F.esc(parent?.label||'운영현황')}</span>${parent?.children?F.icon('chevron',11)+`<span>${F.esc(page.title)}</span>`:''}`;document.getElementById('page-heading').innerHTML=`<div><h1>${F.esc(page.title)}</h1><p class="page-heading-sub">${F.esc(page.description||'')}</p></div><div class="heading-meta">2026년 11월 20일 금요일<br><span class="caption">서울 · 본사</span></div>`;document.getElementById('company-name').textContent=F.db.company.name;const root=document.getElementById('page-content');root.innerHTML=page.render();F.associateLabels(root);if(page.bind)page.bind(root);document.title='시리얼링크 · '+F.serviceLabel()+' · '+page.title;};
-F.go=function(route){if(!F.routes[route])return;if(F.Auth&&!F.Auth.signedIn){F.Auth.requestRoute(route);return;}if(F.Platform)route=F.Platform.prepareRoute(route);if(F.Platform?.isCore(route)){}else if(route.startsWith('cargo-'))F.ui.service='cargo';else if(route.startsWith('rent-'))F.ui.service='rental';else if(!['users','organization','permissions','notifications','company'].includes(route))F.ui.service='corporate';try{demoBridge.setItem(SERVICE_KEY,F.ui.service);}catch(e){}F.ui.route=route;for(const n of F.getNav())if(n.children?.some(x=>x[0]===route))F.ui.expanded.add(n.key);F.closeModal();F.closeDrawer();document.querySelector('.sidebar').classList.remove('is-open');document.querySelector('.mobile-scrim').classList.remove('is-open');F.render();demoBridge.route(F.ui.route,F.ui.service);window.scrollTo({top:0,behavior:'instant'});};
+F.go=function(route){if(!F.routes[route])return;if(F.Auth&&!F.Auth.signedIn){F.Auth.requestRoute(route);return;}if(F.Platform)route=F.Platform.prepareRoute(route);if(F.Platform?.isCore(route)){}else if(route.startsWith('cargo-'))F.ui.service='cargo';else if(route.startsWith('rent-'))F.ui.service='rental';else if(!['users','organization','permissions','notifications','company'].includes(route))F.ui.service='corporate';try{demoBridge.setItem(SERVICE_KEY,F.ui.service);}catch(e){}F.ui.route=route;for(const n of F.getNav())if(n.children?.some(x=>x[0]===route))F.ui.expanded.add(n.key);F.closeModal();F.closeDrawer();F.setMobileMenu(false);F.render();demoBridge.route(F.ui.route,F.ui.service);window.scrollTo({top:0,behavior:'instant'});};
 let focusBeforeModal=null,focusBeforeDrawer=null;
 F.closeModal=function(){const root=document.getElementById('modal-root');if(root.innerHTML){root.innerHTML='';if(focusBeforeModal?.isConnected)focusBeforeModal.focus();}document.body.style.overflow=document.getElementById('drawer-root').innerHTML?'hidden':'';};
 F.closeDrawer=function(){const root=document.getElementById('drawer-root');if(root.innerHTML){root.innerHTML='';if(focusBeforeDrawer?.isConnected)focusBeforeDrawer.focus();}document.body.style.overflow=document.getElementById('modal-root').innerHTML?'hidden':'';};
@@ -962,8 +973,12 @@ F.handleKeydown=function(e){
   }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();if(signedOut){if(!document.getElementById('modal-root').innerHTML)document.getElementById('login-email')?.focus();}else F.actions['open-search']();return;}
   if(e.key==='Escape'){
-    if(document.getElementById('modal-root').innerHTML)F.closeModal();else F.closeDrawer();
-    document.querySelector('.sidebar').classList.remove('is-open');document.querySelector('.mobile-scrim').classList.remove('is-open');
+    if(document.getElementById('modal-root').innerHTML)F.closeModal();
+    else if(document.getElementById('drawer-root').innerHTML)F.closeDrawer();
+    else if(document.querySelector('.sidebar.is-open')){
+      F.setMobileMenu(false);
+      document.querySelector('.topbar .mobile-menu').focus({preventScroll:true});
+    }
   }
   if(e.key==='Tab'){
     const scope=document.querySelector('#modal-root .modal')||document.querySelector('#drawer-root .drawer');if(!scope)return;
@@ -973,10 +988,28 @@ F.handleKeydown=function(e){
     else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   }
 };
+F.setMobileMenu=function(open){
+  const sidebar=document.getElementById('business-sidebar');
+  const trigger=document.querySelector('.topbar .mobile-menu');
+  const returnFocus=!open&&sidebar.classList.contains('is-open')&&sidebar.contains(document.activeElement);
+  sidebar.classList.toggle('is-open',open);
+  sidebar.inert=sidebar.hidden||(!open&&window.matchMedia('(max-width:1000px)').matches);
+  document.querySelector('.mobile-scrim').classList.toggle('is-open',open);
+  trigger.setAttribute('aria-expanded',String(open));
+  trigger.setAttribute('aria-label',open?'업무 메뉴 닫기':'업무 메뉴 열기');
+  if(returnFocus&&trigger.offsetWidth)trigger.focus({preventScroll:true});
+};
 F.init=function(){
   F.applyViewWidth();
   document.addEventListener('click',F.handleClick);document.addEventListener('keydown',F.handleKeydown);
-  F.action('mobile-menu',()=>{document.querySelector('.sidebar').classList.toggle('is-open');document.querySelector('.mobile-scrim').classList.toggle('is-open');});
+  F.setMobileMenu(false);
+  window.matchMedia('(max-width:1000px)').addEventListener('change',()=>F.setMobileMenu(false));
+  F.action('mobile-menu',()=>{
+    const open=!document.querySelector('.sidebar.is-open');
+    F.setMobileMenu(open);
+    const focus=open?(document.querySelector('.sidebar .nav-item.active,.sidebar .nav-item.parent-active')||document.querySelector('.sidebar .brand')):document.querySelector('.topbar .mobile-menu');
+    focus?.focus({preventScroll:true});
+  });
   demoBridge.start();
 };
 })();
@@ -5331,7 +5364,7 @@ P.renderShell=function(){
   const item=(route,label,icon,active)=>'<button type="button" class="platform-rail-item '+(active?'active':'')+'" data-route="'+route+'"'+(active?' aria-current="page"':'')+'>'+F.icon(icon,20)+'<span>'+E(label)+'</span></button>';
   rail.innerHTML='<a class="platform-mark" href="#platform-home" data-route="platform-home" aria-label="시리얼링크 홈">'+F.icon('pin',23)+'</a><nav class="platform-primary" aria-label="공통 메뉴">'+item('platform-home','홈','map',F.ui.route==='platform-home')+item('platform-devices','단말기','signal',F.ui.route==='platform-devices')+item('platform-account','내정보','users',F.ui.route==='platform-account')+'</nav><nav class="platform-business-links" aria-label="이용 중인 업무 서비스">'+Object.entries(services).filter(([k])=>d.companyConnected&&d.enabled[k]).map(([k,s])=>item(s.route,s.label,s.icon,!core&&F.ui.service===k)).join('')+'<button type="button" class="platform-rail-item platform-add-service" data-action="platform-services" aria-label="이용 서비스 설정">'+F.icon('plus',18)+'<span>서비스</span></button></nav><div class="platform-rail-bottom"><button type="button" class="platform-rail-item" data-action="demo-live-map" aria-label="실시간 지도 체험">'+F.icon('map',19)+'<span>실시간 지도</span></button><button type="button" class="platform-rail-item" data-action="open-help" aria-label="체험 안내">'+F.icon('info',19)+'<span>도움말</span></button><button type="button" class="platform-rail-item" data-action="auth-logout" aria-label="체험 종료">'+F.icon('logout',18)+'<span>체험 종료</span></button></div>';
  }
- const side=document.querySelector('.sidebar');if(side){side.hidden=core;side.inert=core;}
+ const side=document.querySelector('.sidebar');if(side){side.hidden=core;F.setMobileMenu(!core&&side.classList.contains('is-open'));}
  const title=document.getElementById('workspace-service-title');if(title)title.textContent=services[F.ui.service]?.label||'업무 서비스';
  const scope=document.getElementById('platform-scope');
  if(scope){

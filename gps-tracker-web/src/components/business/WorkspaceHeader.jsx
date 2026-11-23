@@ -1,9 +1,15 @@
 import {createContext,useContext} from 'react';
 import Icon from '../Icon';
+import { MemberHeaderActions } from '../MemberDemoButton';
 import './workspace-header.css';
 
 export const WorkspaceHeaderContext=createContext(null);
 export const WorkspaceCompanyContext=createContext(null);
+
+export function WorkspaceHeaderActions({service = 'corporate', ...props}) {
+  const member = useContext(WorkspaceHeaderContext);
+  return <MemberHeaderActions {...props} demoPath={member ? 'demo/' + service : undefined}/>;
+}
 
 export function WorkspaceScope({fallback=null,ownName}) {
   const member=useContext(WorkspaceHeaderContext),company=useContext(WorkspaceCompanyContext);
@@ -24,7 +30,7 @@ export function WorkspaceAvatar({label,onClick,expanded}) {
   const name=member?.name||'내정보';
   const openProfile=member?.openProfile;
   return <button type="button" className="ws-avatar" aria-label={openProfile?'내정보':label} title={name} aria-haspopup={openProfile?undefined:'dialog'} aria-expanded={openProfile?undefined:expanded} onClick={openProfile||onClick}>
-    {member?.name?Array.from(name)[0]:<Icon name="user" size={14}/>}
+    <Icon name="user" size={15}/>
   </button>;
 }
 

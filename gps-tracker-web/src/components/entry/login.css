@@ -116,10 +116,19 @@
 }
 .entry-demo-link:hover { background: #e8eff8; border-color: #cbd9eb; }
 .entry-demo-info {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px 12px;
   margin-top: 11px; padding: 10px 12px; border: 1px solid #e9edf3; border-radius: 9px;
   background: #fcfdfe; color: #66778c; font-size: 12px;
 }
-.entry-demo-info > p {margin:6px 0 0; font-size:11px; line-height:1.6; color:#7a8798;}
+.entry-demo-info > p {grid-column:1/-1; margin:0; font-size:11px; line-height:1.6; color:#7a8798;}
+.entry-demo-info > .entry-demo-fill {padding:1px 0; line-height:1.6; color:#6887b2;}
+.entry-demo-help[open] {grid-area:1 / 1 / 2 / -1;}
+.entry-demo-help[open] + .entry-demo-fill {grid-area:1 / 2; justify-self:end;}
+.entry-sample-account {display:grid; gap:4px; margin:10px 0 0; font-size:12px; line-height:1.6;}
+.entry-sample-account > div {display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:8px;}
+.entry-sample-account dt {color:#738296;}
+.entry-sample-account dd {margin:0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums;}
+.entry-demo-help {min-width:0;}
 .entry-demo-help summary {
   width:fit-content; padding:1px 0; line-height:1.6; display: flex; align-items: center; gap: 7px; list-style: none; cursor: pointer;
 }

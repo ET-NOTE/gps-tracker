@@ -5,7 +5,7 @@ import { vehicleName } from '../../lib/business';
 import {useCorporateInfo,useMe} from '../../state';
 import { useBusinessVehicle } from './BusinessWorkspace';
 import BusinessDrawer from './BusinessDrawer';
-import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceHeaderActions,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import './rental-workspace.css';
 import './fleet-workspace-layout.css';
 
@@ -89,10 +89,12 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
     </aside>
     <div className="rnt-main"><header className="rnt-top ws-member-top no-print">
       <button className="ws-icon ws-menu" type="button" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={dialog==='nav'} onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
-      <WorkspaceBreadcrumb service={heading} group={group.label} page={pageLabel}/><WorkspaceScope ownName={companyName}/>
-      <WorkspaceWidthControl className="rnt-width" wide={wide} onChange={chooseWidth}/>
-      <button className="ws-wide-search" type="button" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>
-      {headerAction&&<div className="ws-alert-action">{headerAction}</div>}<WorkspaceAvatar label="계정 메뉴 열기" expanded={dialog==='account'} onClick={()=>setDialog('account')}/>
+      <WorkspaceBreadcrumb service={heading} group={group.label} page={pageLabel}/>
+      <WorkspaceHeaderActions service={menu===rentalMenu?'rentcar':'cargo'} scope={<WorkspaceScope ownName={companyName}/>}
+        widthControl={<WorkspaceWidthControl className="rnt-width" wide={wide} onChange={chooseWidth}/>}
+        search={<button className="ws-wide-search" type="button" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>}
+        alerts={headerAction&&<div className="ws-alert-action">{headerAction}</div>}/>
+      <WorkspaceAvatar label="계정 메뉴 열기" expanded={dialog==='account'} onClick={()=>setDialog('account')}/>
     </header><div className="rnt-scroller" ref={content}><div className="rnt-content">
       <div className="rnt-title"><div><h1>{title}</h1>{description && <p>{description}</p>}</div><div className="rnt-title-actions"><time>{today}</time></div></div>
       {children}

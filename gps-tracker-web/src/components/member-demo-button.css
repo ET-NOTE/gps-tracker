@@ -1,0 +1,13 @@
+.pt-member-shell button.member-demo-trigger {
+  flex:none; position:relative; display:inline-grid; place-items:center;
+  min-width:33px; height:22px; min-height:0; padding:2px 6px;
+  border:1px solid #e6ebf3; border-radius:5px; background:#f0f3f8; color:#6d7c94;
+  box-shadow:none; font:400 10px/1.5 var(--fleet-font); letter-spacing:.4px; white-space:nowrap; cursor:pointer;
+}
+.pt-member-shell button.member-demo-trigger:hover,.pt-member-shell button.member-demo-trigger:focus-visible {color:var(--primary);border-color:var(--primary)}
+[data-theme="dark"] .pt-member-shell button.member-demo-trigger {background:var(--surface-2);border-color:var(--border);color:var(--text-2)}
+.member-demo-description {font:400 14px/1.65 var(--fleet-font);color:var(--text-2);margin:0}
+@media(max-width:700px) {
+  .pt-member-shell button.member-demo-trigger {height:24px}
+  .pt-member-shell button.member-demo-trigger::before {content:"";position:absolute;inset:-8px 0}
+}

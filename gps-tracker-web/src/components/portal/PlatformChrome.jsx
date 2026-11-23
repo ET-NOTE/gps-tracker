@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../Icon';
+import { MemberHeaderActions } from '../MemberDemoButton';
 import Modal from '../ui/Modal';
 import { useAccountType } from '../../state';
 import { clearTokens } from '../../api';
@@ -126,10 +127,13 @@ export function PlatformHeader({ view, availableServices = [], servicePaths = {}
   return <header className="pt-header">
     <div className="pt-crumb"><span>위치관리</span><Icon name="chevron-right" size={13}/><strong>{current?.label || '홈'}</strong></div>
     <div className="pt-header-actions">
-      <ScopeSelect {...{scope, scopeOptions, onScopeChange}}/>
-      <button type="button" className="pt-search-trigger" onClick={() => setPanel('search')} aria-label="통합 검색" aria-haspopup="dialog" aria-keyshortcuts="Control+k Meta+k"><Icon name="search" size={17}/><span>메뉴·단말기 검색</span><kbd>Ctrl K</kbd></button>
-      <TerminalAlerts devices={devices} meta={meta} onDevice={openDevice} scopeLabel={scopeOptions.find(item=>item.value===scope)?.label}/>
-      <Link className="pt-avatar" aria-label="내 계정" title={name} to="/profile?tab=account">{Array.from(name)[0]}</Link>
+      <MemberHeaderActions
+        demoPath={view === 'devices' ? 'demo?view=platform-devices' : view === 'profile' ? 'demo?view=platform-account' : 'demo'}
+        scope={<ScopeSelect {...{scope, scopeOptions, onScopeChange}}/>}
+        search={<button type="button" className="pt-search-trigger" onClick={() => setPanel('search')} aria-label="통합 검색" aria-haspopup="dialog" aria-keyshortcuts="Control+k Meta+k"><Icon name="search" size={17}/><span>메뉴·단말기 검색</span><kbd>Ctrl K</kbd></button>}
+        alerts={<TerminalAlerts devices={devices} meta={meta} onDevice={openDevice} scopeLabel={scopeOptions.find(item=>item.value===scope)?.label}/>}
+      />
+      <Link className="pt-avatar" aria-label="내 계정" title={name} to="/profile?tab=account"><Icon name="user" size={15}/></Link>
     </div>
     {panel === 'search' && <GlobalSearch services={links} owned={ownerServices(account)} {...{devices,isAdmin}} onDevice={openDevice} onClose={() => setPanel('')}/>}
   </header>;

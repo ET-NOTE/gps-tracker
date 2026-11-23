@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, setTokens } from '../api';
 import AccountRecovery from '../components/entry/AccountRecovery';
 import { AuthField, OtpField, PasswordField, useOtpChallenge } from '../components/entry/AuthFields';
 import LoginLayout from '../components/entry/LoginLayout';
 
 const emailKey = 'seriallink.rememberedEmail';
+const sampleEmail = 'demo@seriallink.example';
+const samplePassword = 'demo1234!';
 function rememberedEmail() {
   try { return localStorage.getItem(emailKey) || ''; } catch { return ''; }
 }
@@ -17,6 +19,7 @@ function saveEmail(email) {
 }
 
 export default function Auth({ onLogin, loginNext }) {
+  const navigate = useNavigate();
   const [register, setRegister] = useState(false);
   const [email, setEmail] = useState(rememberedEmail);
   const [rememberEmail, setRememberEmail] = useState(Boolean(email));
@@ -44,6 +47,13 @@ export default function Auth({ onLogin, loginNext }) {
     otp.reset();
   }
 
+  function fillSampleAccount() {
+    setEmail(sampleEmail);
+    setPassword(samplePassword);
+    setError('');
+    setNotice('');
+  }
+
   async function sendOtp() {
     if (!phone.trim() || busy) return;
     setBusy(true); setError('');
@@ -59,6 +69,11 @@ export default function Auth({ onLogin, loginNext }) {
     let created = false;
     const address = email.trim();
     try {
+      if (!register && address.toLowerCase() === sampleEmail) {
+        if (password !== samplePassword) throw Error('체험 비밀번호를 확인하거나 ‘계정 입력하기’를 눌러 주세요.');
+        navigate('/demo', {state: {loginNext}});
+        return;
+      }
       if (register) {
         if (!name.trim()) throw Error('이름을 입력해 주세요.');
         if (password !== confirm) throw Error('비밀번호 확인이 일치하지 않습니다.');
@@ -106,9 +121,14 @@ export default function Auth({ onLogin, loginNext }) {
       <Link className="entry-demo-link" to="/demo" state={{loginNext}}>데모 체험하기</Link>
       <div className="entry-demo-info">
         <details className="entry-demo-help">
-          <summary>체험 데이터 안내</summary>
+          <summary>체험 계정 보기</summary>
+          <dl className="entry-sample-account">
+            <div><dt>이메일</dt><dd>{sampleEmail}</dd></div>
+            <div><dt>비밀번호</dt><dd>{samplePassword}</dd></div>
+          </dl>
           <p>차량과 예약을 추가하거나 수정할 수 있습니다. 변경 내용은 이 브라우저 탭에서만 보입니다.</p>
         </details>
+        <button type="button" className="entry-text-button entry-demo-fill" onClick={fillSampleAccount} disabled={busy}>계정 입력하기</button>
         <p>체험을 종료하면 예시 데이터가 초기화됩니다.</p>
       </div>
     </>}

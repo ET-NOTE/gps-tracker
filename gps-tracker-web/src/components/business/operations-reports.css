@@ -42,3 +42,31 @@
 @media(max-width:360px){
   .pt-member-shell .rnt-shell .ops-filter-box>.ro-filters {grid-template-columns:minmax(0,1fr)}
 }
+
+.pt-member-shell .rnt-shell .fr-transport-report {gap:16px}
+.fr-transport-report .ops-tools {gap:12px;margin:8px 0 2px}
+.fr-transport-report .ops-tools p {font-size:14px}
+.fr-transport-report .fr-metric-note {display:block;font:400 10px/1.55 var(--fleet-font);color:var(--fleet-faint);margin-top:8px}
+.fr-transport-report .fr-table th {white-space:nowrap}
+.pt-member-shell .rnt-shell .fr-transport-report .ops-filter-actions {padding:0;margin-top:11px;gap:8px}
+.pt-member-shell .rnt-shell .fr-transport-report .ops-filter-actions :is(span,button) {font:400 11px/1.55 var(--fleet-font)}
+.pt-member-shell .rnt-shell .fr-transport-report .ops-filter-actions button {min-height:17px;padding:0}
+.fr-transport-report .ops-chart-panel header {padding:20px 22px 16px}
+.fr-transport-report .ops-chart-panel header p {width:auto}
+.fr-report-cost {padding:22px}
+.fr-report-cost header {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.fr-report-cost :is(h2,p) {margin:0}
+.fr-report-cost header strong {font-size:17px;font-weight:500;overflow-wrap:anywhere;min-width:0}
+.fr-report-cost p {font-size:11px;color:var(--fleet-caption);margin-top:4px}
+.fr-report-cost>p {margin:12px 0}
+.pt-member-shell .rnt-shell .fr-report-cost .fr-btn {min-height:28px;padding:5px 9px;background:var(--surface-2);font-size:11px}
+@media(max-width:760px){
+  .fr-transport-report .ops-tools {margin:4px 0 2px}
+  .fr-transport-report .ops-tools p {flex-basis:100%}
+  .pt-member-shell .rnt-shell .fr-transport-report .fr-stats:not(.fr-summary)>div {padding:12px 13px}
+  .pt-member-shell .rnt-shell .fr-transport-report .fr-stats dd {font-size:23px}
+  .fr-transport-report .fr-metric-note {font-size:9px}
+  .pt-member-shell .rnt-shell .fr-transport-report .ops-filter-box>.fr-filters {gap:10px}
+  .pt-member-shell .rnt-shell .fr-transport-report .ops-filter-box select {height:38px;min-height:38px}
+  .fr-transport-report .ops-chart-panel header,.fr-report-cost {padding:17px}
+}

@@ -25,6 +25,8 @@ async function modules(globals={},phone=false){
    if(name==='react/jsx-runtime')return synthetic(jsx);
    if(name.endsWith('BusinessDrawer'))return synthetic({default:drawer});
    if(name.endsWith('/useCorporatePhone'))return synthetic({default:()=>phone});
+   if(name.endsWith('/useBreakpoint'))return synthetic({default:()=>phone?'mobile':'desktop'});
+   if(name==='../MemberDemoButton')return synthetic(await load('../src/components/MemberDemoButton.jsx'));
    if(name==='./WorkspaceHeader')return synthetic(await load('../src/components/business/WorkspaceHeader.jsx'));
    if(name==='./CorporateMobileHeader')return synthetic({default:(await load('../src/components/business/CorporateMobileHeader.jsx')).default});
    return synthetic({default:noop,corporatePageHint,classifyDevice:()=>({color:'#64748b',label:'수신 이력 없음'}),ageString:noop,vehicleName,

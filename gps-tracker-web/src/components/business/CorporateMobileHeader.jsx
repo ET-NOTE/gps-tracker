@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icon from '../Icon';
 import BusinessDrawer from './BusinessDrawer';
-import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
+import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceHeaderActions,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import './corporate-mobile-shell.css';
 
 export default function CorporateMobileHeader({ active, groups, tabs, sections = {}, section, onTab, toolbar, destinations, onNavigate, onQuick, company, wide, onWidth }) {
@@ -31,11 +31,11 @@ export default function CorporateMobileHeader({ active, groups, tabs, sections =
     <header className="corporate-phone-header ws-member-top no-print">
       <button type="button" className="ws-icon ws-menu" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={panel === 'navigation'} onClick={openMenu}><Icon name="menu" size={17}/></button>
       <WorkspaceBreadcrumb service="법인운행" group={group.label} page={crumb}/>
-      <WorkspaceScope/>
-      {onWidth && <WorkspaceWidthControl className="fleet-width" wide={wide} onChange={onWidth}/>}
-      <button type="button" className="ws-wide-search" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={16}/></button>
-      {onNavigate && map && <button type="button" className="ws-icon ws-secondary" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={16}/></button>}
-      <button type="button" className="ws-icon" aria-label="운영 알림" onClick={()=>onQuick('alerts')}><Icon name="bell" size={17}/></button>
+      <WorkspaceHeaderActions scope={<WorkspaceScope/>}
+        widthControl={onWidth && <WorkspaceWidthControl className="fleet-width" wide={wide} onChange={onWidth}/>}
+        search={<><button type="button" className="ws-wide-search" aria-label="차량·메뉴 검색" onClick={()=>onQuick('search')}><Icon name="search" size={16}/></button>
+          {onNavigate && map && <button type="button" className="ws-icon ws-secondary" aria-label={map.label} onClick={() => leave(map.id)}><Icon name="map" size={16}/></button>}</>}
+        alerts={<button type="button" className="ws-icon" aria-label="운영 알림" onClick={()=>onQuick('alerts')}><Icon name="bell" size={17}/></button>}/>
       <WorkspaceAvatar label="회사 및 계정 메뉴" expanded={panel==='account'} onClick={()=>setPanel('account')}/>
     </header>
     {panel === 'navigation' && <BusinessDrawer title="법인운행" subtitle={company && company+' · 업무 공간'} navigation onHome={()=>visit(tabs[0].id)} onClose={close}>
