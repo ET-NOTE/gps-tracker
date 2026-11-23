@@ -57,6 +57,6 @@ test('Fleet trip detail renders accepted map points without fetching them again'
  const Detail=await fixture('TripDetailTab.jsx',{listLocationsGrouped:async()=>{calls++;return[];},flattenGroupedAsc:x=>x});let r;
  const points=[{lat:37,lng:127,recorded_at:'2026-10-21T00:00:00Z'},{lat:37.1,lng:127.1,recorded_at:'2026-10-21T00:01:00Z'}];
  await act(async()=>{r=create(React.createElement(Detail,{deviceId:7,trip:{started_at:points[0].recorded_at},points,mapRef:{current:{}}}));});
- assert.equal(calls,0);assert.match(text(r),/포인트/);assert.doesNotMatch(text(r),/로딩/);
+ assert.equal(calls,0);assert.ok(r.root.findAllByType('span').some(span=>span.children.join('')==='위치 기록 2개'));assert.doesNotMatch(text(r),/로딩/);
  await act(async()=>r.unmount());
 });

@@ -154,10 +154,10 @@ export default function TripDetailTab({ trip, points, mapRef }) {
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', fontSize: 10, color: 'var(--text-3)' }}>
             <span>평균 {totals.avg}km/h</span>
-            <span>{samples.length}포인트</span>
+            <span>위치 기록 {samples.length}개</span>
             {samples.length < enriched.length && (
-              <span title="waypoint 표는 균등 샘플. 지도의 seeker path 는 원본 그대로">
-                (원본 {enriched.length})
+              <span title="표에는 일정 간격으로 고른 위치 기록을 표시합니다. 지도에서 전체 경로를 볼 수 있습니다.">
+                (전체 {enriched.length}개)
               </span>
             )}
           </div>

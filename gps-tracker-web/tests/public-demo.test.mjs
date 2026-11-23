@@ -87,3 +87,34 @@ test('sample forms can submit to local handlers while the document prohibits out
     assert.ok(policy.split(';').map(rule => rule.trim()).includes(directive));
   }
 });
+
+test('returning demo sessions receive the current default copy without overwriting user records', async () => {
+  const template = await readFile(new URL('../public/fleet-preview/fleet-v1.html', import.meta.url), 'utf8');
+  const cleanContract = JSON.parse(template.match(/^window\.RentalSeed=(.+);$/m)[1]).templates[0].body;
+  const previousContract = cleanContract + '\n\n이 문서는 화면 구성을 확인하기 위한 예시 양식입니다.';
+  const key = 'seriallink-fleet-prototype-v1';
+  const apply = fleet => {
+    const html = bootDocument(bootstrapMarker, {}, {[key]: JSON.stringify(fleet)});
+    const state = JSON.parse(html.match(/window\.SERIAL_DEMO_BOOT=(.*);<\/script>/)[1]).state;
+    return JSON.parse(state[key]);
+  };
+  const fleet = {
+    version: 1,
+    rental: {
+      templates: [{id: 'rt1', body: previousContract}],
+      customers: [
+        {id: 'rc1', memo: '예시 고객 정보', phone: 'changed'},
+        {id: 'rc2', memo: '담당자 지정'},
+        {id: 'new-id', memo: '예시 고객 정보'},
+      ],
+    },
+    cargo: {orders: [{id: 'co11', note: '화주 요청으로 취소된 예시 주문'}]},
+  };
+  const result = apply(fleet);
+  assert.deepEqual(result.rental.templates, [{id: 'rt1', body: cleanContract}]);
+  assert.deepEqual(result.rental.customers, [{id: 'rc1', memo: '', phone: 'changed'}, ...fleet.rental.customers.slice(1)]);
+  assert.deepEqual(result.cargo.orders, [{id: 'co11', note: '화주 요청으로 취소'}]);
+  assert.deepEqual(apply(result), result);
+  fleet.rental.templates[0].body += '\n추가 특약';
+  assert.deepEqual(apply(fleet).rental.templates, fleet.rental.templates);
+});

@@ -9,7 +9,7 @@
 //   글자 ~1pt 작게.
 import Icon from './Icon';
 import './PointInfoSheet.css';
-import { batteryText, batteryPolicy } from '../lib/battery';
+import { batteryText, batteryLevelHelp } from '../lib/battery';
 
 export default function PointInfoSheet({ info, onClose, onRoadview, compact = false, bottomOffset = 0, leftOffset = 0 }) {
   if (!info) return null;
@@ -54,7 +54,7 @@ export default function PointInfoSheet({ info, onClose, onRoadview, compact = fa
       <dl className="point-info-stats">
         {isCluster && <div><dt>정차</dt><dd>{clusterDur} · {meta.clusterCount}개 지점</dd></div>}
         {speedStr && <div><dt>속도</dt><dd>{speedStr}</dd></div>}
-        {battStr && <div title={batteryPolicy.estimate_note}><dt>배터리 · 추정</dt><dd>{battStr}</dd></div>}
+        {battStr && <div title={batteryLevelHelp}><dt>배터리 · 추정</dt><dd>{battStr}</dd></div>}
         {!compact && meta?.cbcMv > 0 && <div><dt>모듈 전압</dt><dd>{(meta.cbcMv / 1000).toFixed(2)} V</dd></div>}
         {!compact && satStr && <div><dt>위성</dt><dd>{meta.sat}개</dd></div>}
         {!compact && Number.isFinite(lat) && Number.isFinite(lng) && <div><dt>좌표</dt><dd>{lat.toFixed(5)}, {lng.toFixed(5)}</dd></div>}

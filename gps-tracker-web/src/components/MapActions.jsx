@@ -22,7 +22,7 @@ export default function MapActions({ hasDevice, canTrack = hasDevice, tracking, 
   return <div ref={root} className="map-actions" style={{ bottom }}>
     {!simple && expanded && <div className="map-tools-menu" role="group" aria-label="운행 도구 목록">
       {onNativeTracking && <button disabled={!hasDevice} onClick={() => { setExpanded(false); onNativeTracking(); }}>
-        <Icon name="target" size={18} /><span>진행 방향 추적<small>Android 회전 지도 · 테스트</small></span>
+        <Icon name="target" size={18} /><span>진행 방향 추적<small>안드로이드 앱 회전 지도 (베타)</small></span>
       </button>}
       <button onClick={() => open('seeker')} disabled={!hasDevice}>
         <Icon name="route" size={18} /><span>운행 분석<small>운행 분석·경로 재생</small></span>
@@ -33,7 +33,7 @@ export default function MapActions({ hasDevice, canTrack = hasDevice, tracking, 
       <button onClick={() => open('route')}>
         <Icon name="mapPin" size={18} /><span>경로 계획<small>방문할 목적지 정리</small></span>
       </button>
-      {!hasDevice && <p>운행 분석는 단말기를 선택한 뒤 사용할 수 있습니다.</p>}
+      {!hasDevice && <p>운행 분석은 단말기를 선택한 뒤 사용할 수 있습니다.</p>}
     </div>}
     {!simple && <button className="map-action btn-bounce" title="운행 도구" aria-label="운행 도구"
       aria-expanded={expanded} data-active={expanded} onClick={() => setExpanded(value => !value)}>

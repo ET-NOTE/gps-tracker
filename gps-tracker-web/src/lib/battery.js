@@ -1,6 +1,9 @@
 import policy from '../../../gps-tracker-api/battery-policy.json';
 
 export const batteryPolicy = policy;
+const emptyVoltage = (policy.curve[0][0] / 1000).toFixed(2);
+export const batteryLevelHelp = `잔량은 단말기 전압으로 추정합니다. 표준 단말기가 저전압으로 반복 재시작하는 구간(${emptyVoltage}V)을 0%로 표시합니다. 배터리의 안전 방전 한계나 완전 방전을 뜻하지 않으며 배터리 종류·부하·온도에 따라 달라집니다.`;
+export const batteryVoltageHelp = '표시 전압은 방전 실측값으로 보정한 추정치입니다. 측정 범위 밖에서는 가장 가까운 끝점의 보정값을 사용합니다. 충전·USB 연결 중이거나 온도·부하가 측정 당시와 다르면 정확도가 확인되지 않았습니다.';
 export const BATTERY_STATES = {
   normal: { label: '정상', color: 'var(--status-success-text)' },
   low: { label: '저전압', color: 'var(--status-warning-text)' },

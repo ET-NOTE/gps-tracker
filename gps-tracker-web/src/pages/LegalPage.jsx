@@ -1,7 +1,7 @@
 // 개인정보 처리방침 · 이용약관 — 스켈레톤.
 // 실제 발효 전 법률 검토 및 사업자 정보 채워넣어야 함.
 
-const TODO = '[ TODO — 발효 전 사업자 정보 / 법률 검토 필요 ]';
+const draftNotice = '사업자 정보가 확정되고 법률 검토가 완료되기 전의 초안입니다.';
 
 export default function LegalPage({ kind }) {
   const data = kind === 'privacy' ? PRIVACY : TERMS;
@@ -95,7 +95,7 @@ const PRIVACY = {
     },
     {
       h: '6. 개인정보 보호 책임자',
-      p: [TODO, '문의: project307@naver.com'],
+      p: [draftNotice, '문의: project307@naver.com'],
     },
   ],
 };
@@ -150,7 +150,7 @@ const TERMS = {
     },
     {
       h: '제7조 (요금 및 환불)',
-      p: [TODO, '결제 관련 환불 정책은 별도 안내합니다.'],
+      p: [draftNotice, '결제 관련 환불 정책은 별도 안내합니다.'],
     },
     {
       h: '제8조 (분쟁 해결)',

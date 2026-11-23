@@ -25,9 +25,9 @@ function Switch({label,hint,icon,checked,onChange,disabled}) {
 
 function Mailbox() {
   const mail=useQuery({queryKey:['fleet-notification-mail-preview'],queryFn:api.fleetNotificationMailbox,refetchInterval:5000});
-  return <BusinessSection title="개발 메일함" description="내 계정에 생성된 최근 이메일 5건">
-    {mail.isError ? <BusinessError onRetry={mail.refetch}>개발 메일함을 불러오지 못했습니다.</BusinessError>
-      : !mail.data?.length ? <p className="fleet-notification-empty" role="status">{mail.isPending?'불러오는 중…':'수신한 개발 메일이 없습니다.'}</p>
+  return <BusinessSection title="이메일 미리보기" description="내 계정의 최근 알림 메일 5건">
+    {mail.isError ? <BusinessError onRetry={mail.refetch}>이메일 미리보기를 불러오지 못했습니다.</BusinessError>
+      : !mail.data?.length ? <p className="fleet-notification-empty" role="status">{mail.isPending?'불러오는 중…':'미리 볼 알림 메일이 없습니다.'}</p>
       : <ul className="fleet-mail-preview">{mail.data.map(item=><li key={item.id}><strong>{notificationTopics.find(t=>t.key===item.category)?.label} 알림</strong><time dateTime={item.at}>{kstDateTime(item.at)}</time></li>)}</ul>}
   </BusinessSection>;
 }
@@ -59,7 +59,7 @@ export default function FleetNotificationSettings() {
       <div className="fleet-notification-side">
         <BusinessSection title="수신 방법"><div className="fleet-notification-rows">
           <Switch label="앱 알림" hint="상단의 운영 알림에서 확인합니다." {...configure('in_app')}/>
-          <Switch label="이메일" hint={p.email_mode==='preview'?'개발 메일함에서 확인합니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':p.email_available?'등록 이메일로 보냅니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':'메일 발송 서버 연결이 필요합니다.'}
+          <Switch label="이메일" hint={p.email_mode==='preview'?'이메일은 미리보기로만 제공됩니다. 운행 알림은 예약 상태가 바뀔 때 생성됩니다.':p.email_available?'등록 이메일로 보냅니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':'메일 발송 서버 연결이 필요합니다.'}
             {...configure('email')} disabled={!canEdit||save.isPending||(!p.email_available&&!p.email)}/></div>
         </BusinessSection>
         <BusinessSection title="현재 설정">
