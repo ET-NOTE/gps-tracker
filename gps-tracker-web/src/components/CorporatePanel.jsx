@@ -41,6 +41,10 @@ import { useBusinessClock, useBusinessSubscription } from './business/useBusines
 import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleName } from '../lib/business';
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
+import CarImage from './CarImage';
+
+const receptionTones={active:'good',sleeping:'info',gps_loss:'warning',signal_loss:'warning',low_batt:'warning',offline:'urgent',lost:'urgent',critical_batt:'urgent',overcharge:'urgent'};
+const receptionToneOf=status=>receptionTones[status?.id]||'';
 import {FleetAssets,FleetAssetForm,FleetAssetDetail,useFleetAssets,projectFleetAssets,fleetAssetsKey,useAssetStats as useFleetStats,useFleetReservations as useReservations,useCreateFleetReservation as useCreateReservation,useUpdateFleetReservation as useUpdateReservation,useCancelFleetReservation as useDeleteReservation} from './business/FleetAssets';
 import { Modal, FormField, Input, Select, Textarea, Button, SkeletonList } from './ui';
 import {
@@ -55,6 +59,7 @@ import './business/directory-layout.css';
 import './business/fleet-design-shell.css';
 import './business/fleet-member.css';
 import './business/fleet-reference-records.css';
+import './business/fleet-mockup-sync.css';
 
 const PURPOSE_LABEL = {
   commute:     '출퇴근',
@@ -161,7 +166,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab === 'live' && <FleetLive devices={devices} onRefresh={()=>Promise.all([terminals.refetch(),assets.refetch()])} initialId={restored?.page==='live' ? restored.vehicleId : null}/>}
     {['vehicles','devices','maintenance'].includes(tab) && <FleetAssets key={tab+(missingSchedulesOnly?'missing-schedules':'all')} mode={tab} canRegisterTerminal={access.billing && !subjectScoped && !!onNavigate} onReserve={id=>reserve({new:true,vehicleId:id})} initialCreate={initialCreate} initialMissingSchedules={missingSchedulesOnly} mapReturn={!restored?.workspaceDetail && restored?.page===tab ? restored : null} onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={openDetailMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
-    {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} onSites={()=>setTab('sites','sites')} hideNavigation />{access.manage_team&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
+    {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} onSites={()=>setTab('sites','sites')} sites={<FleetSites/>} hideNavigation />{access.manage_team&&sectionTabs.staff==='users'&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
     {tab === 'sites' && <FleetSites activeTab={sectionTabs.sites} onTab={selectSection} hideNavigation />}
     {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'} initialScope={expenseDrill?.ledger} onOpenCategories={()=>setTab('expense-categories')}/>}
     {tab==='approvals'&&canReview&&<FleetExpenses approvalsOnly reservationInbox={canReviewReservations ? <ReservationsTab devices={devices} requestsOnly/> : null}/>}
@@ -174,7 +179,8 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab==='settings' && sectionTabs.settings==='policy' && <div className="fleet-operating-policy"><FleetReservationPolicy/><FleetBookingHours/></div>}
     {tab==='settings' && sectionTabs.settings==='purposes' && <FleetTripPurposes access={access}/>}
     {tab==='settings' && sectionTabs.settings==='notifications' && <FleetNotificationSettings/>}
-    {tab === 'settings' && ['company','subscription'].includes(sectionTabs.settings) && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
+    {tab === 'settings' && sectionTabs.settings==='company' && <div className="fleet-company-service"><section aria-label="회사 정보"><InfoTab readOnly={!access.manage_team} /></section><section aria-label="서비스 이용 현황">{subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />}</section></div>}
+    {tab === 'settings' && sectionTabs.settings==='subscription' && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
     </>}
   </BusinessWorkspace>;
 }
@@ -199,20 +205,20 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
   const tasks=corporateAttention(devices,now,{classify:classifyDevice,battery:deviceBattery});
   const attention=summary?.complete&&pending!=null?tasks.length+missing.length+pending+summary.missing:null;
   const cards=[
-    {label:'전체 차량',value:devices.length,unit:'대',icon:'car',onClick:onVehicles},
-    {label:'운행 중',value:summary?.complete?summary.running:null,unit:'대',icon:'route',tone:'green',onClick:onLive},
-    {label:'오늘 예약',value:reserved,unit:'건',icon:'clock',onClick:()=>onReserve({})},
-    {label:'확인할 일',value:attention,unit:'건',icon:'warn',tone:'amber',onClick:()=>{tasksRef.current?.focus({preventScroll:true});tasksRef.current?.scrollIntoView({block:'nearest'});}},
+    {label:'전체 차량',value:devices.length,unit:'대',icon:'car',note:'등록된 법인 차량',onClick:onVehicles},
+    {label:'운행 중',value:summary?.complete?summary.running:null,unit:'대',icon:'route',tone:'green',note:'운행 기록 기준',onClick:onLive},
+    {label:'오늘 예약',value:reserved,unit:'건',icon:'calendar',note:'예정·이용 중 예약',onClick:()=>onReserve({})},
+    {label:'확인할 일',value:attention,unit:'건',icon:'warn',tone:'amber',note:'운행 확인 · 결재 · 수신',onClick:()=>{tasksRef.current?.focus({preventScroll:true});tasksRef.current?.scrollIntoView({block:'nearest'});}},
   ];
   const days=Array.from({length:7},(_,i)=>businessDate(now-(6-i)*86400000));
   const distanceLabel=stats.error?'조회 실패':stats.loading?'조회 중':stats.todayKm!=null?stats.todayKm.toLocaleString()+' km':stats.pending?'집계 대기':'수신 없음';
   return <div className="business-overview fleet-dashboard">
     <div className="fleet-dashboard-toolbar">
-      <div><time dateTime={period.day}><Icon name="clock" size={15}/>{period.day.replaceAll('-','.')} · 오늘</time></div>
+      <div><time dateTime={period.day}><Icon name="calendar" size={15}/>{period.day.replaceAll('-','.')} · 오늘</time></div>
       <div>{onWeeklyReport&&<BusinessButton icon="bar" onClick={onWeeklyReport}>운행 리포트</BusinessButton>}{onCreate&&<BusinessButton primary icon="plus" onClick={onCreate}>차량 등록</BusinessButton>}</div>
     </div>
     <div className="fleet-dashboard-metrics">{cards.map(card=><button type="button" key={card.label} className={card.tone||''} onClick={card.onClick} disabled={!card.onClick}>
-      <span><i><Icon name={card.icon} size={15}/></i>{card.label}<span className="fleet-metric-more">더보기 <Icon name="chevron-right" size={12}/></span></span><strong>{card.value??'—'}{card.value!=null&&<small>{card.unit}</small>}</strong>
+      <span><i><Icon name={card.icon} size={15}/></i>{card.label}<span className="fleet-metric-more">더보기 <Icon name="chevron-right" size={12}/></span></span><strong>{card.value??'—'}{card.value!=null&&<small>{card.unit}</small>}</strong>{card.note&&<em className="fleet-metric-note">{card.note}</em>}
     </button>)}</div>
     <div className="business-overview-grid fleet-dashboard-grid">
       <BusinessLocation devices={devices} onLive={onLive}/>
@@ -226,15 +232,15 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
     </div>
     {reservations.error&&<BusinessError onRetry={reservations.refetch}>오늘 예약 수를 불러오지 못했습니다.</BusinessError>}
     <div className="fleet-dashboard-grid fleet-dashboard-bottom">
-      <BusinessSection title="차량 목록" description={'등록 차량 '+devices.length+'대'} action={onVehicles&&<button type="button" className="fleet-dashboard-link" onClick={onVehicles}>전체 목록 <Icon name="chevron-right" size={14}/></button>}>
+      <BusinessSection title="차량 목록" description={'등록 차량 '+devices.length+'대'+(devices.length>3?' 중 3대 미리보기':'')} action={onVehicles&&<button type="button" className="fleet-dashboard-link" onClick={onVehicles}>더보기 <Icon name="chevron-right" size={14}/></button>}>
         <div className="fleet-dashboard-vehicles"><div className="fleet-dashboard-row-head" aria-hidden="true"><span>차량</span><span>담당자</span><span>운영 상태</span><span>이번 달 거리</span><span>단말 수신</span></div>{devices.slice(0,3).map(d=>{
           const month=stats.byVehicle?.get(d.id)?.total_distance_m;
           return <button type="button" key={d.id} onClick={()=>openVehicle(d)}>
-            <span className="fleet-dashboard-vehicle-name"><i><Icon name="car" size={20}/></i><span><strong>{d.car_plate||corporateVehicleName(d)}</strong><small>{d.car_model||terminalName(d)}</small></span></span>
+            <span className="fleet-dashboard-vehicle-name"><i><CarImage vehicleId={d.fleet_vehicle_id} deviceId={d.source_device_id||d.id} version={d.car_image_url} fallback={<Icon name="car" size={20}/>}/></i><span><strong>{d.car_plate||corporateVehicleName(d)}</strong><small>{d.car_model||terminalName(d)}</small></span></span>
             <span className="fleet-dashboard-manager">{staff.find(s=>s.id===d.asset?.manager_staff_id)?.name||'미지정'}<small>{d.department||''}</small></span>
-            <span><small className="fleet-dashboard-availability">{d.enabled===false?'사용 정지':'사용 가능'}</small></span>
+            <span><small className={'fleet-dashboard-availability business-badge '+(d.enabled===false?'':'good')}>{d.enabled===false?'사용 정지':'사용 가능'}</small></span>
             <span className="fleet-dashboard-km">{Number.isFinite(month)?(month/1000).toLocaleString('ko-KR',{maximumFractionDigits:1})+' km':'—'}</span>
-            <span className="fleet-dashboard-reception">{d.terminal_status_label||classifyDevice(d,undefined,now).label}</span>
+            <span className="fleet-dashboard-reception"><small className={'business-badge '+(!d.has_primary_terminal||d.terminal_status_label?'':receptionToneOf(classifyDevice(d,undefined,now)))}>{!d.has_primary_terminal?'미연결':d.terminal_status_label||classifyDevice(d,undefined,now).label}</small></span>
           </button>;
         })}</div>
         {!devices.length&&<BusinessEmpty compact title="등록된 차량이 없습니다."/>}
@@ -248,7 +254,6 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
       </BusinessSection>
     </div>
     {showVehicles&&<BusinessVehicles separateTerminal localMap devices={devices} onMap={onMap} onDetail={onReport} detailLabel="운행 리포트"/>}
-    {setup}
   </div>;
 }
 function FleetWeekChart({days,distances}){
@@ -1030,8 +1035,8 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
       {invalidPeriod&&<BusinessError>시작일과 종료일을 1년 이내로 선택해 주세요.</BusinessError>}
       {!error && !invalidPeriod && viewMode==='list' && list && <section className="corporate-reservation-ledger">
         <div className="corporate-reservation-scroll" role="region" aria-label="차량 예약 목록 · 좌우 스크롤" tabIndex={0}>
-          <table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">목적·메모</th><th scope="col">상태</th><th scope="col">관리</th></tr></thead>
-            <tbody>{list.map(r=><ReservationRow key={r.id} r={r} readOnly={!canWrite||r.can_edit===false} onOpen={()=>setOpened(r)} onEdit={()=>setEditing(r)} onDelete={()=>cancelBooking(r)}/>)}</tbody>
+          <table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">운행목적 / 메모</th><th scope="col">상태</th></tr></thead>
+            <tbody>{list.map(r=><ReservationRow key={r.id} r={r} onOpen={()=>setOpened(r)}/>)}</tbody>
           </table>
           {!list.length&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
         </div>
@@ -1089,8 +1094,7 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
   </Modal>;
 }
 
-function ReservationRow({r,onOpen,onEdit,onDelete,readOnly=false}) {
-  const detailsOnly=readOnly||(r.approval_required&&['rejected','cancelled','completed'].includes(r.status));
+function ReservationRow({r,onOpen}) {
   const state=RESV_STATUS[r.status]||RESV_STATUS.planned;
   const untilStart=Math.round((Date.parse(r.starts_at)-Date.now())/60000),untilEnd=Math.round((Date.parse(r.ends_at)-Date.now())/60000);
   const imminent=r.status==='planned'&&untilStart>=0&&untilStart<=60;
@@ -1098,11 +1102,10 @@ function ReservationRow({r,onOpen,onEdit,onDelete,readOnly=false}) {
   return <tr className="booking-detail-row" onClick={event=>{
     if(!event.target.closest('button')){event.currentTarget.querySelector('.booking-detail-link')?.focus({preventScroll:true});onOpen();}
   }}>
-    <td data-label="차량"><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&<small>{r.license_plate}</small>}</td>
+    <td data-label="차량"><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&r.vehicle_name&&r.vehicle_name!==r.license_plate&&<small>{r.vehicle_name}</small>}</td>
     <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></td>
-    <td data-label="목적·메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
+    <td data-label="운행목적 / 메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
     <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
-    <td><div className="corporate-reservation-row-actions"><BusinessButton onClick={detailsOnly?onOpen:onEdit} aria-label={`예약 ${r.id} ${detailsOnly?'상세':'상세·수정'}`}>{detailsOnly?'상세':'수정'}</BusinessButton>{!readOnly&&!['cancelled','rejected'].includes(r.status)&&<BusinessButton onClick={onDelete} aria-label={`예약 ${r.id} 취소`}>취소</BusinessButton>}</div></td>
   </tr>;
 }
 

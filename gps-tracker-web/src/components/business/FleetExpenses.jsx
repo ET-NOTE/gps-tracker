@@ -29,7 +29,7 @@ export default function FleetExpenses(props){
  const choose=value=>{setSelected(null);setKind(value);};
  if(props.approvalsOnly&&props.reservationInbox!==undefined){
   if(!canExpenses&&!canReservations)return null;
-  const tabs=[['all','전체 요청'],...(canReservations?[['reservation','예약 요청']]:[]),...(canExpenses?[['expense','지출 요청']]:[])];
+  const tabs=[['all','전체 요청'],...(canReservations?[['reservation','차량 예약']]:[]),...(canExpenses?[['expense','지출']]:[])];
   const mode=tabs.some(([key])=>key===kind)?kind:'all';
   return <div className="fleet-approval-inbox">
    <div className="corporate-view-switch" role="group" aria-label="승인 요청 종류">{tabs.map(([key,name])=><button key={key} type="button" className="corporate-view-option" aria-pressed={mode===key} onClick={()=>choose(key)}>{name}</button>)}</div>

@@ -6,6 +6,7 @@ import { corporateVehicleName, locationState, terminalName } from '../../lib/cor
 import { kstDateTime } from '../../lib/businessExport';
 import { useBusinessClock } from './useBusinessData';
 import { useVehicleGroups } from './FleetVehicleGroups';
+import CarImage from '../CarImage';
 
 const labels = {all:'전체 차량',current:'현재 수신',old:'마지막 수신',none:'위치 없음'};
 
@@ -42,7 +43,7 @@ export default function FleetLive({devices, initialId, onRefresh}) {
       <label>차량 그룹<select value={group} onChange={e=>setGroup(e.target.value)}><option value="">전체 그룹</option>{(groups.data||[]).map(g=><option key={g.id} value={g.id}>{g.name}</option>)}<option value="unassigned">그룹 미지정</option></select></label>
       <label>단말기 연결<select value={binding} onChange={e=>setBinding(e.target.value)}><option value="all">전체 상태</option><option value="linked">연결</option><option value="unlinked">미연결</option></select></label>
       </div>
-      <div className="fleet-record-filterfoot"><span aria-live="polite">{rows.length} / {devices.length}대</span>
+      <div className="fleet-record-filterfoot"><span aria-live="polite">전체 {devices.length}대 중 <b>{rows.length}대</b> 조회</span>
         <BusinessButton onClick={()=>{setStatus('all');setQuery('');setDepartment('');setGroup('');setBinding('all');}}>필터 초기화</BusinessButton>
       </div>
       {groups.error&&<button type="button" className="business-link" onClick={()=>groups.refetch()}>차량 그룹 다시 불러오기</button>}
@@ -54,7 +55,7 @@ export default function FleetLive({devices, initialId, onRefresh}) {
     </section>
     <section className="fleet-live-list" aria-label="관제 차량">
       <header className="fleet-live-panel-head"><h2>차량 상태</h2><span>{rows.length}대</span></header>
-      <ul>{rows.map(d=><li key={d.id}><button type="button" aria-pressed={d===selected} onClick={()=>select(d)}><strong>{corporateVehicleName(d)}</strong><small>{d.has_primary_terminal ? terminalName(d) : '연결 단말기 없음'}</small><span data-state={locationState(d,now)}>{labels[locationState(d,now)]}</span></button></li>)}</ul>
+      <ul>{rows.map(d=><li key={d.id}><button type="button" aria-pressed={d===selected} onClick={()=>select(d)}><span className="fleet-live-thumb" aria-hidden="true"><CarImage vehicleId={d.fleet_vehicle_id} deviceId={d.source_device_id||d.id} version={d.car_image_url} fallback={<Icon name="car" size={18}/>}/></span><strong>{corporateVehicleName(d)}</strong><small>{[d.department,d.has_primary_terminal ? terminalName(d) : '연결 단말기 없음'].filter(Boolean).join(' · ')}</small><span data-state={locationState(d,now)}>{labels[locationState(d,now)]}</span></button></li>)}</ul>
       {!rows.length&&<BusinessEmpty compact title="조회된 차량이 없습니다."/>}
     </section>
   </div>;

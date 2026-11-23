@@ -77,3 +77,54 @@
   .fleet-approval-table th {height:48px;font-size:12px;font-weight:500;white-space:nowrap}
   .fleet-approval-table td {max-width:200px;overflow-wrap:anywhere}
 }
+.fleet-approval-guide{margin:0;font-size:12px;line-height:1.5;color:var(--text-2)}
+.fleet-approval-list-head>strong{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.fleet-approval-list-head>strong>small{font-size:12px;font-weight:400;color:var(--text-2)}
+.fleet-approval-kind{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:5px;font-size:11px;line-height:1.4;white-space:nowrap;background:#f0f2f6;color:#7b8593}
+.fleet-approval-kind::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+.fleet-approval-kind.is-reservation{background:var(--status-info-bg,#edf3ff);color:var(--primary,#3676e5)}
+
+/* Desktop: summary first, tabs and download on one row, two filter rows, compact table. */
+@media (min-width:768px){
+  .business-workspace--corporate .business-content .fleet-approval-inbox:has(>.fleet-combined-approvals){display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 12px;align-items:end}
+  .fleet-approval-inbox:has(>.fleet-combined-approvals) .fleet-combined-approvals{display:contents}
+  .fleet-approval-inbox:has(>.fleet-combined-approvals)>.corporate-view-switch{grid-row:2;grid-column:1}
+  .fleet-approval-inbox:has(>.fleet-combined-approvals) .fleet-combined-approvals>*{grid-column:1/-1}
+  .fleet-approval-inbox:has(>.fleet-combined-approvals) .fleet-combined-approvals>.fleet-approval-metrics{display:block;grid-row:1}
+  .fleet-approval-inbox:has(>.fleet-combined-approvals) .fleet-combined-approvals>.fleet-approval-actions{grid-row:2;grid-column:2}
+  .fleet-approval-metrics>.fleet-record-metrics{margin:0}
+
+  .business-workspace--corporate .business-content .fleet-approval-inbox>.corporate-view-switch{
+    display:inline-flex;align-items:flex-end;gap:22px;justify-self:start;max-width:100%;overflow-x:auto;
+    padding:0;background:transparent;border:0;border-bottom:1px solid var(--sync-line,#e7eaf0);border-radius:0;
+  }
+  .business-workspace--corporate .business-content .fleet-approval-inbox>.corporate-view-switch>.corporate-view-option{
+    flex:none;min-height:0;padding:0 0 11px;margin-bottom:-1px;border:0;border-bottom:2px solid transparent;border-radius:0;
+    background:transparent!important;box-shadow:none!important;color:#8c94a0!important;font-size:13px;font-weight:400;
+  }
+  .business-workspace--corporate .business-content .fleet-approval-inbox>.corporate-view-switch>.corporate-view-option[aria-pressed=true]{
+    color:var(--primary)!important;border-bottom-color:var(--primary);
+  }
+
+  .business-workspace--corporate .business-content .fleet-approval-filters{
+    display:grid;grid-template-columns:auto repeat(3,minmax(130px,158px)) minmax(0,1fr);gap:12px;align-items:end;
+  }
+  .fleet-approval-filters :is(fieldset,label){font-size:12px;color:var(--sync-muted,#7e8998)}
+  .fleet-approval-filters fieldset input[type=date]{width:145px}
+  .fleet-approval-filters label:has(.fleet-approval-search){grid-row:2;grid-column:1/-2;max-width:340px}
+  .fleet-approval-search>svg{display:block;position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-3)}
+  .business-workspace--corporate .business-content .fleet-approval-search input[type=search]{width:100%;padding-left:36px}
+  .business-workspace--corporate .business-content .fleet-approval-filters>.business-button{
+    grid-row:2;grid-column:5;justify-self:end;border-color:transparent!important;background:transparent;box-shadow:none;color:var(--text-2)!important;
+  }
+
+  .fleet-approval-list-head>strong>span{display:none}
+  .business-workspace--corporate .business-content .fleet-approval-list-head .business-button:not(.is-primary){background:#eef2f7;border-color:transparent!important}
+  .business-workspace--corporate .business-content .fleet-approval-table{border-color:var(--sync-line,#e7eaf0);border-radius:12px}
+  .business-workspace--corporate .business-content .fleet-approval-table table{font-size:12px;white-space:nowrap}
+  .business-workspace--corporate .business-content .fleet-approval-table th{padding:12px 17px;background:#f8f9fc;color:#8a93a1;font-size:11px;font-weight:400}
+  .business-workspace--corporate .business-content .fleet-approval-table td{padding:14px 17px;color:#586171;border-bottom-color:#f0f2f6}
+  .fleet-approval-table td small{font-size:10px;color:#929aa7}
+  .fleet-approval-table .fleet-approval-detail{font-size:12px;padding:0}
+  .business-workspace--corporate .business-content .fleet-approval-table td .business-button{min-height:28px;padding:5px 10px;font-size:11px;background:#eef2f7;border-color:transparent!important}
+}

@@ -1,0 +1,230 @@
+/* Desktop corporate screens follow the reference layout: compact controls, small status pills and
+   underline tabs. Mobile keeps its own tuned rules, so everything here starts at tablet width. */
+@media screen and (min-width:768px) {
+  .business-workspace.business-workspace--corporate {
+    --sync-line:#e7eaf0; --sync-muted:#7e8998; --sync-control-text:#5b6574;
+    --font-body:13px; --field-label-size:12px; --field-help-size:12px; --field-gap:6px;
+    --control-font-size:13px; --control-min-height:37px; --touch-target:36px;
+    --sync-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237b8592' stroke-width='1.5'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+  }
+
+  /* Form controls: one 13px size and a thin chevron instead of the native select arrow. */
+  .business-workspace--corporate .business-content :is(select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color])),
+  .business-workspace--corporate .business-content textarea {
+    font-size:13px!important; line-height:1.5;
+  }
+  .business-workspace--corporate .business-content :is(select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color])) {
+    min-height:37px!important;
+  }
+  .business-workspace--corporate .business-content select {
+    -webkit-appearance:none; appearance:none;
+    padding:7px 32px 7px 11px!important;
+    border:1px solid #e2e6ed; border-radius:8px;
+    background:var(--surface,#fff) var(--sync-chevron) no-repeat right 10px center/14px 14px!important;
+    color:var(--sync-control-text); text-overflow:ellipsis;
+  }
+  .business-workspace--corporate .business-content select:disabled {opacity:.6}
+  .business-workspace--corporate .business-content input[type=date] {padding-inline:11px 9px!important;color:var(--sync-control-text)}
+  .business-workspace--corporate .business-content :is(select,input,textarea)::placeholder {color:#a2a9b4}
+
+  /* Field labels: one light grey style (shared form fields set a bold label inline). */
+  .business-workspace--corporate .business-content :is(.fleet-record-fields,.fleet-record-filterbox,.fleet-approval-filters) label[for] {font-weight:400!important;color:var(--sync-muted)!important}
+  .business-workspace--corporate .business-content .fleet-record-fields .fleet-date-field>span {color:var(--sync-muted)}
+
+  /* Search boxes with an icon: same 37px box as the other controls. */
+  .business-workspace--corporate .business-content label.fleet-inline-search {min-height:37px!important;height:37px;padding-block:0!important;border-color:#e2e6ed;border-radius:8px}
+  .business-workspace--corporate .business-content label.fleet-inline-search>input[type=search] {min-height:0!important;height:35px;font-size:12px!important}
+
+  /* Underline tabs: no filled box behind the active tab. */
+  .business-workspace--corporate .business-content :is(.expense-status-tabs,.fleet-booking-query .corporate-view-switch) button[aria-pressed=true] {background:transparent!important;box-shadow:none!important;border-radius:0!important}
+  .business-workspace--corporate .business-content .expense-page-size {font-size:12px!important;min-height:0;padding:6px 10px}
+
+  /* Buttons */
+  .business-workspace--corporate .business-content .business-button {
+    min-height:35px; padding:7px 13px; font-size:12px; font-weight:400; border-radius:8px;
+  }
+  .business-workspace--corporate .business-content .business-button:not(.is-primary) {border-color:#e0e5ec;color:var(--sync-control-text)}
+  .business-workspace--corporate .business-content .business-button svg {width:15px;height:15px}
+  .business-workspace--corporate .business-content .expense-download>button {color:var(--sync-control-text)!important;border-color:#e0e5ec!important}
+
+  /* Status badges: small pill with a dot, like the reference list rows. */
+  .business-workspace--corporate .business-content .business-badge,
+  .business-drawer .business-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    min-width:0!important; justify-content:flex-start!important;
+    padding:4px 8px!important; border-radius:5px!important;
+    font-size:11px!important; font-weight:400!important; line-height:1.4!important;
+  }
+  .business-workspace--corporate .business-content .business-badge::before,
+  .business-drawer .business-badge::before {
+    content:''; flex:none; width:4px; height:4px; border-radius:50%; background:currentColor;
+  }
+
+  /* Tables: horizontal rules only. */
+  .business-workspace--corporate .business-content table :is(th,td) {border-left:0!important;border-right:0!important}
+}
+
+/* Live view list: thumbnail, vehicle, secondary line and a status pill on the right. */
+.fleet-live li button {grid-template-columns:56px minmax(0,1fr) auto!important; align-items:center; column-gap:11px!important; row-gap:2px!important}
+.fleet-live li .fleet-live-thumb {grid-row:1/3; display:grid; place-items:center; width:56px; height:32px; color:var(--text-3)}
+.fleet-live li .fleet-live-thumb img {width:100%; height:100%; object-fit:contain}
+.fleet-live li button>strong {grid-column:2; align-self:end}
+.fleet-live li button>small {grid-column:2; grid-row:2; align-self:start}
+.fleet-live li button>[data-state] {grid-column:3; grid-row:1/3; display:inline-flex; align-items:center; gap:5px; padding:4px 8px; border-radius:5px; font-size:11px; line-height:1.4; white-space:nowrap; background:#f0f2f6; color:#7b8593}
+.fleet-live li button>[data-state]::before {content:''; width:4px; height:4px; border-radius:50%; background:currentColor}
+.fleet-live li button>[data-state="current"] {background:var(--status-success-bg,#eaf6f0); color:var(--status-success-text,#26856b)}
+.fleet-live li button>[data-state="none"] {background:var(--status-warning-bg,#fff5e5); color:var(--status-warning-text,#b77923)}
+
+@media screen and (min-width:768px) {
+  /* Live view: grey segmented status filter, 13px search and compact list rows. */
+  .business-workspace--corporate .business-content .fleet-live-statuses {display:inline-flex; gap:2px; padding:3px; border:0; border-radius:8px; background:#edf0f5}
+  .business-workspace--corporate .business-content .fleet-live-statuses button {min-height:0; padding:5px 12px; border:0!important; border-radius:6px; font-size:12px; color:#7d8796; background:transparent!important; box-shadow:none}
+  .business-workspace--corporate .business-content .fleet-live-statuses button[aria-pressed=true] {background:#fff!important; color:#455269!important; box-shadow:0 1px 4px #2334560a}
+  .business-workspace--corporate .business-content .fleet-member-live-tools {gap:8px}
+  .business-workspace--corporate .business-content .fleet-member-live-tools>.fleet-member-search {margin-left:auto}
+  .business-workspace--corporate .business-content .fleet-member-live .fleet-live-filters {padding:14px 17px 10px; border:1px solid var(--sync-line); border-radius:11px; background:#fafbfd}
+  .business-workspace--corporate .business-content .fleet-member-live .fleet-live-filters label {font-size:11px; color:var(--sync-muted)}
+  .business-workspace--corporate .business-content .fleet-member-live .fleet-record-filterfoot {font-size:11px; color:#8d98a6}
+  .business-workspace--corporate .business-content .fleet-member-live .fleet-record-filterfoot b {font-weight:400; color:var(--primary)}
+  .business-workspace--corporate .business-content .fleet-member-live .fleet-record-filterfoot .business-button {min-height:0; padding:0 3px; border:0; background:transparent; font-size:11px; color:var(--primary)}
+  .business-workspace--corporate .fleet-member-live .fleet-live-panel-head h2 {font-size:15px; font-weight:400}
+  .business-workspace--corporate .fleet-member-live .fleet-live-panel-head h2 small {font-size:11px; color:var(--text-3); font-weight:400; margin-left:4px}
+  .business-workspace--corporate .fleet-live li button {padding:10px 12px; border-top-color:#f0f2f6}
+  .business-workspace--corporate .fleet-live li button>strong {font-size:12px; font-weight:400; color:#414c5c}
+  .business-workspace--corporate .fleet-live li button>small {font-size:10px; color:#929aa7}
+  .business-workspace--corporate .fleet-live li button[aria-pressed=true] {background:#f1f5fc}
+}
+
+/* Page-level underline tabs (권한 그룹 · 변경 이력). */
+.fleet-page-tabs {display:inline-flex; gap:22px; margin-bottom:18px; border-bottom:1px solid var(--border); max-width:100%; overflow-x:auto}
+.fleet-page-tabs button {flex:none; padding:0 0 11px; margin-bottom:-1px; border:0; border-bottom:2px solid transparent; background:transparent; color:#8c94a0; font:inherit; font-size:13px; cursor:pointer}
+.fleet-page-tabs button[aria-pressed=true] {color:var(--primary); border-bottom-color:var(--primary)}
+
+/* Company and service status side by side. */
+.fleet-company-service {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:start}
+.fleet-company-service>section {min-width:0}
+@media (max-width:900px) {.fleet-company-service {grid-template-columns:minmax(0,1fr)}}
+
+@media screen and (min-width:768px) {
+  /* Sidebar: grey child links with only the current page in blue, quiet footer. */
+  .business-workspace--corporate .fleet-nav-children button {color:#7b8592!important}
+  .business-workspace--corporate .fleet-nav-children button[aria-current=page] {color:var(--primary)!important}
+  .business-workspace--corporate .business-nav-tools {border-top:0!important; padding:12px 4px 4px!important; gap:10px!important}
+  .business-workspace--corporate .business-nav-tools .fleet-nav-service-link {display:flex; align-items:center; gap:7px; width:auto; min-height:0!important; padding:4px 6px!important; border:0!important; background:transparent!important; color:#7b8592!important; font-size:11px!important; cursor:pointer}
+  .business-workspace--corporate .business-nav-tools .fleet-nav-service-link:hover {color:var(--primary)!important}
+  .business-workspace--corporate .business-nav-tools .fleet-nav-copyright {padding:0 6px; font-size:10px; color:#a2a9b4}
+
+  /* Organization tabs: plain underline tabs (class-less buttons otherwise get the boxed default). */
+  .business-workspace--corporate .business-content .fleet-org-tabs button {min-height:0!important; padding:0 0 11px!important; margin-bottom:-1px; border:0!important; border-bottom:2px solid transparent!important; border-radius:0!important; background:transparent!important; color:#8c94a0!important; font-size:13px!important; display:inline-flex; align-items:baseline; gap:7px}
+  .business-workspace--corporate .business-content .fleet-org-tabs button[aria-pressed=true] {color:var(--primary)!important; border-bottom-color:var(--primary)!important}
+  .business-workspace--corporate .business-content .fleet-org-tabs button small {font-size:11px; color:#a2a9b4}
+  .business-workspace--corporate .business-content .fleet-page-tabs button {min-height:0!important; padding:0 0 11px!important; border:0!important; border-bottom:2px solid transparent!important; border-radius:0!important; background:transparent!important; color:#8c94a0!important; font-size:13px!important}
+  .business-workspace--corporate .business-content .fleet-page-tabs button[aria-pressed=true] {color:var(--primary)!important; border-bottom-color:var(--primary)!important}
+
+  .business-workspace--corporate .corporate-admin-details>summary {padding:14px 20px!important; font-size:13px!important}
+}
+
+@media screen and (min-width:768px) {
+  /* Secondary switches inside a page: grey segmented control. */
+  .business-workspace--corporate .business-content :is(.fleet-sites,.fleet-people-cartax,.business-settings)>.business-switch,
+  .business-workspace--corporate .business-content .fleet-site-status-tabs {
+    display:inline-flex!important; gap:2px!important; width:max-content; justify-self:start; align-self:start; max-width:100%; margin:0 0 14px!important; padding:3px!important;
+    border:0!important; border-radius:8px!important; background:#edf0f5!important; overflow-x:auto;
+  }
+  .business-workspace--corporate .business-content :is(.fleet-sites,.fleet-people-cartax,.business-settings)>.business-switch button,
+  .business-workspace--corporate .business-content .fleet-site-status-tabs button {
+    min-height:0!important; padding:5px 12px!important; border:0!important; border-radius:6px!important;
+    background:transparent!important; box-shadow:none!important; color:#7d8796!important; font-size:12px!important; font-weight:400!important;
+  }
+  .business-workspace--corporate .business-content :is(.fleet-sites,.fleet-people-cartax,.business-settings)>.business-switch button[aria-pressed=true],
+  .business-workspace--corporate .business-content .fleet-site-status-tabs button[aria-pressed=true] {
+    background:#fff!important; color:#455269!important; box-shadow:0 1px 4px #2334560a!important;
+  }
+
+  /* Tables: reference header and cell sizes. */
+  .business-workspace--corporate .business-content table th {font-size:11px!important; font-weight:400!important; color:#8a93a1!important}
+  .business-workspace--corporate .business-content table td {font-size:12px!important}
+  .business-workspace--corporate .business-content table td :is(small,.cell-secondary) {font-size:10px!important}
+
+  /* Empty states and list footers. */
+  .business-workspace--corporate .business-content .business-empty strong {font-size:13px!important; font-weight:400; color:#7b8592}
+  .business-workspace--corporate .business-content .business-empty p {font-size:12px!important; color:#a4adba}
+  .business-workspace--corporate .business-content :is(.fleet-site-footer,.fleet-site-result-count,.fleet-team-empty) {font-size:12px!important; color:#929ba7}
+  .business-workspace--corporate .business-content details>summary {font-size:13px!important}
+}
+
+/* Vehicle list heading: count beside the title, row hint on the right. */
+.fleet-assets-table-heading h2 small {margin-left:6px; font-size:11px; font-weight:400; color:var(--text-3)}
+.business-workspace--corporate .fleet-assets-table-heading {justify-content:space-between!important}
+.fleet-assets-table-heading>.fleet-assets-hint {font-size:11px; color:#929ba7}
+.fleet-assets-reference-table td>.business-badge+small {display:block; margin-top:4px}
+@media (max-width:767px) {.fleet-assets-table-heading>.fleet-assets-hint {display:none}}
+
+/* Vehicle detail: identity line above the tabs, folding sections, compact action row. */
+.fleet-vehicle-identity {display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:2px 0 14px}
+.fleet-vehicle-identity h3 {margin:0; font-size:21px; font-weight:400; line-height:1.3; color:var(--text)}
+.fleet-vehicle-identity p {margin:4px 0 0; font-size:11px; color:var(--text-3)}
+.fleet-vehicle-identity>.business-badge {flex:none; margin-top:4px}
+.fleet-assets-detail-section h3 {display:flex; align-items:center; gap:7px}
+.fleet-assets-detail .fleet-vehicle-collapse {border:1px solid var(--border); border-radius:10px; padding:0 12px}
+.fleet-assets-detail .fleet-vehicle-collapse>summary {display:flex; align-items:center; gap:8px; min-height:42px; font-size:12px!important; cursor:pointer; list-style:none}
+.fleet-assets-detail .fleet-vehicle-collapse>summary::-webkit-details-marker {display:none}
+.fleet-assets-detail .fleet-vehicle-collapse[open] {padding-bottom:12px}
+.fleet-assets-detail .fleet-vehicle-collapse .fleet-assets-detail-meta {font-size:11px; color:var(--status-warning-text)}
+.fleet-vehicle-battery-more {margin:8px 0}
+.fleet-vehicle-battery-more>summary {font-size:11px!important; color:var(--text-3); cursor:pointer}
+.fleet-vehicle-map-link {margin-top:10px; min-height:30px!important; padding:4px 10px!important; font-size:11px!important}
+.fleet-assets-detail .business-map-wrap {margin-top:10px; border-radius:8px; overflow:hidden}
+
+@media screen and (min-width:768px) {
+  /* Drawer close: plain × like the reference panel. */
+  .business-drawer>header>.business-button {min-width:32px!important; min-height:32px!important; width:32px; height:32px; padding:0!important; border:0!important; background:transparent!important; box-shadow:none!important; color:#7b8592!important; font-size:20px!important}
+  .business-drawer>header>.business-button:hover {background:#f2f4f7!important}
+
+  /* Directory side lists (vehicle groups, branch groups): compact rows. */
+  .business-workspace--corporate .business-content .fleet-directory-heading h2 {font-size:13px!important; font-weight:500}
+  .business-workspace--corporate .business-content .fleet-directory-heading .business-button {min-width:0!important; min-height:28px!important; padding:4px 8px!important; border-color:transparent!important; background:transparent!important}
+  .business-workspace--corporate .business-content :is(.fleet-directory-group,.fleet-directory-footer-action) {min-height:34px!important; padding:6px 10px!important; font-size:12px!important}
+  .business-workspace--corporate .business-content .fleet-directory-group-count {font-size:10px!important}
+}
+
+/* Dashboard: KPI sub-lines, photo thumbnails and pills in the vehicle preview. */
+.fleet-dashboard-metrics .fleet-metric-note {display:block; margin-top:2px; font-style:normal; font-size:11px; line-height:1.4; color:#909aa7; text-align:left}
+.fleet-dashboard-metrics button.green .fleet-metric-note {color:var(--status-success-text)}
+.fleet-dashboard-metrics button.amber .fleet-metric-note {color:var(--status-warning-text)}
+@media (max-width:767px) {.fleet-dashboard-metrics .fleet-metric-note {display:none}}
+.fleet-dashboard-vehicle-name>i {overflow:hidden}
+.fleet-dashboard-vehicle-name>i img {width:100%; height:100%; object-fit:contain}
+.fleet-dashboard-vehicles .business-badge {font-size:11px}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-content .fleet-dashboard .business-section-title h3 {font-size:15px!important; font-weight:400!important; line-height:1.4!important}
+  .business-workspace--corporate .business-content .fleet-dashboard .business-section-title p {font-size:11px!important; color:#929ba7!important; margin-top:2px!important}
+  .business-workspace--corporate .business-content .fleet-dashboard .fleet-dashboard-link {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-dashboard-vehicle-name strong {font-size:12px!important; font-weight:400!important}
+  .business-workspace--corporate .business-content .fleet-dashboard-vehicle-name small,
+  .business-workspace--corporate .business-content .fleet-dashboard-manager small {font-size:10px!important}
+  .business-workspace--corporate .business-content :is(.fleet-dashboard-manager,.fleet-dashboard-km) {font-size:12px!important}
+  .business-workspace--corporate .business-content .fleet-dashboard-reception .business-badge {width:auto; justify-self:start}
+  .business-workspace--corporate .business-content .fleet-dashboard-reception {background:transparent!important; color:inherit!important}
+  .business-workspace--corporate .business-content .fleet-week-chart strong {font-weight:400!important; font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-week-chart time {font-size:10px!important}
+}
+
+/* Reservation status: same small pill as the other lists (colors stay per status). */
+.business-workspace--corporate .corporate-reservation-badge,.business-drawer .corporate-reservation-badge,.gps-business-modal .corporate-reservation-badge {
+  display:inline-flex!important; align-items:center; gap:5px; padding:4px 8px!important; border-radius:5px!important;
+  font-size:11px!important; font-weight:400!important; line-height:1.4!important; white-space:nowrap;
+}
+.business-workspace--corporate .corporate-reservation-badge::before,.business-drawer .corporate-reservation-badge::before,.gps-business-modal .corporate-reservation-badge::before {
+  content:''; width:4px; height:4px; border-radius:50%; background:currentColor; flex:none;
+}
+@media screen and (min-width:768px) {
+  /* Maintenance schedule filter: grey segmented control as in the reference. */
+  .business-workspace--corporate .business-content .fleet-operations[data-mode=maintenance] .fleet-operations-status {display:inline-flex!important; gap:2px!important; padding:3px!important; border:0!important; border-radius:8px!important; background:#edf0f5!important}
+  .business-workspace--corporate .business-content .fleet-operations[data-mode=maintenance] .fleet-operations-status button {min-height:0!important; padding:5px 12px!important; border:0!important; border-radius:6px!important; background:transparent!important; box-shadow:none!important; color:#7d8796!important; font-size:12px!important}
+  .business-workspace--corporate .business-content .fleet-operations[data-mode=maintenance] .fleet-operations-status button[aria-pressed=true] {background:#fff!important; color:#455269!important; box-shadow:0 1px 4px #2334560a!important}
+}
+@media screen and (max-width:767px) {
+  .business-workspace--corporate .business-content .fleet-org-tabs button {min-height:36px!important; padding:0 0 4px!important; border:0!important; border-bottom:2px solid transparent!important; border-radius:0!important; background:transparent!important; color:var(--text-2)!important; font-size:13px!important; display:inline-flex; align-items:center; gap:6px}
+  .business-workspace--corporate .business-content .fleet-org-tabs button[aria-pressed=true] {color:var(--primary)!important; border-bottom-color:var(--primary)!important}
+}

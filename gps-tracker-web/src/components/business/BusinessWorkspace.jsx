@@ -86,6 +86,10 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
     if (child && onSection) {onTab(page); onSection(page,child);}
     else onTab(page,child);
   }
+  // Pages and sections without their own sidebar link highlight the link they open from.
+  const navParent = {sites:{page:'staff',id:'organization'},audit:{page:'staff',id:'permissions'},subscription:{page:'settings',id:'company'}};
+  const currentLink = active.nav===false ? navParent[active.id] : sections?.[active.id]?.find(([id])=>id===section)?.[2]?.hidden ? navParent[section] : {page:tab,id:section};
+  const navCurrent = link => currentLink && link.page===currentLink.page && (!link.id || link.id===currentLink.id);
   const groupLabel = navigation.find(item=>item.id===activeGroup)?.label || active.label;
   const pageLabel = sections?.[active.id]?.find(([id])=>section===id)?.[1] || active.label;
   const company = companyLabel || '내 회사';
@@ -101,8 +105,8 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
       <nav className="business-nav no-print" aria-label={`${title} 메뉴`}>
         {corporate && <div className="fleet-member-brand"><button type="button" className="fleet-brand-home" aria-label="시리얼링크 운영 현황" onClick={()=>onTab('overview')}><span className="fleet-brand-symbol"><Icon name="car" size={19}/></span>법인운행</button><small>{company} · 업무 공간</small></div>}
         {corporate ? navigation.map(item=>{
-          const pages=tabs.filter(t=>(t.group || t.id)===item.id);
-          const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:p.label}]);
+          const pages=tabs.filter(t=>(t.group || t.id)===item.id&&t.nav!==false);
+          const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].filter(entry=>!entry[2]?.hidden).map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:p.label}]);
           if (!links.length) return null;
           const nested=links.length>1, open=expanded===item.id, current=activeGroup===item.id;
           return <div className="fleet-nav-group" key={item.id}><button type="button" className="business-nav-item" aria-current={current?'page':undefined} aria-expanded={nested?open:undefined} onClick={()=>{
@@ -110,13 +114,13 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
             onTab(lastInGroup[item.id] && pages.some(p=>p.id===lastInGroup[item.id]) ? lastInGroup[item.id] : pages[0].id);
             setExpanded(item.id);
           }}><Icon name={item.icon} size={18}/><span>{item.label}</span>{nested&&<Icon name={open?'chevron-down':'chevron-right'} size={14}/>}</button>
-            {nested&&open&&<nav className="fleet-nav-children" aria-label={`${item.label} 하위 메뉴`}>{links.map(link=><button key={link.page+(link.id||'')} type="button" aria-current={tab===link.page&&(!link.id||section===link.id)?'page':undefined} onClick={()=>visit(link.page,link.id)}>{link.label}</button>)}</nav>}
+            {nested&&open&&<nav className="fleet-nav-children" aria-label={`${item.label} 하위 메뉴`}>{links.map(link=><button key={link.page+(link.id||'')} type="button" aria-current={navCurrent(link)?'page':undefined} onClick={()=>visit(link.page,link.id)}>{link.label}</button>)}</nav>}
           </div>;
         }) : navigation.map(item => <button className="business-nav-item" key={item.id} type="button" aria-current={(groups ? activeGroup : tab) === item.id ? 'page' : undefined} onClick={() => onTab(groups ? lastInGroup[item.id] || tabs.find(t => t.group === item.id).id : item.id)}>
           <Icon name={item.icon} size={18} /><span>{item.label}</span>
         </button>)}
-        {onNavigate && mapNavigation && <button className="business-nav-item business-map-shortcut" type="button" title="내 계정 단말기의 전체 지도" onClick={() => onNavigate('home')}><Icon name="mapPin" size={18} /><span>실시간 지도</span></button>}
-        {corporate && <div className="business-nav-tools">{action}{onNavigate && <button className="business-button" type="button" aria-expanded={accountMenu} onClick={() => setAccountMenu(true)}><Icon name="user" size={18} />계정 메뉴</button>}</div>}
+        {!corporate && onNavigate && mapNavigation && <button className="business-nav-item business-map-shortcut" type="button" title="내 계정 단말기의 전체 지도" onClick={() => onNavigate('home')}><Icon name="mapPin" size={18} /><span>실시간 지도</span></button>}
+        {corporate && <div className="business-nav-tools">{action}{onNavigate && <button className="fleet-nav-service-link" type="button" onClick={() => onNavigate('profile')}><Icon name="settings" size={14} />이용 서비스 설정</button>}<small className="fleet-nav-copyright">시리얼링크 © {new Date(day).getFullYear()}</small></div>}
       </nav>
       {corporate && phone ? <CorporateMobileHeader active={active} groups={groups} tabs={tabs} section={section} sections={sections} company={company}
         onTab={visit} toolbar={toolbar} onNavigate={onNavigate} destinations={accountNavigation} onQuick={setQuick} wide={wide} onWidth={chooseWidth}/>
