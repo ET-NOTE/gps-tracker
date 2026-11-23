@@ -96,7 +96,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
       </div>
       <div className="fleet-record-filterfoot"><span aria-live="polite">전체 {total}{unit} 중 <b>{count}{unit}</b> 조회</span><div>
         {!terminals&&<button type="button" className="business-button" aria-expanded={searchOpen} onClick={()=>{setSearchOpen(!searchOpen);if(searchOpen)setQuery('');}}><Icon name="search" size={13}/>검색</button>}
-        <button type="button" className="business-button" onClick={reset}><Icon name="refresh" size={13}/>필터 초기화</button>
+        <button type="button" className="fleet-filter-reset-link" onClick={reset}><Icon name="refresh" size={13}/>필터 초기화</button>
       </div></div>
     </section>
     {terminals&&visibleTerminals.some(r=>r.offline)&&<div className="fleet-operations-callout"><Icon name="info" size={16}/>수신이 중단된 단말기의 위치는 마지막 수신 기준입니다. 현재 위치와 다를 수 있습니다.</div>}

@@ -16,10 +16,13 @@ import CorporateMobileHeader from './CorporateMobileHeader';
 import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceHeaderActions,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import FleetQuickPanel from './FleetQuickPanel';
 import './business.css';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 const VehicleContext = createContext(null);
 const SelectionContext = createContext(null);
 export const useBusinessVehicle = () => useContext(VehicleContext);
+const mockupHiddenPages = ['monthly', 'expense-categories'];
+
 export function RentalVehicleScope({devices, meta, onMap, onVehicleAction, onManageVehicle, children}) {
   const [focusedId, setFocusedId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -45,9 +48,15 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
   const navigation = groups || tabs;
   const activeGroup = active.group || active.id;
   const subnavGroup = active.subnavGroup || activeGroup;
-  const subTabs = groups ? tabs.filter(item => (item.subnavGroup || item.group) === subnavGroup) : [];
+  // Desktop follows the design mockup: these pages stay reachable by URL but get no menu entry.
+  const mockupNav = kind === 'corporate' && !phone && hideOutsideMockup;
+  const menuPage = item => !(mockupNav && mockupHiddenPages.includes(item.id));
+  const subTabs = groups ? tabs.filter(item => (item.subnavGroup || item.group) === subnavGroup && menuPage(item)) : [];
   const subnavLabel = navigation.find(item => item.id === subnavGroup)?.label;
   const [lastInGroup, setLastInGroup] = useState({});
+  // Groups opened during this session stay open; the active group always opens.
+  const [expandedGroups, setExpandedGroups] = useState(() => new Set([activeGroup]));
+  useEffect(() => { setExpandedGroups(previous => previous.has(activeGroup) ? previous : new Set([...previous, activeGroup])); }, [activeGroup]);
   const [expanded, setExpanded] = useState(activeGroup);
   useEffect(() => { setExpanded(activeGroup); }, [activeGroup]);
   const [wide,setWide] = useState(() => {
@@ -105,11 +114,18 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
       <nav className="business-nav no-print" aria-label={`${title} 메뉴`}>
         {corporate && <div className="fleet-member-brand"><button type="button" className="fleet-brand-home" aria-label="시리얼링크 운영 현황" onClick={()=>onTab('overview')}><span className="fleet-brand-symbol"><Icon name="car" size={19}/></span>법인운행</button><small>{company} · 업무 공간</small></div>}
         {corporate ? navigation.map(item=>{
-          const pages=tabs.filter(t=>(t.group || t.id)===item.id&&t.nav!==false);
+          const pages=tabs.filter(t=>(t.group || t.id)===item.id&&t.nav!==false&&menuPage(t));
           const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].filter(entry=>!entry[2]?.hidden).map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:p.label}]);
           if (!links.length) return null;
-          const nested=links.length>1, open=expanded===item.id, current=activeGroup===item.id;
+          const nested=links.length>1, open=mockupNav?expandedGroups.has(item.id):expanded===item.id, current=activeGroup===item.id;
           return <div className="fleet-nav-group" key={item.id}><button type="button" className="business-nav-item" aria-current={current?'page':undefined} aria-expanded={nested?open:undefined} onClick={()=>{
+            if (mockupNav && nested) {
+              // An open group only closes; a closed group opens on its first page.
+              if (open) { setExpandedGroups(previous => { const next = new Set(previous); next.delete(item.id); return next; }); return; }
+              setExpandedGroups(previous => new Set([...previous, item.id]));
+              visit(links[0].page, links[0].id);
+              return;
+            }
             if (nested && current) {setExpanded(open?null:item.id);return;}
             onTab(lastInGroup[item.id] && pages.some(p=>p.id===lastInGroup[item.id]) ? lastInGroup[item.id] : pages[0].id);
             setExpanded(item.id);

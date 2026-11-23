@@ -119,7 +119,7 @@ export default function FleetTripLog({ devices, onOpenVehicle }) {
         <label>운행목적<select value={filters.purpose} onChange={e => set('purpose', e.target.value)}><option value="">전체 운행목적</option><option value="unclassified">미분류</option>{purposes.map(n => <option key={n}>{n}</option>)}</select></label>
       </div>
       <div className="fleet-record-filterfoot"><label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="운행 검색" placeholder="차량, 운전자, 도착지 검색" value={filters.query} onChange={e => set('query', e.target.value)}/></label><div>
-        <BusinessButton icon="refresh" onClick={() => { setFilters(initial); setView('all'); }}>조건 초기화</BusinessButton>
+        <button type="button" className="fleet-filter-reset-link" onClick={() => { setFilters(initial); setView('all'); }}><Icon name="refresh" size={13}/>조건 초기화</button>
       </div></div>
     </div>
     {invalid && <BusinessError>시작일과 종료일을 확인해 주세요.</BusinessError>}

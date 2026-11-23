@@ -761,10 +761,57 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   .business-workspace--corporate .business-content .fleet-week-chart strong small {font-size:11px!important}
   .business-workspace--corporate .business-content .fleet-record-filterbox[aria-label="차량 필터 조건"] .fleet-record-fields>label {font-size:11px!important}
   .business-workspace--corporate .business-content .fleet-filter-reset-link {font-size:11px!important}
-  .business-workspace--corporate .business-content .fleet-expenses .fleet-record-metrics dt {font-size:13px!important}
+  .business-workspace--corporate .business-content .fleet-expenses .fleet-record-metrics dt {font-size:12px!important}
   .business-workspace--corporate .business-content button.business-button[aria-label="CSV 일괄 등록"] {font-size:11px!important}
   .business-workspace--corporate .business-content .fleet-people-table thead th:last-child {font-size:12px!important}
   .business-workspace--corporate .business-content .fleet-service-usage .fleet-usage-bar>div>span {font-size:14px!important}
   .business-workspace--corporate .business-content .fleet-service-usage .business-section-title p {font-size:10px!important}
   .business-workspace--corporate .business-content .fleet-analytics--costs .fleet-analytics-tabs button {font-size:12px!important}
+}
+/* ── Mockup round 6: last type sizes (desktop, per screen) ── */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-content .fleet-operations[data-mode=devices] .fleet-operations-card footer button.business-button {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-purpose-note {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-analytics--trips .fleet-analytics-tabs button {font-size:12px!important}
+}
+/* ── Mockup round 7: menu children, fixed-width query fields, single search border ── */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-nav .fleet-nav-children {border-inline-start:1px solid #dde3ed!important}
+  .business-workspace--corporate .business-nav .fleet-nav-children button {font-size:12px!important; color:#838b98!important; border-left-color:transparent!important}
+  .business-workspace--corporate .business-nav .fleet-nav-children button[aria-current=page] {color:var(--primary)!important; border-left:1px solid var(--primary)!important}
+  /* Query fields keep the mockup's fixed widths instead of stretching across the page. */
+  .business-workspace--corporate .business-content :is(.fleet-booking-query-fields,.fleet-expense-fields) {display:flex!important; flex-wrap:wrap; align-items:flex-end}
+  .business-workspace--corporate .business-content :is(.fleet-booking-query-fields,.fleet-expense-fields)>:not(.fleet-date-field) {flex:0 0 157px; width:157px; min-width:0}
+  .business-workspace--corporate .business-content :is(.fleet-booking-query-fields,.fleet-expense-fields)>.fleet-date-field {flex:0 0 330px; width:330px}
+  .business-workspace--corporate .business-content .fleet-booking-query-foot {align-items:flex-end; flex-wrap:nowrap}
+  .business-workspace--corporate .business-content .fleet-booking-query-foot>label:not(.fleet-inline-search) {flex:0 0 157px; width:157px; min-width:0}
+  .business-workspace--corporate .business-content .fleet-booking-query-foot>.fleet-inline-search,
+  .business-workspace--corporate .business-content .fleet-expense-query .fleet-labeled-search {flex:0 0 340px; width:340px; max-width:340px}
+  .business-workspace--corporate .business-content :is(.fleet-booking-query-foot,.fleet-expense-query .fleet-record-filterfoot)>div {margin-left:auto; display:flex; align-items:flex-end; align-self:flex-end}
+  .business-workspace--corporate .business-content .fleet-expense-query .fleet-record-filterfoot {display:flex; align-items:flex-end; gap:12px}
+  /* One border: the wrapper draws it (and the focus ring); the input inside has none. */
+  .business-workspace--corporate .business-content span.fleet-inline-search {display:flex; align-items:center; gap:6px; box-sizing:border-box; height:37px; padding:0 10px; border:1px solid #e2e6ed; border-radius:8px; background:#fff}
+  .business-workspace--corporate .business-content .fleet-inline-search>input[type=search] {border:0!important; outline:0!important; box-shadow:none!important; background:transparent; min-width:0; flex:1}
+  .business-workspace--corporate .business-content span.fleet-inline-search:focus-within {outline:2px solid var(--primary); outline-offset:1px}
+}
+/* Live monitoring (desktop design): operating-state badges, pin hint, last reception line. */
+@media screen and (min-width:768px) {
+  .fleet-live[data-mockup] .fleet-live-map-hint {display:block!important; margin:3px 0 0; font-size:11px; color:#929ba7}
+  .fleet-live li button>[data-state="running"] {background:var(--status-success-bg,#eaf6f0); color:var(--status-success-text,#26856b)}
+  .fleet-live li button>[data-state="idle"] {background:#f1f3f7; color:#6b7686}
+  .fleet-live li button>[data-state="service"] {background:var(--status-warning-bg,#fff5e5); color:var(--status-warning-text,#b77923)}
+  .fleet-live-last-seen {margin:0; padding:10px 16px 14px; border-top:1px solid #eef1f5; font-size:11px; color:#929ba7}
+}
+/* Same query pattern on the other ledgers: fixed field widths, 340px search, reset link at the row end. */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-content :is(.fleet-operations-query,.fleet-live-filters,.fleet-record-filterbox[aria-label="차량 필터 조건"])>.fleet-record-fields {display:flex!important; flex-wrap:wrap; align-items:flex-end}
+  .business-workspace--corporate .business-content :is(.fleet-operations-query,.fleet-live-filters,.fleet-record-filterbox[aria-label="차량 필터 조건"])>.fleet-record-fields>* {flex:0 0 157px; width:157px; min-width:0}
+  .business-workspace--corporate .business-content .fleet-trip-log-fields+.fleet-record-filterfoot>label.fleet-inline-search {flex:0 0 340px; width:340px; max-width:340px}
+  .business-workspace--corporate .business-content .fleet-approval-filters {display:flex!important; flex-wrap:wrap; align-items:flex-end; gap:10px 12px}
+  .business-workspace--corporate .business-content .fleet-approval-filters>label {flex:0 0 157px; width:157px; min-width:0}
+  .business-workspace--corporate .business-content .fleet-approval-filters>label:has(.fleet-approval-search) {flex:0 0 340px; width:340px}
+  .business-workspace--corporate .business-content .fleet-approval-filters>.fleet-filter-reset-link {margin-left:auto; align-self:flex-end}
+  .business-workspace--corporate .business-content .fleet-approval-search {display:flex; align-items:center; gap:6px; box-sizing:border-box; height:37px; padding:0 10px; border:1px solid #e2e6ed; border-radius:8px; background:#fff}
+  .business-workspace--corporate .business-content .fleet-approval-search>input {border:0!important; outline:0!important; box-shadow:none!important; background:transparent; min-width:0; flex:1}
+  .business-workspace--corporate .business-content .fleet-approval-search:focus-within {outline:2px solid var(--primary); outline-offset:1px}
 }

@@ -82,7 +82,7 @@ export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
       <label>담당자<select value={person} onChange={e=>field('person',e.target.value)}><option value="">전체 담당자</option>{options(records,'personKey','person','미지정')}</select></label>
       <label>담당자 부서<select value={department} onChange={e=>field('department',e.target.value)}><option value="">전체 부서</option>{options(records,'departmentKey','department','부서 미지정')}</select></label>
       <label>검색<span className="fleet-approval-search"><Icon name="search" size={15}/><input type="search" aria-label="차량, 담당자, 내용 검색" placeholder="차량, 담당자, 내용 검색" value={query} onChange={e=>field('query',e.target.value)}/></span></label>
-      <BusinessButton icon="refresh" onClick={()=>change(initialFilters())}>조건 초기화</BusinessButton>
+      <button type="button" className="fleet-filter-reset-link" onClick={()=>change(initialFilters())}><Icon name="refresh" size={13}/>조건 초기화</button>
     </div>
     <p className="fleet-approval-guide">담당자와 부서는 예약의 운전자, 지출의 요청자를 기준으로 조회합니다.</p>
     <div className="fleet-approval-list-head"><strong><span>승인 요청 {ready?rows.length:'—'}건</span><small>{picked.length}건 선택</small></strong><div><BusinessButton disabled={!picked.length} onClick={()=>setBatch({decision:'rejected',rows:picked})}>선택 반려</BusinessButton><BusinessButton primary icon="check" disabled={!picked.length} onClick={()=>setBatch({decision:'approved',rows:picked})}>선택 승인</BusinessButton></div></div>
