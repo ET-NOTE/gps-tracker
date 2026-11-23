@@ -754,3 +754,17 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   .business-workspace--corporate .business-content .fleet-operating-policy .business-section-title p {font-size:10px!important}
   .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-hint {font-size:11px!important}
 }
+/* ── Mockup round 5: remaining type sizes (desktop, per screen) ── */
+.fleet-filter-reset-link {font-size:11px}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-content .fleet-week-chart time {font-size:12px!important}
+  .business-workspace--corporate .business-content .fleet-week-chart strong small {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-record-filterbox[aria-label="차량 필터 조건"] .fleet-record-fields>label {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-filter-reset-link {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-expenses .fleet-record-metrics dt {font-size:13px!important}
+  .business-workspace--corporate .business-content button.business-button[aria-label="CSV 일괄 등록"] {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-people-table thead th:last-child {font-size:12px!important}
+  .business-workspace--corporate .business-content .fleet-service-usage .fleet-usage-bar>div>span {font-size:14px!important}
+  .business-workspace--corporate .business-content .fleet-service-usage .business-section-title p {font-size:10px!important}
+  .business-workspace--corporate .business-content .fleet-analytics--costs .fleet-analytics-tabs button {font-size:12px!important}
+}

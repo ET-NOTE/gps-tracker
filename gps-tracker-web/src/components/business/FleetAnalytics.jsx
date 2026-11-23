@@ -159,7 +159,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       ...(dimension?{category_id:dimension}:{}),...(department?{department_id:department}:{})}}});
   }
   const interactiveGroups = by==='vehicle' && (trips ? !!onReport : !!onExpenses);
-  return <div className="fleet-analytics">
+  return <div className={"fleet-analytics fleet-analytics--"+section}>
     <div className="fleet-analytics-toolbar"><div className="fleet-analytics-tabs" role="group" aria-label="집계 기준">
       {trips&&<button type="button" aria-pressed={group==='all'} onClick={()=>setGroup('all')}>전체</button>}
       {Object.entries(analyticGroups[section]).map(([id,label])=><button type="button" key={id} aria-pressed={group===id} onClick={()=>setGroup(id)}>{id==='category'?'항목':label}별</button>)}
