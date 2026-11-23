@@ -77,7 +77,7 @@ export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
     ]}/></div>
     <div className="fleet-approval-actions"><ExportButtons csvOnly disabled={!ready||!rows.length} report={approvalReport(rows,filters)} prepareExport={freshReport}/></div>
     <div className="fleet-approval-filters">
-      <fieldset><legend>차량 이용일 · 지출일</legend><div><input type="date" aria-label="조회 시작일" value={from} max={to||undefined} onChange={e=>field('from',e.target.value)}/><span>~</span><input type="date" aria-label="조회 종료일" value={to} min={from||undefined} onChange={e=>field('to',e.target.value)}/></div></fieldset>
+      <fieldset><legend>요청 기간</legend><div><input type="date" aria-label="조회 시작일" value={from} max={to||undefined} onChange={e=>field('from',e.target.value)}/><span>~</span><input type="date" aria-label="조회 종료일" value={to} min={from||undefined} onChange={e=>field('to',e.target.value)}/></div></fieldset>
       <label>승인 상태<select value={status} onChange={e=>change({...filters,status:e.target.value,person:'',department:''})}>{Object.entries(approvalLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}<option value="">전체 상태</option></select></label>
       <label>담당자<select value={person} onChange={e=>field('person',e.target.value)}><option value="">전체 담당자</option>{options(records,'personKey','person','미지정')}</select></label>
       <label>담당자 부서<select value={department} onChange={e=>field('department',e.target.value)}><option value="">전체 부서</option>{options(records,'departmentKey','department','부서 미지정')}</select></label>
