@@ -20,6 +20,8 @@ import {ExpenseReceiptThumbnail,ExpenseInlineAttachments,ExpenseAttachmentViewer
 import Icon from '../Icon';
 import {Modal,FormField,Input,Select,Textarea,Button} from '../ui';
 import './fleet-expenses.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 
 export default function FleetExpenses(props){
  const access=useFleetAccess();
@@ -40,6 +42,8 @@ export default function FleetExpenses(props){
  return <ExpenseWorkspace key={props.approvalsOnly?'approval':props.categoriesOnly?'categories':'expenses'} {...props}/>;
 }
 function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories,initialDetail=null,initialScope}){
+ // Desktop follows the design mockup; phones keep every control.
+ const mockup=!useCorporatePhone()&&hideOutsideMockup;
  const access=useFleetAccess(),qc=useQueryClient(),cats=useQuery({queryKey:['expense-categories'],queryFn:()=>api.expenseCategories()}),assets=useFleetAssets(),staff=useStaff(),org=useFleetOrganization();
  const today=businessDate(),[filters,setFilters]=useState(()=>initialScope?.filters||{from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(initialDetail),[category,setCategory]=useState(null);
  const [query,setQuery]=useState(''),[status,setStatus]=useState(approvalsOnly?'pending':initialScope?.status||''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
@@ -114,19 +118,19 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
  return <div className="fleet-expenses">
  <FleetRecordMetrics label={approvalsOnly?'승인 관리 조회 요약':'조회된 지출 요약'} items={[
   {name:'조회 지출 합계',value:ready?rows.reduce((sum,row)=>sum+row.amount_krw,0):null,unit:'원',icon:'bar'},
-  {name:'승인 금액',value:ready?total.amount:null,unit:'원',tone:'green'},
+  {name:'승인 완료',value:ready?total.amount:null,unit:'원',tone:'green'},
   {name:'승인 대기',value:ready?total.pending:null,unit:'건',tone:'amber'},
   {name:'반려',value:ready?total.rejected:null,unit:'건'},
  ]}/>
  <section className="fleet-expense-query" aria-label="지출 조회 조건">
   <div className="fleet-record-toolbar">
-   <div className="expense-status-tabs" role="group" aria-label="지출 상태 필터">{(approvalsOnly?[['pending','승인 대기'],['approved','승인 완료'],['rejected','반려']]:[['','전체 지출'],['approved','승인 완료'],['pending','승인 대기'],['rejected','반려'],['cancelled','취소']]).map(([value,label])=><button className="expense-status-tab" key={value} type="button" aria-pressed={status===value} onClick={()=>{setStatus(value);setPage(0);setDownloadsOpen(false);}}>{label}<span className="expense-status-count">{ready&&(!limited||value===status)?counts[value||'all']:'—'}</span></button>)}</div>
+   <div className="expense-status-tabs" role="group" aria-label="지출 상태 필터">{(approvalsOnly?[['pending','승인 대기'],['approved','승인 완료'],['rejected','반려']]:[['','전체 지출'],['approved','승인 완료'],['pending','승인 대기'],['rejected','반려'],...(mockup?[]:[['cancelled','취소']])]).map(([value,label])=><button className="expense-status-tab" key={value} type="button" aria-pressed={status===value} onClick={()=>{setStatus(value);setPage(0);setDownloadsOpen(false);}}>{label}<span className="expense-status-count">{ready&&(!limited||value===status)?counts[value||'all']:'—'}</span></button>)}</div>
    <div className="expense-output-actions fleet-record-actions" ref={outputRef}>
-    <div className="expense-download" ref={downloadRef}><BusinessButton icon="download" disabled={!ready} aria-expanded={downloadsOpen} aria-controls={downloadId} onClick={()=>{setDownloadsOpen(open=>!open);setSettingsOpen(false);}}>다운로드</BusinessButton>{downloadsOpen&&<div className="expense-download-menu" id={downloadId}><ExportButtons disabled={!ready} report={ready?expenseReport(rows,{...filters,filterText:selectedNames}):null}/></div>}</div>
-    <div className="expense-settings" ref={settingsRef}><BusinessButton icon="settings" aria-label="지출 설정" title="지출 설정" aria-expanded={settingsOpen} aria-controls={settingsId} onClick={()=>{setSettingsOpen(open=>!open);setDownloadsOpen(false);}}><span>지출 설정</span><Icon name={settingsOpen?'chevron-up':'chevron-down'} size={14}/></BusinessButton>{settingsOpen&&<div className="expense-settings-menu" id={settingsId} role="group" aria-label="지출 설정 옵션">
+    {mockup?<ExportButtons csvOnly disabled={!ready} report={ready?expenseReport(rows,{...filters,filterText:selectedNames}):null}/>:<div className="expense-download" ref={downloadRef}><BusinessButton icon="download" disabled={!ready} aria-expanded={downloadsOpen} aria-controls={downloadId} onClick={()=>{setDownloadsOpen(open=>!open);setSettingsOpen(false);}}>다운로드</BusinessButton>{downloadsOpen&&<div className="expense-download-menu" id={downloadId}><ExportButtons disabled={!ready} report={ready?expenseReport(rows,{...filters,filterText:selectedNames}):null}/></div>}</div>}
+    {!mockup&&<div className="expense-settings" ref={settingsRef}><BusinessButton icon="settings" aria-label="지출 설정" title="지출 설정" aria-expanded={settingsOpen} aria-controls={settingsId} onClick={()=>{setSettingsOpen(open=>!open);setDownloadsOpen(false);}}><span>지출 설정</span><Icon name={settingsOpen?'chevron-up':'chevron-down'} size={14}/></BusinessButton>{settingsOpen&&<div className="expense-settings-menu" id={settingsId} role="group" aria-label="지출 설정 옵션">
      {onOpenCategories&&<BusinessButton icon="list" onClick={()=>{setSettingsOpen(false);onOpenCategories();}}>지출 항목 관리</BusinessButton>}
      <BusinessButton icon="bar" disabled={!ready} aria-pressed={summaryOpen} aria-controls={summaryId} onClick={()=>{setSummaryOpen(open=>!open);setSettingsOpen(false);}}>비용 집계{summaryOpen&&<Icon name="check" size={14}/>}</BusinessButton>
-    </div>}</div>
+    </div>}</div>}
     {!approvalsOnly&&access.write_expenses!==false&&<BusinessButton primary icon="plus" onClick={()=>setEdit({})}>지출 등록</BusinessButton>}
    </div>
   </div>
@@ -138,9 +142,9 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
    {filterFields(filters,filter,false)}
   </div>
   <div className="fleet-record-filterfoot">
-   <label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="차량, 지출 항목, 요청자 검색" placeholder="차량, 지출 항목, 요청자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}}/></label>
-   <div>{refreshButton}<BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>필터{advancedCount>0&&<span className="expense-filter-count">{advancedCount}</span>}</BusinessButton>
-    <BusinessButton onClick={()=>{setFilters({from:today.slice(0,7)+'-01',to:today});setQuery('');setStatus(approvalsOnly?'pending':'');setPage(0);}}>조건 초기화</BusinessButton></div>
+   <label className="fleet-labeled-search"><span>검색</span><span className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="차량, 거래처, 요청자 검색" placeholder="차량, 거래처, 요청자 검색" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}}/></span></label>
+   <div>{!mockup&&<>{refreshButton}<BusinessButton icon="filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>필터{advancedCount>0&&<span className="expense-filter-count">{advancedCount}</span>}</BusinessButton></>}
+    <button type="button" className="fleet-filter-reset-link" onClick={()=>{setFilters({from:today.slice(0,7)+'-01',to:today});setQuery('');setStatus(approvalsOnly?'pending':'');setPage(0);}}><Icon name="refresh" size={13}/>조건 초기화</button></div>
   </div>
   {limited&&<p className="expense-scope-note" role="status">{status?'전체 조회가 1,000건을 넘어 선택한 상태만 조회합니다. 다른 상태의 건수는 미집계(—)입니다.':'전체 조회가 1,000건을 넘습니다. 상태를 선택하거나 기간·필터를 좁혀 주세요.'}</p>}
  </section>
@@ -154,7 +158,7 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
   <BusinessButton disabled={!selected.length} onClick={()=>setBatch({decision:'rejected',rows:selected})}>선택 반려</BusinessButton>
  </div>}
  {!valid?<p role="alert" className="expense-note">조회 기간을 확인해 주세요.</p>:entries.error?<BusinessError onRetry={entries.refetch}>{entries.error.message||'지출을 불러오지 못했습니다.'}</BusinessError>:entries.isPending||entries.isFetching||allEntries.isFetching?<p className="expense-note">지출 내역 불러오는 중…</p>:<>
- <div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{approvalsOnly&&status==='pending'&&<th scope="col">선택</th>}{['지출일','차량','지출 항목','금액','요청자','상태','결제수단','메모','첨부파일'].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{pageRows.map(r=><tr key={r.id} tabIndex={0} aria-label={`지출 ${r.id} 상세 열기`} onClick={e=>{if(!e.target.closest('button,input,a,label'))setDetail(r.id);}} onKeyDown={e=>{if(e.target===e.currentTarget && ['Enter',' '].includes(e.key)){e.preventDefault();setDetail(r.id);}}}>
+ <div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{approvalsOnly&&status==='pending'&&<th scope="col">선택</th>}{['지출일','차량','지출 항목','금액','요청자','상태',...(mockup?[]:['결제수단','메모','첨부파일'])].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{pageRows.map(r=><tr key={r.id} tabIndex={0} aria-label={`지출 ${r.id} 상세 열기`} onClick={e=>{if(!e.target.closest('button,input,a,label'))setDetail(r.id);}} onKeyDown={e=>{if(e.target===e.currentTarget && ['Enter',' '].includes(e.key)){e.preventDefault();setDetail(r.id);}}}>
   {approvalsOnly&&status==='pending'&&<td data-label="선택">{picker(r)}</td>}
   <td data-label="지출일"><button type="button" className="expense-detail-link" title="지출 상세 보기" aria-label={`지출 ${r.id} 상세${r.receipt_count?` · 첨부 ${r.receipt_count}개`:''}`} onClick={()=>setDetail(r.id)}>{r.spent_on}</button></td>
 <td data-label="차량">{r.vehicle_name}</td>
@@ -162,12 +166,12 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
   <td data-label="금액" className="number">{expenseMoney(r.amount_krw)}원</td>
   <td data-label="사용자 · 부서"><strong>{r.staff_name||'미지정'}</strong><small>{r.department_name||'부서 미지정'}</small></td>
   <td data-label="상태"><span className={`business-badge expense-status-${r.status}`}>{expenseStatus[r.status]}</span></td>
-  <td data-label="결제수단">{paymentMethods[r.payment_method]}</td>
+  {!mockup&&<><td data-label="결제수단">{paymentMethods[r.payment_method]}</td>
   <td data-label="메모" className="expense-memo-cell">{r.note?.trim()?<button type="button" className="expense-memo-button" title="메모 보기" aria-label={`지출 ${r.id} 메모 보기`} onClick={()=>setMemo(r)}><Icon name="message" size={16}/></button>:<span className="expense-muted" aria-label="메모 없음">—</span>}</td>
-  <td data-label="첨부파일" className="expense-attachment-cell">{r.receipt_count>0?<ExpenseReceiptThumbnail expenseId={r.id} count={r.receipt_count} onOpen={()=>setDetail(r.id)}/>:<span className="expense-muted" aria-label="첨부파일 없음">—</span>}</td>
+  <td data-label="첨부파일" className="expense-attachment-cell">{r.receipt_count>0?<ExpenseReceiptThumbnail expenseId={r.id} count={r.receipt_count} onOpen={()=>setDetail(r.id)}/>:<span className="expense-muted" aria-label="첨부파일 없음">—</span>}</td></>}
  </tr>)}</tbody></table></div>
  {!rows.length&&<BusinessEmpty title={approvalsOnly?'조회된 승인 내역이 없습니다.':'조회된 지출이 없습니다.'}>{approvalsOnly?'조회 상태나 기간을 변경하세요.':'새 지출을 등록하거나 조회 조건을 변경하세요.'}</BusinessEmpty>}
- <div className="expense-pagination"><span>{rows.length}건</span><div className="expense-actions"><BusinessButton aria-label="이전 페이지" disabled={!page} onClick={()=>setPage(p=>p-1)}><Icon name="chevron-left" size={16}/></BusinessButton><span className="expense-page-number">{page+1} / {Math.max(1,Math.ceil(rows.length/25))}</span><BusinessButton aria-label="다음 페이지" disabled={(page+1)*25>=rows.length} onClick={()=>setPage(p=>p+1)}><Icon name="chevron-right" size={16}/></BusinessButton><span className="expense-page-size">25개씩 보기</span></div></div>
+ {(!mockup||rows.length>25)&&<div className="expense-pagination"><span>{rows.length}건</span><div className="expense-actions"><BusinessButton aria-label="이전 페이지" disabled={!page} onClick={()=>setPage(p=>p-1)}><Icon name="chevron-left" size={16}/></BusinessButton><span className="expense-page-number">{page+1} / {Math.max(1,Math.ceil(rows.length/25))}</span><BusinessButton aria-label="다음 페이지" disabled={(page+1)*25>=rows.length} onClick={()=>setPage(p=>p+1)}><Icon name="chevron-right" size={16}/></BusinessButton><span className="expense-page-size">25개씩 보기</span></div></div>}
  </>}
  </section>
  {ready&&summaryOpen&&<section className="expense-summary-panel" id={summaryId} aria-label="승인 비용 집계"><header><div><h3>승인 비용 집계</h3><p>현재 목록에 있는 승인 지출만 합산합니다.</p></div><Select aria-label="집계 기준" value={groupBy} onChange={e=>setGroupBy(e.target.value)}><option value="month">월별</option><option value="vehicle">차량별</option><option value="department">부서별</option></Select></header><div className="expense-summary">{groups.length?groups.map(g=><div key={g.key}><strong>{g.label}</strong><span>{g.count}건</span><b>{expenseMoney(g.amount)}원</b></div>):<BusinessEmpty compact title="승인된 지출이 없습니다."/>}</div></section>}

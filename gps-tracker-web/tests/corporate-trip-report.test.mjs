@@ -45,7 +45,7 @@ async function components({trips=[],staff=[],access={manage_reports:true,staff_i
       TripEvidence:noop,TripCorrection:noop,TripCorrectionHistory:noop,TripAssignmentModal:noop,TripRulesModal:noop,TripAssignmentHistory:noop,
       FleetAccountScope:noop,useFleetAccess:()=>access,staffCanDrive:s=>s.active,
       BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:button,BusinessError:errorBox,BusinessEmpty:noop,BusinessSection:noop,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
-      BusinessCompanyInfo:noop,BusinessSubscription:noop,ageString:noop,classifyDevice:noop,setSignalLossMinutes:noop,useOperatingPolicy:()=>({}),deviceBattery:noop,useBusinessClock:noop,useBusinessSubscription:noop,
+      BusinessCompanyInfo:noop,BusinessSubscription:noop,ageString:noop,classifyDevice:noop,setSignalLossMinutes:noop,useOperatingPolicy:()=>({}),hideOutsideMockup:false,deviceBattery:noop,useBusinessClock:noop,useBusinessSubscription:noop,
       alertDialog:args=>alerts.push(args),confirmDialog:noop,StatCard:noop,StatCardGrid:noop,
       FleetAssets:noop,FleetAssetForm:noop,FleetAssetDetail:noop,useFleetAssets:noop,projectFleetAssets:noop,fleetAssetsKey:[],useAssetStats:noop,useFleetReservations:noop,useCreateFleetReservation:noop,useUpdateFleetReservation:noop,useCancelFleetReservation:noop,
       Modal:modal,FormField:body,Input:noop,Select:noop,Textarea:noop,Button:button,SkeletonList:noop,

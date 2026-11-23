@@ -21,7 +21,7 @@ const groupCount=(r,label)=>Number(text(groupButton(r,label).findAllByType('span
 const rowNames=r=>r.root.findByType('tbody').findAllByType('tr').map(n=>text(n.findAllByType('td')[0].children));
 const detailDrawers=r=>r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']);
 
-async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false,mapReturn}={}){
+async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false,mapReturn,mockupHidden=false}={}){
  const context=vm.createContext({console});
  const synthetic=exports=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context});
  const code=(await transform(await readFile(new URL('../src/components/business/FleetAssets.jsx',import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
@@ -37,6 +37,7 @@ async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVeh
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'../../lib/fleetAssetFilters':filters,'../../lib/fleetAssets':assetsLib,
   '../../useCorporatePhone':{default:()=>phone},
+  '../../lib/mockupHidden':{hideOutsideMockup:mockupHidden},
   './FleetBatchBindings':{default:()=>React.createElement('button',{},'단말기 일괄 연결')},
   '../CarImage':{default:({vehicleId,version,fallback})=>React.createElement('span',{'data-vehicle-id':vehicleId,'data-photo-version':version},fallback)}};
  const directoryCode=(await transform(await readFile(new URL('../src/components/business/DirectoryLayout.jsx',import.meta.url),'utf8'),{loader:'jsx',jsx:'automatic',format:'esm'})).code;
@@ -384,4 +385,15 @@ test('vehicle detail survives edit cancellation and saving, and uses the refresh
  await act(async()=>r.root.find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}}));
  await act(async()=>button(r,'연결 저장').props.onClick());
  assert.equal(connections[0][1].updated_at,'after-edit');
+});
+
+test('desktop mockup mode hides batch binding, advanced filters and sorting but keeps them on phones',async t=>{
+ const desk=await mount(t,{mockupHidden:true});
+ const labels=desk.r.root.findAll(n=>n.type==='button').map(n=>text(n.children));
+ assert.ok(!labels.includes('단말기 일괄 연결')&&!labels.includes('필터'));
+ assert.equal(desk.r.root.findAllByProps({className:'fleet-assets-sort'}).length,0);
+ assert.ok(labels.includes('필터 초기화'));
+ assert.match(text(desk.r.toJSON()),/차량 정보와 단말 수신 상태는 별도로 관리합니다/);
+ const phone=await mount(t,{mockupHidden:true,phone:true});
+ assert.ok(phone.r.root.findAll(n=>n.type==='button').some(n=>text(n.children)==='단말기 일괄 연결'));
 });

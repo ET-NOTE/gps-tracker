@@ -21,6 +21,7 @@ import CarImage from '../CarImage';
 import BusinessMap from './BusinessMap';
 import {DirectoryLayout,DirectoryGroups} from './DirectoryLayout';
 import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 import {useVehicleGroups,VehicleGroupForm} from './FleetVehicleGroups';
 import Icon from '../Icon';
 import './fleet-assets-cartax.css';
@@ -47,6 +48,7 @@ function mobileVehicleLabels(vehicle,manager){
 export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onReserve,initialMissingSchedules=false,mapReturn,initialCreate=false,mode='vehicles',canRegisterTerminal=false}) {
   const access=useFleetAccess();
   const mobile=useCorporatePhone();
+  const mockup=hideOutsideMockup&&!mobile;
   const [edit,setEdit]=useState(()=>initialCreate&&access.manage_vehicles?{}:null),[detail,setDetail]=useState(mapReturn?.vehicleId ?? null),[query,setQuery]=useState(mapReturn?.directory?.query ?? ''),[group,setGroup]=useState(mapReturn?.directory?.group ?? 'all'),[sort,setSort]=useState(mapReturn?.directory?.sort ?? 'name');
   const groups=useVehicleGroups(mode==='vehicles');
   const [addGroup,setAddGroup]=useState(false);
@@ -133,15 +135,15 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
         <label>단말 수신 상태<select aria-label="단말 수신 상태" value={receptionFilter} onChange={e=>setReceptionFilter(e.target.value)}><option value="">전체 수신 상태</option><option value="normal">정상 수신</option><option value="check">수신 확인</option><option value="none">단말 미연결</option></select></label>
       </div>
       <div className="fleet-record-filterfoot"><span>전체 {assets.length}대 중 {rows.length}대 조회</span><div>
-        {access.manage_vehicles&&<FleetBatchBindings assets={assets} devices={devices} onChanged={onChanged}/>}
-        <button className="business-button" type="button" aria-expanded={filterOpen} onClick={openFilters}><Icon name="filter" size={14}/>필터</button>
-        {(filtered||sort!=='name')&&<button className="business-button" type="button" onClick={reset}>필터 초기화</button>}
+        {access.manage_vehicles&&!mockup&&<FleetBatchBindings assets={assets} devices={devices} onChanged={onChanged}/>}
+        {!mockup&&<button className="business-button" type="button" aria-expanded={filterOpen} onClick={openFilters}><Icon name="filter" size={14}/>필터</button>}
+        <button className="fleet-filter-reset-link" type="button" disabled={!(filtered||sort!=='name')} onClick={reset}><Icon name="refresh" size={13}/>필터 초기화</button>
       </div></div>
     </section>
     <DirectoryLayout sidebar={<DirectoryGroups title="차량 그룹" aria-label="차량 그룹 조회" items={groupItems} value={group} onChange={setGroup} action={groupButton}/>}>
     <div className="fleet-assets-content">
     <section className="fleet-assets-ledger" aria-label="차량 목록">
-      <header className="fleet-assets-table-heading"><h2>{groupItems.find(item=>item.id===group)?.label||'차량 목록'}<small>{rows.length}대</small></h2><span className="fleet-assets-hint">행을 누르면 차량 상세가 열립니다.</span><select className="fleet-assets-sort" aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}>{sortOptions}</select></header>
+      <header className="fleet-assets-table-heading"><h2>{groupItems.find(item=>item.id===group)?.label||'차량 목록'}<small>{rows.length}대</small></h2><span className="fleet-assets-hint">행을 누르면 차량 상세가 열립니다.</span>{!mockup&&<select className="fleet-assets-sort" aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}>{sortOptions}</select>}</header>
       {mobile?<>
       <div className="fleet-mobile-table-scroll" role="region" aria-label="차량 목록 · 좌우 스크롤" tabIndex={0}><div className="fleet-mobile-vehicle-columns" aria-hidden="true"><span>차량</span><span>운영 상태</span><span>단말기</span><span>계기판 거리</span></div><ul className="mobile-fleet-rows">{rows.map(v=>{
         const distance=assetOdometer(v),manager=staff.find(s=>s.id===v.manager_staff_id)?.name;
@@ -181,7 +183,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
         <td><TerminalReception vehicle={v} device={byVehicle.get(v.id)} meta={meta[v.id]}/></td>
       </tr>)}</tbody></table></div>{empty}
       </>}
-      <footer className="fleet-assets-footer"><span role="status">{countLabel}</span></footer>
+      <footer className="fleet-assets-footer"><span role="status">{countLabel}</span><span className="fleet-assets-footnote">차량 정보와 단말 수신 상태는 별도로 관리합니다.</span></footer>
     </section>
     </div>
     </DirectoryLayout></>}

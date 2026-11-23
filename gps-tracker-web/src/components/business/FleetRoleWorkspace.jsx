@@ -7,6 +7,7 @@ import Icon from '../Icon';
 import { BusinessButton, BusinessError } from './BusinessWorkspace';
 import { fleetRoles } from './FleetAccess';
 import FleetGroupAssignment from './FleetGroupAssignment';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 // One screen for every permission group, as in the mockup: the built-in roles (read-only)
 // and the company's own groups (editable), with a group list on the left and the editor on the right.
@@ -74,6 +75,9 @@ export default function FleetRoleWorkspace({ access, onMembers, onAudit, withGro
   }, saved => { setSelected('group:' + saved.id); setMessage('권한 그룹을 저장했습니다.'); });
   const copy = () => run(() => api.createFleetPermissionGroup({ name: group.name + ' 복사', description: group.description || '', permissions: [...group.permissions] }),
     saved => { setSelected('group:' + saved.id); setMessage('그룹을 복사했습니다.'); });
+  // A built-in role becomes a starting point for a company group with the permissions a group may hold.
+  const copyRole = () => run(() => api.createFleetPermissionGroup({ name: fleetRoles[role] + ' 복사', description: roleDescriptions[role] || '', permissions: capabilities.filter(c => c[3] && c[2].includes(role)).map(c => c[0]) }),
+    saved => { setSelected('group:' + saved.id); setMessage('기본 역할을 맞춤 그룹으로 복사했습니다.'); });
   const remove = async () => {
     if (!await confirmDialog({ title: '권한 그룹 삭제', body: `‘${group.name}’ 그룹을 삭제할까요?`, confirmLabel: '삭제', danger: true })) return;
     run(() => api.deleteFleetPermissionGroup(group.id, group.updated_at), () => { setSelected('role:' + access.role); setMessage('그룹을 삭제했습니다.'); });
@@ -89,7 +93,7 @@ export default function FleetRoleWorkspace({ access, onMembers, onAudit, withGro
 
   return <div className="fleet-role-workspace">
     <div className="fleet-role-toolbar"><span>권한 그룹 {total}개</span><div className="fleet-role-head-actions">
-      {onAudit && <BusinessButton icon="clock" onClick={onAudit}>변경 이력</BusinessButton>}
+      {onAudit && !hideOutsideMockup && <BusinessButton icon="clock" onClick={onAudit}>변경 이력</BusinessButton>}
       {withGroups && <BusinessButton primary icon="plus" disabled={groups.isPending || Boolean(groups.error) || busy} onClick={() => setSelected('new')}>그룹 추가</BusinessButton>}</div></div>
     {groups.error && <BusinessError onRetry={groups.refetch}>맞춤 권한 그룹을 불러오지 못했습니다.</BusinessError>}
     <section className="fleet-role-panel" aria-label="권한 그룹">
@@ -107,6 +111,7 @@ export default function FleetRoleWorkspace({ access, onMembers, onAudit, withGro
           <p>{draft ? '변경한 권한은 이 그룹의 사용자에게 함께 적용됩니다.' : roleDescriptions[role]}</p></div>
           <div className="fleet-role-head-actions">
             {role && role !== 'owner' && access.manage_team && <button type="button" className="business-button" onClick={() => onMembers(role)}>사용자 보기</button>}
+            {role && withGroups && <button type="button" className="business-button fleet-role-icon-button" aria-label="맞춤 그룹으로 복사" title="맞춤 그룹으로 복사" disabled={busy || groups.isPending || Boolean(groups.error)} onClick={copyRole}><Icon name="copy" size={15}/></button>}
             {group && <><button type="button" className="business-button" disabled={busy} onClick={() => setAssigning(true)}>사용자 배정</button>
               <button type="button" className="business-button fleet-role-icon-button" aria-label="그룹 복사" title="그룹 복사" disabled={busy} onClick={copy}><Icon name="copy" size={15}/></button>
               <button type="button" className="business-button fleet-role-icon-button" aria-label="그룹 삭제" title={group.members ? '배정된 사용자가 있어 삭제할 수 없습니다.' : '그룹 삭제'} disabled={busy || group.members > 0} onClick={remove}><Icon name="trash" size={15}/></button></>}
@@ -118,16 +123,16 @@ export default function FleetRoleWorkspace({ access, onMembers, onAudit, withGro
           <label className="fleet-role-field-wide">설명{draft ? <input value={draft.description} maxLength={200} disabled={busy} placeholder="그룹의 용도를 적어 주세요. 예: 차량 등록과 예약 승인 담당" onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}/> : <input value={roleDescriptions[role]} disabled readOnly/>}</label>
         </div>
         <div className="fleet-role-matrix-head"><h4 className="fleet-role-matrix-title">메뉴별 권한</h4>
-          {draft && <button type="button" className="fleet-role-select-all" disabled={busy} onClick={() => setDraft(d => ({ ...d, permissions: editableKeys.every(k => d.permissions.includes(k)) ? [] : editableKeys }))}>
-            {editableKeys.every(k => draft.permissions.includes(k)) ? '전체 해제' : '전체 선택'}</button>}</div>
+          {<button type="button" className="fleet-role-select-all" disabled={!draft || busy} onClick={() => setDraft(d => ({ ...d, permissions: editableKeys.every(k => d.permissions.includes(k)) ? [] : editableKeys }))}>
+            {draft && editableKeys.every(k => draft.permissions.includes(k)) ? '전체 해제' : '전체 선택'}</button>}</div>
         <div className="fleet-role-matrix">{menus.map(([menu, keys]) => <div key={menu} className="fleet-role-matrix-row"><strong>{menu}</strong><ul>{keys.map(key => {
           const on = allowedFor(key), canEdit = editable(key);
           return <li key={key} className={(on ? 'allowed' : '') + (canEdit ? ' editable' : '')}>
             <label><input type="checkbox" checked={on} disabled={!canEdit} onChange={() => toggle(key)}/><span className="fleet-role-check" aria-hidden="true">{on && <Icon name="check" size={11}/>}</span>{byKey[key][1]}</label>
           </li>;
         })}</ul></div>)}</div>
-        <p className="fleet-role-matrix-note">{draft ? '사용자·조직 관리, 이용권 결제, 운행기록 보정은 맞춤 그룹에 줄 수 없습니다. 그룹에 배정하면 회사 설정 관리는 제한됩니다.'
-          : '기본 권한 그룹의 권한은 고정되어 있습니다. 필요한 조합은 그룹 추가로 만들어 사용자에게 배정합니다.'}</p>
+        {draft ? <p className="fleet-role-matrix-note">사용자·조직 관리, 이용권 결제, 운행기록 보정은 맞춤 그룹에 줄 수 없습니다. 그룹에 배정하면 회사 설정 관리는 제한됩니다.</p>
+          : <div className="fleet-role-matrix-note"><p>수정·승인 권한을 선택하면 해당 항목의 조회 권한도 함께 적용됩니다.</p><p>관리자 그룹의 사용자 관리와 관리 설정 권한은 유지됩니다.</p></div>}
         {error && <BusinessError>{error}</BusinessError>}
         {message && <p className="fleet-role-matrix-note" role="status">{message}</p>}
         {draft && <footer className="fleet-role-actions">

@@ -62,6 +62,7 @@ async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=fals
   Modal:({children,footer,title})=>React.createElement('section',{role:'dialog','aria-label':title},children,footer),
   FormField:body,Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../lib/business':business,'../../lib/businessExport':businessExport,'../../lib/fleetExpenses':expenses,'../../lib/fleetSites':sites};
+ real['../../lib/mockupHidden']={hideOutsideMockup:false};
  real['./ExpenseCategorySettings']={default:({categories,onEdit,canManage})=>React.createElement('category-settings',{categories,onEdit,canManage})};
  await mod.link(name=>moduleOf(real[name]||(name==='./ExportButtons'?{default:props=>React.createElement('export-preview',props)}:name==='./BusinessDrawer'?{default:({children,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title,'data-view':'drawer',onClose},children)}:common)));
  await mod.evaluate();

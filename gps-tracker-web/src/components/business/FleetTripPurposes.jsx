@@ -77,9 +77,9 @@ export default function FleetTripPurposes() {
     <BusinessSection title={'운행 목적 '+shown.length+'개'} action={<small>사용 중 {items.filter(p=>p.active).length}개</small>}>
       {request.error?<BusinessError onRetry={request.refetch}>운행 목적을 불러오지 못했습니다.</BusinessError>:
         request.isPending?<p className="fleet-purpose-info" role="status">운행 목적 조회 중…</p>:
-        shown.length?<div className="fleet-purpose-scroll" role="region" aria-label="운행 목적 목록" tabIndex={0}><table className="fleet-purpose-table">
+        <div className="fleet-purpose-scroll" role="region" aria-label="운행 목적 목록" tabIndex={0}><table className="fleet-purpose-table">
           <thead><tr><th scope="col">운행 목적</th><th scope="col">참조 기록</th><th scope="col">사용 여부</th>{canEdit&&<th scope="col" aria-label="관리"/>}</tr></thead>
-          <tbody>{shown.map(p=><tr key={p.id} tabIndex={0} aria-label={p.name+' 운행 목적 상세 보기'}
+          <tbody>{shown.length===0&&<tr className="fleet-table-empty-row"><td colSpan={canEdit?4:3}><BusinessEmpty compact title={items.length?'검색 결과가 없습니다.':'등록된 운행 목적이 없습니다.'}/></td></tr>}{shown.map(p=><tr key={p.id} tabIndex={0} aria-label={p.name+' 운행 목적 상세 보기'}
             onClick={()=>openDetails(p.id)} onKeyDown={event=>{
               if (event.target===event.currentTarget && (event.key==='Enter'||event.key===' ')) {
                 event.preventDefault();openDetails(p.id);
@@ -94,7 +94,7 @@ export default function FleetTripPurposes() {
               <button type="button" disabled={busy} aria-label={p.name+' 수정'} onClick={()=>open(p)}>수정</button>
               <button type="button" disabled={busy} aria-label={p.name+' 삭제'} onClick={()=>open(p,true)}>삭제</button></div></td>}
           </tr>)}</tbody>
-        </table></div>:<BusinessEmpty compact title={items.length?'검색 결과가 없습니다.':'등록된 운행 목적이 없습니다.'}/>}
+        </table></div>}
     </BusinessSection>
     <p className="fleet-purpose-note">기존 예약이나 운행 기록에서 사용한 목적은 삭제 대신 사용 중지됩니다.</p>
     {message&&<p className="fleet-purpose-info" role="status">{message}</p>}

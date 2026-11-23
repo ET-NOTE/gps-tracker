@@ -11,7 +11,7 @@ export const expenseTripAmount=(trip,kind)=>kind==='fuel'&&trip?.annotation?.fue
 export function expenseList(rows,{query='',status=''}={}){
  const terms=query.trim().toLocaleLowerCase('ko-KR').split(/\s+/).filter(Boolean);
  const searched=rows.filter(r=>{
-  const text=[r.vehicle_name,r.staff_name,r.group_name,r.category_name].filter(Boolean).join(' ').toLocaleLowerCase('ko-KR');
+  const text=[r.vehicle_name,r.staff_name,r.group_name,r.category_name,r.note].filter(Boolean).join(' ').toLocaleLowerCase('ko-KR');
   return terms.every(term=>text.includes(term));
  });
  const counts={all:searched.length,pending:0,approved:0,rejected:0,cancelled:0};

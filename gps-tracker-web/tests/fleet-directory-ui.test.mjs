@@ -51,6 +51,7 @@ async function mount(name,{access={manage_team:true,role:'owner'},phone=false,pr
   Modal:({children,title,onClose,footer})=>React.createElement('section',{role:'dialog','aria-label':title},React.createElement('button',{'aria-label':'닫기',onClick:onClose}),children,footer),
   FormField:tag('label'),Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../lib/business':business,'../../lib/businessExport':businessExport,'../../lib/fleetSites':{...sites,...siteServices},'../../lib/fleetAssets':assets,'../../lib/fleetPeopleReport':peopleReport};
+ real['../../lib/mockupHidden']={hideOutsideMockup:false};
  const assignmentSource=await readFile(new URL('../src/components/business/FleetGroupAssignment.jsx',import.meta.url),'utf8');
  const assignmentModule=new vm.SourceTextModule((await transform(assignmentSource,{loader:'jsx',jsx:'automatic',format:'esm'})).code,{context});
  await assignmentModule.link(spec=>moduleOf(real[spec]||common));await assignmentModule.evaluate();
@@ -116,7 +117,7 @@ test('compact people management preserves confirmations and optimistic concurren
  const {r,calls,close}=await mount('FleetPeople');
  try{
   const row=tableRows(r)[0];
-  assert.equal(row.findByType('summary').props['aria-label'],'김영업 관리');
+  assert.equal(row.findByType('summary').props['aria-label'],'김영업 수정');
   await act(async()=>row.findAll(n=>n.type==='button'&&text(n.children)==='비활성화')[0].props.onClick());
   await ready(()=>calls.updates.length>0);
   assert.equal(calls.updates[0].id,1);assert.equal(calls.updates[0].body.active,false);assert.equal(calls.updates[0].body.updated_at,'people-v1');

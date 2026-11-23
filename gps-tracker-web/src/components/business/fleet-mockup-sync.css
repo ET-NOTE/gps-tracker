@@ -721,3 +721,21 @@
   .fleet-policy-bar-actions {width:100%}
   .fleet-policy-bar-actions .business-button {flex:1}
 }
+/* ── Mockup round 3: empty table rows, reset links, footnotes, labeled search ── */
+.fleet-table-empty-row td {padding:28px 12px!important; text-align:center; cursor:default}
+.fleet-table-empty-row:hover td {background:transparent!important}
+.fleet-table-empty-row .fleet-team-empty,.fleet-table-empty-row .business-empty {margin:0}
+.fleet-filter-reset-link {display:inline-flex; align-items:center; gap:4px; margin-left:auto; padding:4px 0; border:0; background:none; font:inherit; font-size:12px; color:#7e8998; cursor:pointer; white-space:nowrap}
+.fleet-filter-reset-link:hover:not(:disabled) {color:#2f6fed}
+.fleet-filter-reset-link:disabled {opacity:.5; cursor:default}
+.fleet-filter-reset-link:focus-visible {outline:2px solid #2f6fed; outline-offset:2px; border-radius:4px}
+.fleet-assets-footer {display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.fleet-assets-footnote {font-size:11px; color:#929ba7}
+.fleet-booking-query-foot {display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap}
+.fleet-booking-query-foot>label:not(.fleet-inline-search) {display:grid; gap:7px; min-width:160px; font-size:12px; color:#7e8998}
+.fleet-booking-query-foot>.fleet-inline-search {flex:1 1 280px}
+.fleet-labeled-search {display:grid; gap:7px; flex:1 1 280px; font-size:12px; color:#7e8998}
+.fleet-labeled-search>.fleet-inline-search {width:100%}
+.fleet-role-select-all:disabled {color:#b6bdc8; cursor:default}
+div.fleet-role-matrix-note p {margin:0}
+div.fleet-role-matrix-note p+p {margin-top:4px}

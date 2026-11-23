@@ -7,6 +7,7 @@ import {TripEvidence,TripCorrection,TripCorrectionHistory} from './business/Flee
 import {qualityLabel,reportIncluded,tripTimeRange} from '../lib/tripQuality';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import useCorporatePhone from '../useCorporatePhone';
+import { hideOutsideMockup } from '../lib/mockupHidden';
 import { api } from '../api';
 import Icon from './Icon';
 import ExportButtons from './business/ExportButtons';
@@ -91,6 +92,8 @@ function reportMonthError(month) {
 
 function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice, onVehiclesChange, onNavigate, globalNavigation, meta: personalMeta, toolbar, companyLabel, routeSearch, onRoute, mapReturn, onMapReturnUsed }) {
   const access=useFleetAccess();
+  // PC 화면은 시안에 없는 요소를 숨긴다(기능·경로는 유지). 휴대폰은 모든 진입 경로를 유지한다.
+  const mockupDesk=!useCorporatePhone()&&hideOutsideMockup;
   // 회사 운영 정책의 수신 지연 기준을 이 화면의 단말 상태 판단에 적용한다.
   const offlineMinutes=useOperatingPolicy().data?.offline_minutes;
   useEffect(()=>{setSignalLossMinutes(offlineMinutes);return ()=>setSignalLossMinutes();},[offlineMinutes]);
@@ -171,7 +174,7 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
     {tab === 'live' && <FleetLive devices={devices} onRefresh={()=>Promise.all([terminals.refetch(),assets.refetch()])} initialId={restored?.page==='live' ? restored.vehicleId : null}/>}
     {['vehicles','devices','maintenance'].includes(tab) && <FleetAssets key={tab+(missingSchedulesOnly?'missing-schedules':'all')} mode={tab} canRegisterTerminal={access.billing && !subjectScoped && !!onNavigate} onReserve={id=>reserve({new:true,vehicleId:id})} initialCreate={initialCreate} initialMissingSchedules={missingSchedulesOnly} mapReturn={!restored?.workspaceDetail && restored?.page===tab ? restored : null} onReport={report} meta={meta} assets={assets.data||[]} devices={rawDevices} onMap={openDetailMap} onChanged={assets.refetch} />}
     {tab === 'reservations' && <ReservationsTab devices={devices} request={request} />}
-    {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} onSites={()=>setTab('sites','sites')} sites={<FleetSites/>} hideNavigation />{access.manage_team&&sectionTabs.staff==='users'&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
+    {tab === 'staff' && <><StaffTab activeTab={sectionTabs.staff} onTab={selectSection} onSites={()=>setTab('sites','sites')} sites={<FleetSites/>} hideNavigation />{access.manage_team&&sectionTabs.staff==='users'&&!mockupDesk&&<details className="corporate-admin-details"><summary>계정·단말기 연결 설정</summary><CompanySubjectMappings/></details>}</>}
     {tab === 'sites' && <FleetSites activeTab={sectionTabs.sites} onTab={selectSection} hideNavigation />}
     {['expenses','expense-categories'].includes(tab) && <FleetExpenses categoriesOnly={tab==='expense-categories'} initialScope={expenseDrill?.ledger} onOpenCategories={()=>setTab('expense-categories')}/>}
     {tab==='approvals'&&canReview&&<FleetExpenses approvalsOnly reservationInbox={canReviewReservations ? <ReservationsTab devices={devices} requestsOnly/> : null}/>}
@@ -928,6 +931,7 @@ function bookingPurpose(row) {
   return [row.company_purpose_name,row.purpose].filter(Boolean).join(' · ');
 }
 function ReservationsTab({ devices, request,requestsOnly=false }) {
+  const mockupDesk=!useCorporatePhone()&&hideOutsideMockup;
   const access=useFleetAccess(),canWrite=access.write_reservations!==false;
   const [statusFilter, setStatusFilter] = useState(requestsOnly?'pending':'all');
   const [query, setQuery] = useState('');
@@ -946,6 +950,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const [driverFilter,setDriverFilter] = useState('');
   const [driverDepartment,setDriverDepartment]=useState('');
   const [purposeFilter,setPurposeFilter]=useState('');
+  const [usageFilter,setUsageFilter]=useState('');
   const rangeDays=(Date.parse(dates.to)-Date.parse(dates.from))/86400_000;
   const invalidPeriod=viewMode==='list'&&(!Number.isFinite(rangeDays)||rangeDays<0||rangeDays>=366);
 
@@ -989,7 +994,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const departmentOptions=[...new Set(driverDepartments.values())].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
   const purposeOptions=[...new Set((allReservations||[]).map(bookingPurpose))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ko'));
   const searched = allReservations?.filter(r => (!requestsOnly||(r.approval_required&&r.can_review))&&(!vehicleFilter||String(r.vehicle_id)===vehicleFilter) &&
-    (!driverDepartment||driverDepartments.get(r.driver_staff_id)===driverDepartment) && (!purposeFilter||bookingPurpose(r)===purposeFilter) &&
+    (!driverDepartment||driverDepartments.get(r.driver_staff_id)===driverDepartment) && (!purposeFilter||bookingPurpose(r)===purposeFilter) && (!usageFilter||(usageFilter==='none'?!r.report_purpose:r.report_purpose===usageFilter)) &&
     (!driverFilter||(driverFilter==='unassigned'?r.driver_staff_id==null:String(r.driver_staff_id)===driverFilter)) &&
     [r.vehicle_name,r.device_name,r.license_plate,r.driver_name,bookingPurpose(r),r.note].join(' ').toLocaleLowerCase('ko-KR').includes(query.trim().toLocaleLowerCase('ko-KR')));
   const list = searched?.filter(r => viewMode !== 'list' || statusFilter === 'all' || (statusFilter === 'active' ? ['planned', 'in_progress'].includes(r.status) : r.status === statusFilter));
@@ -1019,7 +1024,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
           {!requestsOnly&&<div className="corporate-view-switch" role="group" aria-label="예약 보기 방식">
             <button type="button" className="corporate-view-option" aria-pressed={viewMode==='list'} onClick={()=>setViewPersist('list')}><Icon name="list" size={16}/>예약 목록</button>
             <button type="button" className="corporate-view-option" aria-pressed={viewMode==='week'} onClick={()=>setViewPersist('week')}>주간 일정</button>
-            <button type="button" className="corporate-view-option" aria-pressed={viewMode==='calendar'} onClick={()=>setViewPersist('calendar')}><Icon name="clock" size={16}/>캘린더</button>
+            {!mockupDesk&&<button type="button" className="corporate-view-option" aria-pressed={viewMode==='calendar'} onClick={()=>setViewPersist('calendar')}><Icon name="clock" size={16}/>캘린더</button>}
           </div>}
           <div className="fleet-record-actions">{viewMode==='calendar' && <input className="corporate-reservation-month" type="month" aria-label="예약 조회 월" value={calYm} onChange={e=>setCalYm(e.target.value||calYm)}/>}
           <ExportButtons csvOnly report={report} disabled={!shown?.length}/>
@@ -1034,11 +1039,10 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
           <label>차량<select value={vehicleFilter} onChange={e=>setVehicleFilter(e.target.value)}><option value="">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{reportVehicleLabel(d)}</option>)}</select></label>
           <label>예약 운전자<select value={driverFilter} onChange={e=>setDriverFilter(e.target.value)}><option value="">전체 예약 운전자</option><option value="unassigned">미지정</option>{staffAll?.map(s=><option value={s.id} key={s.id}>{s.name}{s.active===false?' (비활성)':''}</option>)}</select></label>
           <label>예약 운전자 부서<select value={driverDepartment} onChange={e=>setDriverDepartment(e.target.value)}><option value="">전체 부서</option>{departmentOptions.map(name=><option key={name}>{name}</option>)}</select></label>
-          <label>운행목적<select value={purposeFilter} onChange={e=>setPurposeFilter(e.target.value)}><option value="">전체 운행목적</option>{purposeOptions.includes(purposeFilter)||!purposeFilter?null:<option>{purposeFilter}</option>}{purposeOptions.map(name=><option key={name}>{name}</option>)}</select></label>
         </div>}
-        <div className="fleet-record-filterfoot"><label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량번호, 운전자, 운행목적 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label><div>
-          <BusinessButton icon="filter" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>필터</BusinessButton>
-          <BusinessButton onClick={()=>{setVehicleFilter('');setDriverFilter('');setDriverDepartment('');setPurposeFilter('');setQuery('');setStatusFilter(requestsOnly?'pending':'all');if(viewMode==='list')setDates({from:shiftBookingDay(reservationDay,-7),to:shiftBookingDay(reservationDay,60)});}}>필터 초기화</BusinessButton>
+        <div className="fleet-record-filterfoot fleet-booking-query-foot">{filtersOpen&&<><label>운행목적<select value={purposeFilter} onChange={e=>setPurposeFilter(e.target.value)}><option value="">전체 운행목적</option>{purposeOptions.includes(purposeFilter)||!purposeFilter?null:<option>{purposeFilter}</option>}{purposeOptions.map(name=><option key={name}>{name}</option>)}</select></label><label>이용 구분<select aria-label="이용 구분 필터" value={usageFilter} onChange={e=>setUsageFilter(e.target.value)}><option value="">전체 이용 구분</option><option value="business">업무</option><option value="commute">출퇴근</option><option value="other">기타</option><option value="none">미지정</option></select></label></>}<label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량번호, 운전자, 운행목적 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label><div>
+          {!mockupDesk&&<BusinessButton icon="filter" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>필터</BusinessButton>}
+          <button type="button" className="fleet-filter-reset-link" onClick={()=>{setVehicleFilter('');setDriverFilter('');setDriverDepartment('');setPurposeFilter('');setUsageFilter('');setQuery('');setStatusFilter(requestsOnly?'pending':'all');if(viewMode==='list')setDates({from:shiftBookingDay(reservationDay,-7),to:shiftBookingDay(reservationDay,60)});}}><Icon name="refresh" size={13}/>조건 초기화</button>
         </div></div>
       </div>
       {error && <BusinessError onRetry={refetch}>예약 정보를 불러오지 못했습니다.</BusinessError>}
