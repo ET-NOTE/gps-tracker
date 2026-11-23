@@ -739,3 +739,18 @@
 .fleet-role-select-all:disabled {color:#b6bdc8; cursor:default}
 div.fleet-role-matrix-note p {margin:0}
 div.fleet-role-matrix-note p+p {margin-top:4px}
+/* ── Mockup round 4: type sizes measured against the mockup (desktop, two screens only) ── */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-content .fleet-role-workspace .fleet-role-matrix-row>strong {font-size:14px!important; font-weight:400!important}
+  .business-workspace--corporate .business-content .fleet-role-workspace .fleet-role-matrix li label {font-size:13px!important}
+  .business-workspace--corporate .business-content .fleet-role-workspace .fleet-role-matrix-title {font-size:15px!important; font-weight:400!important}
+  .business-workspace--corporate .business-content .fleet-role-workspace .fleet-role-matrix-note,
+  .business-workspace--corporate .business-content .fleet-role-workspace .fleet-role-matrix-note p {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-role-workspace .fleet-role-list>button small {font-size:11px!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy>.fleet-policy-bar p {font-size:14px!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-bar-actions .business-button {font-size:12px!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-toggle strong {font-size:14px!important; font-weight:400!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-toggle small {font-size:10px!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy .business-section-title p {font-size:10px!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-hint {font-size:11px!important}
+}
