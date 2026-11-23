@@ -222,7 +222,7 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
     </button>)}</div>
     <div className="business-overview-grid fleet-dashboard-grid">
       <BusinessLocation devices={devices} onLive={onLive}/>
-      <div className="fleet-dashboard-tasks" tabIndex={-1} ref={tasksRef}><BusinessSection title="확인할 일">
+      <div className="fleet-dashboard-tasks" tabIndex={-1} ref={tasksRef}><BusinessSection title="확인할 일" action={attention>0&&<span className="business-badge warning fleet-dashboard-task-count">{attention}건</span>}>
         <FleetIncompleteTrips devices={devices} onReport={onReport} now={now} onSummary={setWeekly}/>
         {onExpenses&&<BusinessTask icon="coin" title="지출 승인 요청" description="이번 달 승인 대기" label={pending==null?'—':pending+'건'} action="지출 보기" onClick={onExpenses}/>}
         {expenses.error&&<BusinessError onRetry={expenses.refetch}>승인 대기 건수를 불러오지 못했습니다.</BusinessError>}
@@ -1102,7 +1102,7 @@ function ReservationRow({r,onOpen}) {
   return <tr className="booking-detail-row" onClick={event=>{
     if(!event.target.closest('button')){event.currentTarget.querySelector('.booking-detail-link')?.focus({preventScroll:true});onOpen();}
   }}>
-    <td data-label="차량"><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&r.vehicle_name&&r.vehicle_name!==r.license_plate&&<small>{r.vehicle_name}</small>}</td>
+    <td data-label="차량" className="corporate-reservation-vehicle"><i className="corporate-reservation-thumb" aria-hidden="true"><Icon name="car" size={18}/></i><span><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&r.vehicle_name&&r.vehicle_name!==r.license_plate&&<small>{r.vehicle_name}</small>}</span></td>
     <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></td>
     <td data-label="운행목적 / 메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
     <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>

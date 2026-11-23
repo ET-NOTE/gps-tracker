@@ -189,9 +189,9 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       {result.data.scoped&&<p className="fleet-analytics-note">{subjectScopeNote}</p>}
       {result.data.excluded>0&&<p className="fleet-analytics-note">조회한 차량의 미확정 운행 {number(result.data.excluded)}건은 합계에서 제외했습니다.</p>}
       <FleetRecordMetrics label={trips?'운행 통계 요약':'지출 통계 요약'} items={metrics.map(({label,...metric})=>({name:label,...metric}))}/>
-      <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
+      <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} description={trips?(metric==='count'?'날짜별 운행 건수':'날짜별 주행거리'):'날짜별 지출 금액'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
         {series.length?<Trend series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}
-      </BusinessSection><BusinessSection title={trips?'운행목적별 비중':'항목별 지출'}>
+      </BusinessSection><BusinessSection title={trips?'운행목적별 비중':'항목별 지출'} description={trips?'운행 건수 기준':'지출 금액 기준'}>
         {categories.length?<RankingBars groups={categories} field={trips?'count':'amount'} format={number} unit={trips?'건':'원'}/>:<BusinessEmpty compact title="집계할 항목이 없습니다."/>}
       </BusinessSection></div>
       <BusinessSection title={`${groupName}별 ${trips?'운행':'지출'} 현황`}>
