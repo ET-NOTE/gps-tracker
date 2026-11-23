@@ -115,30 +115,6 @@
   background: #f1f5fa; color: #637e9f; text-decoration: none;
 }
 .entry-demo-link:hover { background: #e8eff8; border-color: #cbd9eb; }
-.entry-demo-info {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px 12px;
-  margin-top: 11px; padding: 10px 12px; border: 1px solid #e9edf3; border-radius: 9px;
-  background: #fcfdfe; color: #66778c; font-size: 12px;
-}
-.entry-demo-info > p {grid-column:1/-1; margin:0; font-size:11px; line-height:1.6; color:#7a8798;}
-.entry-demo-info > .entry-demo-fill {padding:1px 0; line-height:1.6; color:#6887b2;}
-.entry-demo-help[open] {grid-area:1 / 1 / 2 / -1;}
-.entry-demo-help[open] + .entry-demo-fill {grid-area:1 / 2; justify-self:end;}
-.entry-sample-account {display:grid; gap:4px; margin:10px 0 0; font-size:12px; line-height:1.6;}
-.entry-sample-account > div {display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:8px;}
-.entry-sample-account dt {color:#738296;}
-.entry-sample-account dd {margin:0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums;}
-.entry-demo-help {min-width:0;}
-.entry-demo-help summary {
-  width:fit-content; padding:1px 0; line-height:1.6; display: flex; align-items: center; gap: 7px; list-style: none; cursor: pointer;
-}
-.entry-demo-help summary::-webkit-details-marker { display: none; }
-.entry-demo-help summary::after {
-  content: ''; width: 6px; height: 6px; border: solid currentColor; border-width: 0 1px 1px 0;
-  transform: translateY(-2px) rotate(45deg);
-}
-.entry-demo-help[open] summary::after { transform: translateY(2px) rotate(225deg); }
-.entry-demo-help p { margin: 9px 0 0; line-height: 1.65; word-break: keep-all; }
 .entry-links { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
 .entry-panel :is(button, a, summary):focus-visible, .entry-footer a:focus-visible, .entry-recovery button:focus-visible {
   outline: 2px solid #3972ba; outline-offset: 2px;
@@ -199,8 +175,8 @@
   .entry-options label {gap:4px;}
 }
 @media (pointer:coarse) {
-  .entry-options :is(label,button),.entry-links button,.entry-demo-help summary {position:relative;}
-  .entry-options :is(label,button)::before,.entry-links button::before,.entry-demo-help summary::before {
+  .entry-options :is(label,button),.entry-links button {position:relative;}
+  .entry-options :is(label,button)::before,.entry-links button::before {
     content:'';position:absolute;inset:-4px 0;
   }
   .entry-options input {position:relative;z-index:1;}
