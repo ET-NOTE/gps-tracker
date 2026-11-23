@@ -6,11 +6,21 @@ import { terminalName } from '../../lib/corporateOverview';
 import { terminalState } from './FreightDevices';
 import { firstOrder, nameOf, routeName, shipStates, timeLabel, vehicleName } from '../../lib/freightWorkflow';
 import { FreightBadge, FreightButton, FreightField, FreightFilters, FreightOptions, FreightTable } from './FreightKit';
+import { FreightCatalogDialogs } from './FreightCatalog';
+
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 const initial = {branch:'',type:'',state:'',connection:'',query:''};
+// Design list badge: a held vehicle is under maintenance; otherwise its last movement.
+const runBadge = item => item.v && item.v.readiness!=='ready' ? ['정비 중','amber'] : item.motion==='driving' ? ['운행 중','green'] : item.motion==='idle' ? ['정차','neutral'] : ['이동 미확인','neutral'];
 
-export default function FreightOverview({data,devices,onPage,onMap,onRefresh,refreshing}) {
+export default function FreightOverview({data,devices,onPage,onMap,onRefresh,refreshing,save}) {
   const [filter,setFilter] = useState(initial), [selected,setSelected] = useState('');
+  const mockup = !useCorporatePhone() && hideOutsideMockup;
+  // Design: a pin or row opens the vehicle record, as in the vehicle list.
+  const [vehicleView,setVehicleView] = useState(null);
+  const openUnit = item => { setSelected(item.id); if (mockup && item.v) setVehicleView({action:'detail',id:item.v.id}); };
   const change=(key,value)=>setFilter(prev=>({...prev,[key]:value}));
   const byDevice = new Map(devices.map(device=>[String(device.id),device]));
   const linked = new Set(data.vehicles.filter(v=>v.deviceId).map(v=>String(v.deviceId)));
@@ -36,28 +46,30 @@ export default function FreightOverview({data,devices,onPage,onMap,onRefresh,ref
   return <div className="fr-page">
     <div className="fr-toolbar"><span>{list.length}대 조회</span><div className="fr-actions">
       <FreightButton disabled={refreshing} onClick={onRefresh} icon="refresh">{refreshing?'조회 중…':'화면 새로고침'}</FreightButton>
-      <FreightButton onClick={()=>onMap(current?.device?.id)}>전체 지도 보기</FreightButton></div></div>
+      {!mockup&&<FreightButton onClick={()=>onMap(current?.device?.id)}>전체 지도 보기</FreightButton>}</div></div>
     <FreightFilters query={filter.query} onQuery={q=>change('query',q)} placeholder="차량번호, 기사, 소속 검색">
-      <FreightField label="운영 지점"><select value={filter.branch} onChange={e=>change('branch',e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
+      <FreightField label={mockup?'지점':'운영 지점'}><select value={filter.branch} onChange={e=>change('branch',e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
       <FreightField label="차량 형태"><select value={filter.type} onChange={e=>change('type',e.target.value)}><option value="">전체</option>{data.codes.vehicleTypes.map(t=><option key={t}>{t}</option>)}</select></FreightField>
       <FreightField label="차량 상태"><select value={filter.state} onChange={e=>change('state',e.target.value)}><option value="">전체</option><option value="assigned">배차 있음</option><option value="driving">이동 중</option><option value="idle">정차</option><option value="hold">정비·운영 제외</option></select></FreightField>
       <FreightField label="수신 상태"><select value={filter.connection} onChange={e=>change('connection',e.target.value)}><option value="">전체</option><option value="online">정상 수신</option><option value="issue">수신 확인</option><option value="unassigned">미연결</option></select></FreightField>
-      <FreightButton onClick={()=>setFilter(initial)}>조건 초기화</FreightButton>
+      <FreightButton className={mockup?'fleet-filter-reset-link':undefined} icon={mockup?'refresh':undefined} onClick={()=>setFilter(initial)}>조건 초기화</FreightButton>
     </FreightFilters>
     <div className="fr-overview-grid fr-live-grid">
-      <section className="fr-dashboard-card"><header><h2>차량 위치</h2><span>{terminals.filter(validPosition).length}대 표시</span></header>
-        <div className="fr-live-map"><BusinessMap devices={terminals} selectedId={current?.device?.id} onSelect={d=>setSelected(list.find(row=>row.device?.id===d.id)?.id||'')}/></div>
-        {current&&<div className="fr-live-detail"><div><strong>{current.label}</strong><small>{current.connection.label} · 마지막 수신 {timeLabel(current.device?.last_seen_at)}</small></div>
+      <section className="fr-dashboard-card"><header><h2>차량 위치</h2><span>{mockup?list.length+'대 조회':terminals.filter(validPosition).length+'대 표시'}</span></header>
+        <div className="fr-live-map"><BusinessMap devices={terminals} selectedId={current?.device?.id} onSelect={d=>{const item=list.find(row=>row.device?.id===d.id);if(item)openUnit(item);else setSelected('');}}/></div>
+        {!mockup&&current&&<div className="fr-live-detail"><div><strong>{current.label}</strong><small>{current.connection.label} · 마지막 수신 {timeLabel(current.device?.last_seen_at)}</small></div>
           {current.device&&validPosition(current.device)&&<FreightButton onClick={()=>onMap(current.device.id)}>지도에서 보기</FreightButton>}</div>}</section>
       <section className="fr-dashboard-card"><header><h2>조회 차량</h2><span>{list.length}대</span></header><div className="fr-unit-list">
-        {list.map(item=><button type="button" className="fr-unit" key={item.id} aria-pressed={current?.id===item.id} onClick={()=>setSelected(item.id)}>
-          <span>{item.label}<small>{item.v ? [item.v.model,nameOf(data,'drivers',item.v.driverId)].filter(Boolean).join(' · ') : '차량 연결 대기 단말'}</small></span>
-          <FreightBadge tone={item.connection.state==='online'?'green':item.connection.state==='offline'?'amber':'neutral'}>{item.connection.label}</FreightBadge>
+        {list.map(item=><button type="button" className="fr-unit" key={item.id} aria-pressed={current?.id===item.id} onClick={()=>openUnit(item)}>
+          <span>{item.label}<small>{item.v ? (mockup?[nameOf(data,'drivers',item.v.driverId)||'기사 미지정',item.v.type]:[item.v.model,nameOf(data,'drivers',item.v.driverId)]).filter(Boolean).join(' · ') : '차량 연결 대기 단말'}</small>{mockup&&<small className="fr-unit-seen">마지막 수신 {item.device?.last_seen_at?timeLabel(item.device.last_seen_at):'이력 없음'}</small>}</span>
+          <span className="fr-unit-tags">{mockup&&item.v&&<FreightBadge tone={runBadge(item)[1]}>{runBadge(item)[0]}</FreightBadge>}<FreightBadge tone={item.connection.state==='online'?'green':item.connection.state==='offline'?'amber':'neutral'}>{item.connection.label}</FreightBadge></span>
         </button>)}{!list.length&&<p className="fr-empty">조건에 해당하는 차량이 없습니다.</p>}
       </div></section>
     </div>
-    <section className="fr-dashboard-card"><header><h2>진행 운송</h2><FreightButton onClick={()=>onPage('cargo-schedule')}>전체 일정 보기</FreightButton></header>
+    {mockup&&<p className="fr-live-note">수신이 지연되면 마지막 위치를 표시하며 현재 이동 상태는 미확인으로 표시합니다. 상·하차 완료는 운송 현황에서 별도로 기록합니다.</p>}
+    {!mockup&&<><section className="fr-dashboard-card"><header><h2>진행 운송</h2><FreightButton onClick={()=>onPage('cargo-schedule')}>전체 일정 보기</FreightButton></header>
       <FreightTable columns={['운송번호','상·하차지','차량','기사','상차 예정','운송 상태']} rows={runs.map(s=>({id:s.id,cells:[s.number,routeName(data,firstOrder(data,s)),vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId),timeLabel(s.start),shipStates[s.status]]}))}/></section>
-    <details className="fr-dashboard-card fr-telemetry"><summary>단말기 운행 통계</summary><FreightTelemetry devices={terminals}/></details>
+    <details className="fr-dashboard-card fr-telemetry"><summary>단말기 운행 통계</summary><FreightTelemetry devices={terminals}/></details></>}
+    {vehicleView&&<FreightCatalogDialogs kind="vehicles" data={data} save={save} view={vehicleView} setView={setVehicleView} onOpenRecord={kind=>onPage(({shipments:'cargo-shipments',orders:'cargo-orders',drivers:'cargo-drivers',vehicles:'cargo-vehicles'})[kind]||'cargo-shipments')}/>}
   </div>;
 }

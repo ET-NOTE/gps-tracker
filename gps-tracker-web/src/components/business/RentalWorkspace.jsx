@@ -8,12 +8,19 @@ import BusinessDrawer from './BusinessDrawer';
 import {WorkspaceAvatar,WorkspaceBreadcrumb,WorkspaceHeaderActions,WorkspaceScope,WorkspaceWidthControl} from './WorkspaceHeader';
 import './rental-workspace.css';
 import './fleet-workspace-layout.css';
+import './workspace-mockup-sync.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 import { rentalMenu, rentalPageHeadings, rentalPageDescriptions } from '../../lib/rentalMenu';
 import { freightPageHeadings } from '../../lib/freightMenu';
 export { rentalMenu, rentalPages } from '../../lib/rentalMenu';
 
-function WorkspaceNav({page, group, onTab, menu, label}) {
+// Desktop design: pages kept off the menu (still reachable by URL) and menu-only labels.
+const mockupHiddenPages = ['history'];
+const mockupMenuLabels = {devices:'차량·단말기 연결', 'cargo-devices':'차량·단말기 연결'};
+
+function WorkspaceNav({page, group, onTab, menu, label, mockup=false}) {
   const [expanded, setExpanded] = useState(() => new Set([group.id]));
   useEffect(() => setExpanded(previous => new Set([...previous, group.id])), [group.id]);
   function toggle(id) {
@@ -24,11 +31,17 @@ function WorkspaceNav({page, group, onTab, menu, label}) {
       return next;
     });
   }
-  return <nav aria-label={label + ' 메뉴'} className="rnt-nav">{menu.map(g => {
+  return <nav aria-label={label + ' 메뉴'} className="rnt-nav">{menu.map(source => {
+    const g = mockup ? {...source, pages: source.pages.filter(([id]) => !mockupHiddenPages.includes(id)).map(([id, text]) => [id, mockupMenuLabels[id] || text])} : source;
     const branch = g.pages.length > 1, open = expanded.has(g.id);
     return <div key={g.id}><button type="button" className="rnt-group" data-active={group.id === g.id}
       aria-expanded={branch ? open : undefined} aria-current={!branch && group.id === g.id ? 'page' : undefined}
-      onClick={() => branch ? toggle(g.id) : onTab(g.pages[0][0])}>
+      onClick={() => {
+        if (!branch) return onTab(g.pages[0][0]);
+        // Design: an open group only closes; a closed group opens on its first page.
+        if (mockup && !open) { toggle(g.id); onTab(g.pages[0][0]); return; }
+        toggle(g.id);
+      }}>
       <Icon name={g.icon}/><span>{g.label}</span>{branch && <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14}/>}
     </button>
       {branch && open && <div className="rnt-subnav">{g.pages.map(([id,label]) =>
@@ -78,7 +91,8 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
     return ()=>window.removeEventListener('keydown',key,true);
   },[dialog]);
   const choose=id=>{setDialog(null);onTab(id);};
-  const nav = <WorkspaceNav menu={menu} label={serviceLabel} group={group} page={page} onTab={choose}/>;
+  const mockup = !useCorporatePhone() && hideOutsideMockup;
+  const nav = <WorkspaceNav menu={menu} label={serviceLabel} group={group} page={page} onTab={choose} mockup={mockup}/>;
   const accountLinks = (destinations || [{id:'home',label:'전체 지도',icon:'map'},{id:'devices',label:'내 단말기',icon:'antenna'},{id:'profile',label:'내 정보',icon:'user'}]).map(item=>
     <button className="rnt-group" key={item.id} onClick={()=>{setDialog(null);onNavigate?.(item.id);}}><Icon name={item.icon}/>{item.id==='home'?'전체 지도':item.label}</button>);
   return <section className="gps-user-panel gps-business-panel rnt-shell" data-workspace={widthKey} data-page={page} data-wide={wide}>

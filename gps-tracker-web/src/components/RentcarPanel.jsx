@@ -19,6 +19,8 @@ import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport
 import { RentalVehicleScope, BusinessButton, BusinessError, BusinessEmpty } from './business/BusinessWorkspace';
 import RentalBoard from './business/RentalBoard';
 import RentalDispatchWeek from './business/RentalDispatchWeek';
+import useCorporatePhone from '../useCorporatePhone';
+import { hideOutsideMockup } from '../lib/mockupHidden';
 import ReturnDialog from './business/ReturnWizard';
 import PhotoGalleryModal from './business/PhotoGalleryModal';
 import { useBusinessClock, useRentalOperations, useBusinessSubscription } from './business/useBusinessData';
@@ -104,7 +106,9 @@ export default React.memo(RentcarPanel);
 function ScheduleTab({ devices, vehicles, inventoryReady, inventoryError, onContracts, branches, onWork }) {
   const [mode, setMode] = useState('week');
   const now = useBusinessClock();
-  const tabs=<div className="rental-stage-tabs" aria-label="배차 화면">{[['week','주간 캘린더'],['dispatch','배차 목록'],['board','차량별 배차표'],['month','월간 달력']].map(([id,label])=><button key={id} type="button" aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>;
+  // Desktop design offers the weekly calendar and the dispatch list only.
+  const mockup = !useCorporatePhone() && hideOutsideMockup;
+  const tabs=<div className="rental-stage-tabs" aria-label="배차 화면">{[['week','주간 캘린더'],['dispatch','배차 목록'],...(mockup?[]:[['board','차량별 배차표'],['month','월간 달력']])].map(([id,label])=><button key={id} type="button" aria-pressed={mode===id} onClick={()=>setMode(id)}>{label}</button>)}</div>;
   if(mode==='week')return <RentalDispatchWeek {...{vehicles,inventoryReady,inventoryError,branches,now,tabs,onWork}} onNew={()=>onContracts({new:true})} onContract={contract=>onContracts({contract})}/>;
   return <div className="business-schedule">
     <div className="rental-workflow-toolbar">{tabs}{mode!=='dispatch'&&<BusinessButton primary icon="plus" onClick={()=>onContracts({new:true})}>예약 등록</BusinessButton>}</div>

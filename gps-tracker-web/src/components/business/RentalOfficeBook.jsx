@@ -120,14 +120,14 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
       {isPayments&&<Field label="거래처"><select value={account} onChange={e=>setAccount(e.target.value)}><option value="all">전체 거래처</option><option value="">미연결</option>{catalog.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {isPayments&&<Field label="대여 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(book.contracts.map(c=>c.pickup_location).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
       <Search value={query} setValue={setQuery} label={isCost?'차량·거래처·메모 검색':isRefunds?'계약번호·고객·메모 검색':'계약번호·고객·차량 검색'}/>
-      <BusinessButton icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</BusinessButton>
+      <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>조건 초기화</BusinessButton>
     </div>
     <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw))],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
-      isPayments?[['약정·정산액',won(sum(contracts,c=>c.billed_krw))],['순수납',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보증금 잔액',won(sum(contracts,c=>c.held_krw))]]:
-      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw))],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['처리 대기',returns.length+'건']]}/>
+      isPayments?[['조회 청구액',won(sum(contracts,c=>c.billed_krw))],['이용료 순수납액',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보유 보증금',won(sum(contracts,c=>c.held_krw))]]:
+      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw))],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['현재 처리 대기',returns.length+'건']]}/>
     {isRefunds&&<>
-      <div className="ro-refund-actions"><span>보증금은 이용료 수납액과 별도로 집계합니다.</span><div>{actions}</div></div>
-      <section className="ro-panel"><header className="ro-section-heading"><div><h2>현재 환불·반환 대기</h2><p>조회 기간에 포함된 계약의 현재 잔액입니다.</p></div><span>{returns.length}건</span></header>
+      <div className="ro-refund-actions"><span>보증금은 이용료 수납액과 매출에 포함되지 않습니다.</span><div>{actions}</div></div>
+      <section className="ro-panel"><header className="ro-section-heading"><div><h2>현재 환불·반환 대기</h2><p>현재 잔액 기준 · 아래 거래 기록의 기간·구분 필터와 별도입니다.</p></div><span>{returns.length}건</span></header>
         <Table rows={returns} onRecord={row=>setDetail(row.contract)} columns={[
           ['계약 / 고객',r=><button type="button" className="ro-contract-link ro-detail-link" onClick={()=>setDetail(r.contract)}><strong>#{r.id}</strong><span>{r.contract.renter_name}</span></button>],
           ['계약 상태',r=>r.contract.cancel_outcome==='no_show'?'미방문':r.contract.settlement_finalized?'정산 완료':({draft:'예약 접수',active:'대여 중',overdue:'반납 지연',returned:'반납 완료',cancelled:'취소'})[r.contract.status]||'—'],

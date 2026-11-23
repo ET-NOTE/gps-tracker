@@ -5,10 +5,17 @@ import { authScope } from '../../authSession';
 import { Modal } from '../ui';
 import { BusinessButton, BusinessError, BusinessEmpty } from './BusinessWorkspace';
 import './rental-team.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
+import { TeamBranchDirectory, TeamPeopleLedger, TeamRoleWorkspace } from './TeamMockupViews';
 
 const permissions = {dispatch_read:'배차 조회',service_read:'정비·세차 조회',handover_note:'인수인계 메모 작성'};
 const cargoPermissions = {dispatch_read:"지점 배차 조회",fleet_read:"지점 차량 조회",handover_note:"인수인계 메모 작성"};
 const names = {staff:'직원',branches:'지점',groups:'권한 그룹'};
+// Desktop design: the service permissions placed on the corporate per-menu matrix.
+const rentalMenus = [['차량 예약·배차',[['dispatch_read','배차 조회']]],['차량 관리',[['service_read','정비·세차 조회']]],['대여·반납',[['handover_note','인수인계 메모 작성']]]];
+const cargoMenus = [['배차관리',[['dispatch_read','지점 배차 조회']]],['차량·기사 관리',[['fleet_read','지점 차량 조회']]],['운송관리',[['handover_note','인수인계 메모 작성']]]];
+const impliedPermissions = {handover_note:['dispatch_read']};
 export function useRentalTeamConfig(enabled=true) {
   return useQuery({queryKey:['rental-team',authScope()],queryFn:()=>api.rentalTeam('GET','/config'),enabled});
 }
@@ -46,16 +53,44 @@ function TeamEditor({page,initial,data,onSaved,onClose,cargo}) {
     {error&&<p role="alert">{error}</p>}<footer><BusinessButton onClick={onClose}>닫기</BusinessButton><button className="business-button is-primary" disabled={busy}>{busy?'저장 중…':page==='staff'&&!initial?'초대 코드 발급':'저장'}</button></footer>
   </form></Modal>;
 }
+function InviteCode({code,cargo,onClose}) {
+  return <Modal open title="직원 초대 코드" onClose={onClose}><div className="rnt-team-form"><p>직원에게 아래 주소와 코드를 전달해 주세요. 직원은 초대받은 이메일로 로그인한 후 7일 안에 한 번 사용할 수 있습니다.</p>
+      <label>직원 접속 주소<input readOnly value={window.location.origin+(cargo?'/cargo':'/rentcar')+'?page=staff-desk'}/></label><label>초대 코드<input readOnly value={code} onFocus={e=>e.target.select()}/></label>
+      <BusinessButton onClick={onClose}>확인</BusinessButton></div></Modal>;
+}
 export default function RentalTeam({page,onTab,cargo=false}) {
   const team=cargo?api.cargoTeam:api.rentalTeam, key=[cargo?'cargo-team':'rental-team',authScope()];
   const config=useQuery({queryKey:key,queryFn:()=>team('GET','/config')}), qc=useQueryClient();
   const [editor,setEditor]=useState(null),[code,setCode]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
+  const [query,setQuery]=useState('');
   if(config.isPending)return <p role="status">사용자 정보를 불러오는 중…</p>;
   if(config.error)return <BusinessError onRetry={config.refetch}>사용자 정보를 불러오지 못했습니다.</BusinessError>;
   const data=config.data, ready=page!=='staff'||(data.branches.length>0&&data.groups.length>0);
   const find=(table,id)=>data[table].find(i=>i.id===id)?.name||'미지정';
   function saved(value){setEditor(null);setCode(value||'');qc.invalidateQueries({queryKey:key});}
   async function reissue(id){if(busy)return;setBusy(true);setError('');try{saved((await team('POST','/staff/'+id+'/invite')).code);}catch(e){setError(e.message);}finally{setBusy(false);}}
+  const dialogs=<>{error&&<p role="alert">{error}</p>}
+    {editor&&<TeamEditor cargo={cargo} page={page} initial={editor.initial} data={data} onClose={()=>setEditor(null)} onSaved={saved}/>}
+    {code&&<InviteCode code={code} cargo={cargo} onClose={()=>setCode('')}/>}</>;
+  if(mockup&&page==='staff'){
+    const needle=query.trim().toLowerCase();
+    const rows=data.staff.filter(r=>!needle||[r.name,r.email].some(v=>String(v||'').toLowerCase().includes(needle))).map(r=>({id:r.id,name:r.name,email:r.email,branch:find('branches',r.branch_id),group:find('groups',r.group_id),
+      state:r.active?(r.joined?'사용 중':'초대 대기'):'사용 중지',tone:r.active?(r.joined?'good':'warn'):'',
+      actions:<>{r.active&&!r.joined&&<button type="button" className="rt-link" disabled={busy} onClick={()=>reissue(r.id)}>코드 재발급</button>}<button type="button" className="rt-link" aria-label={r.name+' 수정'} onClick={()=>setEditor({initial:r})}>수정</button></>}));
+    return <div className="rnt-team rt-mockup"><TeamPeopleLedger rows={rows} total={data.staff.length} query={query} onQuery={setQuery}
+      action={<BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>사용자 추가</BusinessButton>}
+      extra={<>{!ready&&<div className="rnt-prerequisites"><p>직원을 초대하려면 소속 지점과 권한 그룹을 먼저 등록해 주세요.</p>{!data.branches.length&&<BusinessButton onClick={()=>onTab('branches')}>지점 등록하기</BusinessButton>} {!data.groups.length&&<BusinessButton onClick={()=>onTab('groups')}>권한 그룹 등록하기</BusinessButton>}</div>}
+        {data.notes.length>0&&<section className="rt-card"><header className="rt-card-head"><h3>최근 인수인계 메모</h3></header><ul className="rt-notes">{data.notes.map(n=><li key={n.id}><strong>{n.body}</strong><small>{n.branch} · {n.staff} · {cargo?"운송":"계약"} #{cargo?n.shipment_id:n.contract_id}</small></li>)}</ul></section>}</>}/>{dialogs}</div>;
+  }
+  if(mockup&&page==='branches'){
+    const rows=data.branches.map(b=>{const n=data.staff.filter(x=>x.branch_id===b.id).length;return {id:b.id,name:b.name,members:n+'명',usage:<span className={'rt-badge '+(n?'good':'')}>{n?'사용 중':'소속 없음'}</span>};});
+    return <div className="rnt-team rt-mockup"><TeamBranchDirectory branches={rows} onAdd={()=>setEditor({initial:null})}/>{dialogs}</div>;
+  }
+  if(mockup&&page==='groups'){
+    const saveGroup=async ({id,name,permissions,revision})=>{const result=await team(id?'PUT':'POST','/groups'+(id?'/'+id:''),{name,permissions,revision});await qc.invalidateQueries({queryKey:key});return result?.id??id;};
+    return <div className="rnt-team rt-mockup"><TeamRoleWorkspace groups={data.groups} memberCount={g=>data.staff.filter(x=>x.group_id===g.id).length} menus={cargo?cargoMenus:rentalMenus} implied={impliedPermissions} save={saveGroup} onMembers={()=>onTab('staff')}/>{dialogs}</div>;
+  }
   return <div className="rnt-team">
     <section><header><h2>{names[page]} {data[page].length}{page==='staff'?'명':'개'}</h2><BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>{names[page]} {page==='staff'?'초대':'추가'}</BusinessButton></header>
     {!ready&&<div className="rnt-prerequisites"><p>직원을 초대하려면 소속 지점과 권한 그룹을 먼저 등록해 주세요.</p>
@@ -69,8 +104,6 @@ export default function RentalTeam({page,onTab,cargo=false}) {
     {page==='staff'&&data.notes.length>0&&<section><header><h2>최근 인수인계 메모</h2></header>{data.notes.map(n=><article key={n.id}><div><strong>{n.body}</strong><small>{n.branch} · {n.staff} · {cargo?"운송":"계약"} #{cargo?n.shipment_id:n.contract_id}</small></div></article>)}</section>}
     {error&&<p role="alert">{error}</p>}
     {editor&&<TeamEditor cargo={cargo} page={page} initial={editor.initial} data={data} onClose={()=>setEditor(null)} onSaved={saved}/>}
-    {code&&<Modal open title="직원 초대 코드" onClose={()=>setCode('')}><div className="rnt-team-form"><p>직원에게 아래 주소와 코드를 전달해 주세요. 직원은 초대받은 이메일로 로그인한 후 7일 안에 한 번 사용할 수 있습니다.</p>
-      <label>직원 접속 주소<input readOnly value={window.location.origin+(cargo?'/cargo':'/rentcar')+'?page=staff-desk'}/></label><label>초대 코드<input readOnly value={code} onFocus={e=>e.target.select()}/></label>
-      <BusinessButton onClick={()=>setCode('')}>확인</BusinessButton></div></Modal>}
+    {code&&<InviteCode code={code} cargo={cargo} onClose={()=>setCode('')}/>}
   </div>;
 }

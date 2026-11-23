@@ -150,7 +150,7 @@ function WorkflowPage({page,data,open,form,navigate,feedback,setFeedback,dispatc
       {recurring&&<FreightField label="사용 여부"><select aria-label="사용 여부" value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체</option><option value="active">사용 중</option><option value="inactive">사용 중지</option></select></FreightField>}
       {isOrder&&<FreightField label="필요 차량"><select value={f.type} onChange={e=>change('type',e.target.value)}><option value="">전체 차량 형태</option>{data.codes.vehicleTypes.map(t=><option key={t}>{t}</option>)}</select></FreightField>}
       {page==='shipments'&&<FreightField label="운송사"><select value={f.carrier} onChange={e=>change('carrier',e.target.value)}><option value="">전체</option><option value="own">직영</option><FreightOptions rows={data.carriers}/></select></FreightField>}
-      {(schedule||shipList)&&<FreightField label="운송 단계"><select value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체</option>{Object.entries(shipStates).filter(([k])=>!schedule||k!=='cancelled').map(([key,val])=><option key={key} value={key}>{val}</option>)}</select></FreightField>}
+      {(schedule||shipList)&&<FreightField label="운송 상태"><select value={f.status} onChange={e=>change('status',e.target.value)}><option value="">전체 상태</option>{Object.entries(shipStates).filter(([k])=>!schedule||k!=='cancelled').map(([key,val])=><option key={key} value={key}>{val}</option>)}</select></FreightField>}
     </FreightFilters>;
   return <div className="fr-page fr-workflow">
     {!schedule&&!recurring&&page!=='dispatch'&&<FreightStats items={summary} unit="건"/>}

@@ -22,7 +22,7 @@ export const rentalPageHeadings = {
 export const rentalPageDescriptions = {
   fleet:'오늘 인도·반납과 준비할 업무를 확인하세요.',
   reservations:'고객과 이용 일정, 합의 요금을 관리합니다.',
-  schedule:'대여와 차량 준비 일정을 확인하고 차량을 배정합니다.',
+  schedule:'대여와 차량 준비 일정을 확인하고 실제 차량을 배정합니다.',
   contracts:'계약 고객과 실운전자, 대여 조건과 처리 이력을 확인합니다.',
   checkout:'운전자와 계약, 결제를 확인하고 차량을 인도합니다.',
   active:'운행 중인 대여 건의 연장과 반납 일정을 관리합니다.',
@@ -31,7 +31,7 @@ export const rentalPageDescriptions = {
   'rent-accounts':'법인 고객의 소속과 정산 방식을 관리합니다.',
   'rent-rates':'차종별 기본 요금과 보증금, 자차 보장료를 설정합니다.',
   'rent-payments':'계약별 이용료와 미수금, 별도 보증금 잔액을 확인합니다.',
-  'rent-refunds':'이용료 환불과 보증금의 수납·반환을 관리합니다.',
+  'rent-refunds':'이용료 환불과 보증금의 수납·반환을 구분해 관리합니다.',
   'rent-costs':'차량별 세차·정비·주유 비용을 기록하고 조회합니다.',
   policy:'예약 간격과 출고 전 확인 조건을 설정합니다.',
   'rent-templates':'대여 계약서의 문구를 편집하고 계약 정보를 넣어 미리 확인합니다.',

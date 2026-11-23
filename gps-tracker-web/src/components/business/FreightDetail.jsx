@@ -12,7 +12,7 @@ const eventLabels={requested:'배차 요청',confirmed:'배차 확정',arrived:'
 
 export {Status,tone} from './FreightKit';
 export function nextAction(s){
-  if(s.status==='requested')return ['accept','배차 수락'];
+  if(s.status==='requested')return ['accept','수락 확인'];
   if(stepMap[s.status])return [stepMap[s.status].type,stepMap[s.status].label];
   if(s.status==='delivered'){
     if(['missing','rework'].includes(s.proof.status))return ['proof','인수증 제출'];

@@ -11,6 +11,8 @@ import {fillTemplate,initialPeriod,periodOk,templateKeys,won} from '../../lib/re
 import {officeBookKey,officeCatalogKey} from './rentalOfficeKeys';
 import RentalCustomerHistory from './RentalCustomerHistory';
 import RentalRecordDrawer,{RecordFields,CustomerFields} from './RentalRecordDrawer';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 
 const titles={customers:'고객',accounts:'법인 거래처',rates:'요금표',templates:'계약서 양식'};
 const kinds={person:'개인',business:'법인 고객'}, billing={each:'건별',monthly:'월합산'};
@@ -66,6 +68,7 @@ function Preview({row,devices,close}) {
     </div></Modal>;
 }
 export default function RentalOfficeCatalog({kind,catalog,devices}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [query,setQuery]=useState(''),[status,setStatus]=useState('all'),[type,setType]=useState('all'),[account,setAccount]=useState('all'),[license,setLicense]=useState('all');
   const [extraOpen,setExtraOpen]=useState(false);
   const [edit,setEdit]=useState(undefined),[preview,setPreview]=useState(null),[history,setHistory]=useState(false);
@@ -81,9 +84,9 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
   const openRecord=r=>setSelectedId(r.id);
   const recordLink=r=><button type="button" className="ro-detail-link" aria-label={r.name+' 상세 열기'} onClick={()=>openRecord(r)}>{r.name}</button>;
   const cols={
-    customers:[['고객명',c=><>{recordLink(c)}{c.email&&<small className="ro-secondary">{c.email}</small>}</>],['구분',c=>kinds[c.kind]],['연락처',c=>c.phone],['거래처',findAccount],
-      ['운전면허',c=><span className={c.license_checked?'ro-status':'ro-status amber'}>{c.license_checked?'확인 완료':'확인 필요'}</span>],['대여 이력',c=>(c.contracts_count||0)+'건']],
-    accounts:[['거래처명',c=><>{recordLink(c)}{c.business_number&&<small className="ro-secondary">{c.business_number}</small>}</>],['담당자',c=>c.contact],['연락처',c=>c.phone],['정산 방식',c=>billing[c.billing]],
+    customers:[['고객',c=><>{recordLink(c)}{c.email&&<small className="ro-secondary">{c.email}</small>}</>],['구분',c=>kinds[c.kind]],['연락처',c=>c.phone],['법인 거래처',findAccount],
+      ['면허 확인',c=><span className={c.license_checked?'ro-status':'ro-status amber'}>{c.license_checked?'확인 완료':'확인 필요'}</span>],['대여 이력',c=>(c.contracts_count||0)+'건']],
+    accounts:[['거래처',c=><>{recordLink(c)}{c.business_number&&<small className="ro-secondary">{c.business_number}</small>}</>],['담당자',c=>c.contact],['연락처',c=>c.phone],['정산 방식',c=>billing[c.billing]],
       ['연결 고객',c=>(c.customers_count||0)+'명'],['미수금',c=>won(c.outstanding_krw)]],
     rates:[['차종',recordLink],['1일 대여요금',c=>won(c.daily_krw)],['보증금',c=>won(c.deposit_krw)],['1일 자차 보장료',c=>won(c.coverage_krw)],['등록 차량',c=>(c.vehicles_count||0)+'대']],
     templates:[['양식 이름',recordLink],['내용',c=><span className="ro-excerpt">{c.body.slice(0,80)}</span>],['미리보기',c=><Button variant="ghost" size="sm" onClick={()=>setPreview(c)}>미리보기</Button>]]
@@ -105,10 +108,10 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
           {filter('거래처',account,setAccount,{all:'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
           {filter('면허 확인',license,setLicense,{all:'전체',yes:'확인 완료',no:'미확인'})}</>}
         {kind==='accounts'&&filter('정산 방식',type,setType,{all:'전체 방식',...billing})}
-        {!foldUsage&&usage}
+        {(!foldUsage||mockup)&&usage}
         <Search value={query} setValue={setQuery} label={kind==='accounts'?'거래처, 담당자, 등록번호 검색':kind==='templates'?'양식 이름, 내용 검색':titles[kind]+' 검색'}/>
-        {directory ? <div className="rental-extra-actions">{foldUsage&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton icon="refresh" onClick={clearFilters}>초기화</BusinessButton></div> :
-          (query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<Button variant="ghost" size="sm" onClick={clearFilters}>초기화</Button>}
+        {directory ? <div className="rental-extra-actions">{foldUsage&&!mockup&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={clearFilters}>조건 초기화</BusinessButton></div> :
+          (query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>조건 초기화</button>}
         {foldUsage&&<div className="rental-extra-filters" id="rental-directory-extra" hidden={!extraOpen}>{usage}
           {kind==='customers'&&<BusinessButton onClick={()=>setHistory(true)}>계약 이력·경고 관리</BusinessButton>}
         </div>}
@@ -130,7 +133,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
       <pre className="ro-paper">{selected.body}</pre>
     </RentalRecordDrawer>}
     {selected&&(kind==='customers'||kind==='accounts')&&<RentalRecordDrawer title={titles[kind]+' 상세'} subtitle={selected.name} onClose={()=>setSelectedId(null)}
-      footer={<Button variant="primary" onClick={()=>setEdit(selected)}>{kind==='accounts'?'거래처':'고객'} 수정</Button>}>
+      footer={<>{mockup&&kind==='customers'&&<Button variant="ghost" onClick={()=>{setSelectedId(null);setHistory(true);}}>계약 이력·경고 관리</Button>}<Button variant="primary" onClick={()=>setEdit(selected)}>{kind==='accounts'?'거래처':'고객'} 수정</Button></>}>
       {kind==='customers'?<><CustomerFields person={selected} accounts={catalog.accounts}/><RentalCustomerHistory key={selected.id} customerId={selected.id}/></>:<>
         <RecordFields rows={[['사업자등록번호',selected.business_number],['담당자',selected.contact],['연락처',selected.phone],
           ['정산 방식',billing[selected.billing]],['현재 미수금',won(selected.outstanding_krw)]]}/>

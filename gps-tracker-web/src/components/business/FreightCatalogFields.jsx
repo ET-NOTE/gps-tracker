@@ -39,7 +39,7 @@ export function catalogTable(key,d,terminalLabel) {
     case 'vehicles': return [['차량번호',r=>r.plate],['차량명',r=>r.model],['형태 · 적재능력',r=>r.type+' · '+amount(r.capacityKg)+'kg'],['기사 · 소속',r=>(r.driverId?nameOf(d,'drivers',r.driverId):'미지정')+' · '+carrier(r)],['운영 지점',branch],['준비 상태',r=>readinessLabels[r.readiness]],['단말 수신',terminalLabel]];
     case 'drivers': return [['기사',r=>r.name],['연락처',r=>r.phone],['지점 · 소속',r=>branch(r)+' · '+carrier(r)],['면허',r=>r.licenseChecked?'확인 완료':'미확인'],['운영 상태',r=>r.active===false?'사용 중지':availabilityLabels[r.availability]]];
     case 'services': return [['차량',plate],['구분',r=>r.type],['시작 일시',r=>timeLabel(r.start)],['종료 예정',r=>timeLabel(r.end)],['비용',r=>costLabel(r.cost)],['상태',r=>serviceStates[r.status]]];
-    case 'locations': return [['장소',r=>r.name],['지역 · 주소',r=>r.region+' · '+r.address],['담당자',r=>r.contact],['연락처',r=>r.phone],['작업 가능 시간',r=>r.openTime+' – '+r.closeTime+(r.closeTime<=r.openTime?' (다음 날)':'')]];
+    case 'locations': return [['장소 / 주소',r=><>{r.name}<small>{r.region+' · '+r.address}</small></>],['담당자',r=>r.contact],['연락처',r=>r.phone],['작업 가능 시간',r=>r.openTime+' – '+r.closeTime+(r.closeTime<=r.openTime?' (다음 날)':'')],['작업 안내',r=>r.instructions||'—']];
     case 'rates': return [['요율 이름',r=>r.name],['구간',r=>r.pickupRegion+' → '+r.dropoffRegion],['차량 조건',r=>r.vehicleType+' · '+amount(r.capacityKg)+'kg'],['화주 운임',r=>costLabel(r.sellAmount)],['운송비',r=>costLabel(r.buyAmount)],['상태',active]];
     default: {
       const shipper=key==='shippers';

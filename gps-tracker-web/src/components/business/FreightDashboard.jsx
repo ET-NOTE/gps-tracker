@@ -5,6 +5,8 @@ import { FreightRecordActions } from './FreightWorkflow';
 import { Status } from './FreightDetail';
 import { FreightBadge, FreightButton, FreightField, FreightOptions, FreightStageChart, FreightTable } from './FreightKit';
 import { epoch, firstOrder, inputTime, nameOf, orderStates, routeName, shipStates, stamp, timeLabel, vehicleName } from '../../lib/freightWorkflow';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 function OverviewTable({kind, rows, data, open}) {
   const orders = kind === 'orders';
@@ -31,6 +33,7 @@ function DashboardCard({title,description,onMore,children}) {
 }
 
 function DashboardView({data,devices,onPage,actions}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [branch,setBranch] = useState(''), [view,setView] = useState('');
   const now=Date.now(), today=stamp(now).slice(0,10);
   const inBranch = record => !branch || record.branchId===branch;
@@ -79,7 +82,7 @@ function DashboardView({data,devices,onPage,actions}) {
       <span>{label}<small>더보기 ›</small></span><strong>{value}<em>건</em></strong>
       <span className="fr-metric-note">{note}</span>
     </button>)}</div>
-    <div className="fr-toolbar fr-dashboard-tools"><button type="button" className="fr-monitor-link" onClick={()=>onPage('cargo-live')}><Icon name="map" size={14}/>실시간 관제</button><div className="fr-actions"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
+    <div className="fr-toolbar fr-dashboard-tools">{mockup?<p className="fr-dashboard-guide">운송 주문부터 정산까지 한 흐름으로 관리합니다.</p>:<button type="button" className="fr-monitor-link" onClick={()=>onPage('cargo-live')}><Icon name="map" size={14}/>실시간 관제</button>}<div className="fr-actions"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
       <FreightButton primary icon="plus" onClick={()=>actions.form('new','orders')}>주문 등록</FreightButton></div>
     </div>
     {actions.feedback&&<p role="status" className="fr-note">{actions.feedback}</p>}

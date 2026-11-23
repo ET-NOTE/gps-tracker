@@ -3,19 +3,19 @@ import { FreightField, FreightButton } from './FreightKit';
 import { record } from '../../lib/freightWorkflow';
 
 const policyGroups = [
-  {title:'배차 기준', fields:[
-    ['ownAutoConfirm','자사 차량 배차 시 바로 확정'],
-    ['requireDriverCheck','배차 전 기사 면허 확인'],
+  {title:'배차 기준', description:'저장 후 새 배차와 이후 업무 확인에 적용됩니다.', fields:[
     ['bufferMinutes','운송 사이 준비 시간',0,1440],
-    ['acceptTimeoutMinutes','수락 대기 기준',1,1440],
+    ['acceptTimeoutMinutes','협력사 수락 대기 기준',1,1440],
+    ['ownAutoConfirm','자사 차량은 담당자 배정 시 바로 확정'],
+    ['requireDriverCheck','배차 전에 운전자 확인 상태 검사'],
   ]},
-  {title:'완료·관제 기준', fields:[
-    ['requireProofForBilling','청구 전 인수증 확인'],
+  {title:'완료·관제 기준', description:'운송 상태와 위치 수신 상태는 각각 관리합니다.', note:'단말기의 정차나 위치 도착만으로 상·하차 완료를 처리하지 않습니다. 작업 완료는 별도 기록으로 확인합니다.', fields:[
     ['offlineMinutes','단말 수신 지연 기준',1,240],
+    ['requireProofForBilling','청구 확인 전에 인수증 검토 완료 필요'],
   ]},
 ];
-const noticeGroups=[{title:'알림 표시',fields:[
-  ['dispatchNotice','배차 수락 대기'],['delayNotice','운송 지연·사고'],['proofNotice','인수증 확인'],['connectionNotice','단말 수신 지연'],
+const noticeGroups=[{title:'알림 표시',description:'상단 알림 패널에 표시할 업무 항목을 선택합니다.',note:'현재 표시 채널: 앱 알림 · 문자와 이메일은 발송하지 않습니다.',fields:[
+  ['dispatchNotice','배차 요청·수락 대기'],['delayNotice','운송 지연·긴급 이슈'],['proofNotice','인수증 미제출·확인 대기'],['connectionNotice','단말 수신 확인 필요'],
 ]}];
 const connections=[
   ['차량 단말기','연결된 단말의 위치와 수신 시각을 조회합니다.','cargo-devices','단말기 관리'],
@@ -47,9 +47,9 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
         <button className="fr-btn is-primary" type="submit" disabled={busy}>{busy?'저장 중…':policy?'정책 저장':'알림 설정 저장'}</button>
       </div></div>
       <div className="fr-setting-grid">{groups.map(group=><section className="fr-dashboard-card" key={group.title}>
-        <header><h2>{group.title}</h2></header><div className="fr-settings">{group.fields.map(([key,label,min,max])=>min==null?
+        <header><div><h2>{group.title}</h2>{group.description&&<p className="fr-setting-description">{group.description}</p>}</div></header><div className="fr-settings">{group.fields.map(([key,label,min,max])=>min==null?
           <label key={key} className="fr-setting-row"><span>{label}</span><input type="checkbox" name={key} defaultChecked={data[area][key]}/></label>:
-          <FreightField key={key} label={label+' (분)'}><input name={key} type="number" required min={min} max={max} defaultValue={data[area][key]}/></FreightField>)}</div>
+          <FreightField key={key} label={label+' (분)'}><input name={key} type="number" required min={min} max={max} defaultValue={data[area][key]}/></FreightField>)}{group.note&&<p className="fr-note">{group.note}</p>}</div>
       </section>)}</div>
       {message&&<p role={error?'alert':'status'} className={error?'fr-error':'fr-note'}>{message}</p>}
     </form>

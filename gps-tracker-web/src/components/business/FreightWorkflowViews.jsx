@@ -9,7 +9,7 @@ function detailLink(label,click){return <button className="fr-link" onClick={cli
 
 export function WorkflowTable({page,data,rows,open,form}){
   const orders=page==='orders',recurring=page==='recurring',proofs=page==='proofs';
-  if(orders||recurring)return <FreightTable columns={recurring?['정기 주문 / 화주','상·하차 구간','반복 요일','상차 / 하차 시간','차량·화물','사용 여부','주문 생성']:['주문번호 / 화주','운송 구간','상차 / 하차 예정','화물 / 차량','청구 / 지급 운임','상태','업무 처리']} empty={recurring?'조회된 정기 주문이 없습니다.':'조회된 운송 주문이 없습니다.'} rows={rows.map(o=>({
+  if(orders||recurring)return <FreightTable columns={recurring?['정기 주문 / 화주','상·하차 구간','반복 요일','상차 / 하차 시간','차량·화물','사용 여부','주문 생성']:['주문 / 화주','상·하차 구간','상차 / 하차 예정','화물 / 요청 차량','청구 / 지급 운임','상태','업무 처리']} empty={recurring?'조회된 정기 주문이 없습니다.':'조회된 운송 주문이 없습니다.'} rows={rows.map(o=>({
     id:o.id,onOpen:()=>open(page,o.id),cells:[mainCell(detailLink(recurring?o.name:o.number,()=>open(page,o.id)),nameOf(data,'shippers',o.shipperId)),routeName(data,o),
       ...(recurring?[o.weekdays.map(d=>weekdays[d]).join(' · '),o.startTime+' / '+o.endTime]:[mainCell(timeLabel(o.start),timeLabel(o.end))]),
       mainCell(o.cargoName,o.vehicleType+' · '+num(o.weightKg)+' kg'),...(!recurring?[mainCell(costLabel(o.sellAmount),costLabel(o.buyAmount))]:[]),
@@ -35,7 +35,7 @@ export function DispatchView({data,orders:shown,requests,form,open,orderId,setOr
   const candidates=order?data.vehicles.map(v=>candidate(data,order,v)).filter(c=>(!owner||(owner==='own')===!c.vehicle.carrierId)&&(!possible||!c.reason)).sort((a,b)=>Number(!!a.reason)-Number(!!b.reason)):[];
   return <>
     <div className="fr-split fr-dispatch">
-      <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>미배차 주문</h3><p>주문을 선택하면 차량 후보를 확인할 수 있습니다.</p></div><FreightBadge>{shown.length}건</FreightBadge></header>
+      <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>미배차 주문</h3><p>주문을 선택하면 차량 후보를 확인합니다.</p></div><FreightBadge>{shown.length}건</FreightBadge></header>
         <div className="fr-order-picks">{shown.map(o=><button type="button" className="fr-pick" key={o.id} aria-pressed={order?.id===o.id} onClick={()=>setOrderId(o.id)}>
           <span>{nameOf(data,'shippers',o.shipperId)}<small title={timeLabel(o.start)}>{timeLabel(o.start).replace(/^\d{4}-(\d{2})-/, '$1.')}</small></span><strong>{routeName(data,o)}</strong>
           <span>{o.vehicleType} · {num(o.weightKg)} kg<small>{costLabel(o.sellAmount)}</small></span>
@@ -51,12 +51,12 @@ export function DispatchView({data,orders:shown,requests,form,open,orderId,setOr
               <p>{v.type} · {num(v.capacityKg)} kg · {driver?.name||'기사 미지정'}</p>
               <small>{v.carrierId?nameOf(data,'carriers',v.carrierId):'자사 차량'} · {nameOf(data,'branches',v.branchId)}</small></div></div>
             <footer><span>{reason||'차량·기사 일정과 적재 조건 충족'}</span><FreightButton onClick={()=>form('assign','orders',order.id,v.id)}>{reason?'조합 확인':'배차 선택'}</FreightButton></footer>
-          </li>)}</ul>{!candidates.length&&<p className="fr-empty">해당하는 차량이 없습니다.</p>}</>}
-        {!order&&<p className="fr-empty">주문을 선택하면 후보 차량을 확인할 수 있습니다.</p>}
+          </li>)}</ul>{!candidates.length&&<p className="fr-empty">표시할 차량 후보가 없습니다. 소속·가능 여부 필터를 변경하거나 차량·기사 정보를 확인해 주세요.</p>}</>}
+        {!order&&<p className="fr-empty">주문을 먼저 선택해 주세요. 왼쪽에서 미배차 주문을 선택할 수 있습니다.</p>}
       </section>
     </div>
-    <section className="fr-dashboard-card fr-dispatch-requests"><header><div><h2>배차 수락 대기</h2><small>{requests.length}건</small></div><button type="button" className="fr-link" aria-label="배차 수락 대기 더보기" onClick={onAllRequests}>더보기</button></header>
-      <FreightTable columns={['운송 / 화주','경로','차량 / 기사','상차 예정','업무 처리']} empty="수락 대기 중인 배차가 없습니다." rows={requests.slice(0,4).map(s=>{
+    <section className="fr-dashboard-card fr-dispatch-requests"><header><div><h2>배차 수락 대기</h2><p className="fr-setting-description">현재 담당 지점 기준 · 기사·운송사의 응답을 확인합니다.</p></div><button type="button" className="fr-link" aria-label="배차 수락 대기 더보기" onClick={onAllRequests}>더보기</button></header>
+      <FreightTable columns={['운송번호','운송 구간','차량 / 기사','상차 예정','응답']} empty="수락 대기 중인 배차가 없습니다." rows={requests.slice(0,4).map(s=>{
         const o=firstOrder(data,s);
         return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[mainCell(detailLink(s.number,()=>open('shipments',s.id)),nameOf(data,'shippers',o?.shipperId)),routeName(data,o),
           mainCell(vehicleName(data,s.vehicleId),nameOf(data,'drivers',s.driverId)),timeLabel(s.start),
@@ -76,7 +76,7 @@ export function ScheduleView({data,rows,services,filters,open,onExport,onDispatc
   return <><div className="fr-toolbar fr-week-toolbar"><div className="fr-week-controls"><FreightButton onClick={()=>setWeek(addDays(week,-7))}>이전 주</FreightButton>
     <span>{days[0].replaceAll('-','.')} – {days[6].replaceAll('-','.')}</span><FreightButton onClick={()=>setWeek(addDays(week,7))}>다음 주</FreightButton>
     <FreightButton onClick={()=>setWeek(weekOf(today))}>이번 주</FreightButton></div>
-    <div className="fr-actions"><FreightButton icon="download" onClick={()=>onExport(week,entries)}>일정 다운로드</FreightButton><FreightButton primary onClick={onDispatch}>통합 배차</FreightButton></div></div>
+    <div className="fr-actions"><FreightButton icon="download" onClick={()=>onExport(week,entries)}>CSV 다운로드</FreightButton><FreightButton primary onClick={onDispatch}>통합 배차</FreightButton></div></div>
     {filters}
     <div className="fr-week fr-schedule-grid" role="region" aria-label="주간 운송·정비 일정" tabIndex={0}>{days.map((day,i)=>{
       const relevant=entries.filter(e=>epoch(e.row.start)<epoch(addDays(day,1)+'T00:00')&&epoch(e.row.end)>epoch(day+'T00:00'));

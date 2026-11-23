@@ -48,7 +48,7 @@ export default function RentalStageTable({stage, rows, now, balances, devices, c
     if (stage==='active') return [...head,<>{kstDateTime(c.rental_terms?.checkout_at || c.starts_at)}<small>~ {kstDateTime(c.ends_at)}</small></>,
       c.return_location || '—', payment,button('반납 접수','return')];
     if (stage==='returns') return [...head,<>{kstDateTime(c.ends_at)}<small>{c.returned_at?kstDateTime(c.returned_at):'반납 대기'}</small></>,badge,
-      <>{bill}<small>{balance ? '보증금 '+won(balance.held_krw):'보증금 확인 전'}</small></>,button(c.status==='returned'?(agreedPrice(c) && !c.settled_at?'대여료 정산':'정산 상세'):'반납 접수',c.status==='returned'?(agreedPrice(c) && !c.settled_at?'settle':null):'return')];
+      <>{bill}<small>{balance ? '보증금 '+won(balance.held_krw):'보증금 확인 전'}</small></>,button(c.status==='returned'?(agreedPrice(c) && !c.settled_at?'대여료 정산':'정산 확인'):'반납 접수',c.status==='returned'?(agreedPrice(c) && !c.settled_at?'settle':null):'return')];
     return [...head,period,bill,badge,payment];
   }
   return <div className="rental-stage-table" role="region" aria-label={columns[stage][0]+'별 목록'} tabIndex={0}>

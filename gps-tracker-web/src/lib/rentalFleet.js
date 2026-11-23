@@ -50,9 +50,9 @@ export function fleetDashboard(contracts, devices, work, now) {
   const attention = rentalAttention(retained, devices, now);
   const actions = [
     { key: 'assign', label: '배차가 필요한 예약', icon: 'car', rows: retained.filter(row => row.status === 'draft' && !isAssigned(row)).map(contract => ({ contract })) },
-    { key: 'pickup', label: '오늘 출고 확인', icon: 'file', rows: pickups.filter(event => event.row.status === 'draft').map(event => ({ contract: event.row })) },
+    { key: 'pickup', label: '출고 전 확인', icon: 'file', rows: pickups.filter(event => event.row.status === 'draft').map(event => ({ contract: event.row })) },
     { key: 'return', label: '반납 시간이 지난 차량', icon: 'clock', rows: summary.overdue.map(contract => ({ contract })) },
-    { key: 'care', label: '세차·점검 및 사고 조치', icon: 'wrench', rows: work.filter(item => workState(item) !== 'done' && Date.parse(item.starts_at) <= now).map(item => ({ item })).concat(attention.filter(task => task.category === 'maintenance')) },
+    { key: 'care', label: '차량 준비 확인', icon: 'wrench', rows: work.filter(item => workState(item) !== 'done' && Date.parse(item.starts_at) <= now).map(item => ({ item })).concat(attention.filter(task => task.category === 'maintenance')) },
     { key: 'signal', label: '단말 수신 확인', icon: 'antenna', rows: attention.filter(task => task.category === 'signal') },
   ];
   const counts = { ready: 0, active: 0, service: 0, hold: 0 };

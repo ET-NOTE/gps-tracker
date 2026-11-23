@@ -15,6 +15,8 @@ import { useRentalCatalog } from './RentalBookingForm';
 import { BusinessButton, BusinessError } from './BusinessWorkspace';
 import { useBusinessClock, useRentalOperations } from './useBusinessData';
 import ExportButtons from './ExportButtons';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 import RentalStageTable from './RentalStageTable';
 import { LedgerEditor } from './RentalOfficeBook';
 import { policyKey } from './RentalPolicy';
@@ -74,6 +76,8 @@ function ContractPerson({contract,driver,onClose}) {
 }
 
 export default function RentalWorkflow({ stage='reservations', devices=[], vehicles=[], branches: configuredBranches=[], request, onContracts, onWork }) {
+  // Desktop design: one CSV download button instead of the format menu.
+  const mockup = !useCorporatePhone() && hideOutsideMockup;
   const now=useBusinessClock(), qc=useQueryClient();
   const [filters,setFilters]=useState(baseFilters), [detail,setDetail]=useState(null), [dialog,setDialog]=useState(null);
   const [extraOpen,setExtraOpen]=useState(false);
@@ -129,8 +133,8 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
   const metrics={
     reservations:[['조회 예약',shown.length],['미배정 예약',count(c=>!isAssigned(c) && c.status==='draft')],['출고 준비',assigned],['예약 대여료',shown.filter(c=>c.status!=='cancelled').reduce((sum,c)=>sum+agreementTotal(c),0),'원']],
     contracts:[['조회 계약',shown.length],['계약 확인 전',count(c=>c.status==='draft' && !c.rental_terms?.confirmed_at)],['대여 중',count(c=>['active','overdue'].includes(c.status))],['대여료 미수',unpaid(shown),'원']],
-    checkout:[['출고 예정',shown.length],['오늘 인수 예정',count(c=>businessDate(c.starts_at)===day)],['사전 확인 완료',ready],['확인 필요',ready==null?null:shown.length-ready]],
-    active:[['대여 중',shown.length],['오늘 반납 예정',count(c=>businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['대여료 미수',unpaid(shown),'원']],
+    checkout:[['출고 예정',shown.length],['오늘 인수 예정',count(c=>businessDate(c.starts_at)===day)],['출고 요건 완료',ready],['확인 필요',ready==null?null:shown.length-ready]],
+    active:[['대여 중',shown.length],['오늘 반납 예정',count(c=>businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['추가 대여료 미수',unpaid(shown),'원']],
     returns:[['조회 반납 대상',shown.length],['반납 대기',count(c=>c.status!=='returned')],['반납 완료',count(c=>c.status==='returned')],['반납 후 대여료 미수',unpaid(shown.filter(c=>c.status==='returned')),'원']],
     dispatch:[['조회 대여 일정',shown.length],['배차 대기',count(c=>!isAssigned(c))],['배차 완료',count(isAssigned)]],
   }[stage];
@@ -144,8 +148,8 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
     <BusinessButton onClick={()=>open('ledger',focused)}>결제·보증금 기록</BusinessButton>
   </>;
   const assignedVehicle=focused&&vehicles.find(v=>matchesVehicle(focused,v));
-  const foldPeriod=stage==='active' || stage==='checkout';
-  const compactFilters=foldPeriod || stage==='returns';
+  const foldPeriod=!mockup && (stage==='active' || stage==='checkout');
+  const compactFilters=!mockup && (foldPeriod || stage==='returns');
   const extraCount=[foldPeriod && (filters.from || filters.to),filters.model,filters.status].filter(Boolean).length;
   const periodField=<fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>;
   const modelAndStatus=<>
@@ -156,7 +160,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
     <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
     <div className="rental-workflow-toolbar">
       {stageTabs[stage] ? <div className="rental-stage-tabs" aria-label="업무 범위">{stageTabs[stage].map(([key,label])=><button type="button" key={key} aria-pressed={filters.subset===key} onClick={()=>change("subset",key)}>{label}</button>)}</div> : <span>{shown.length.toLocaleString()}건 조회</span>}
-      <div><ExportButtons grouped report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
+      <div><ExportButtons grouped={!mockup} csvOnly={mockup} report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
         {["reservations","dispatch","contracts"].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open("edit",null)}>예약 등록</BusinessButton>}</div></div>
     <div className="rental-workflow-filters" data-compact={compactFilters || undefined}>
       {!foldPeriod && periodField}
@@ -167,8 +171,8 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
       {stage==="reservations" && <label>예약 경로<select value={filters.channel} onChange={e=>change("channel",e.target.value)}><option value="">전체 경로</option>{[...new Set(stageRows.map(c=>c.rental_terms?.channel).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>}
       <label className="rental-stage-search">검색<input type="search" value={filters.query} onChange={e=>change("query",e.target.value)} placeholder="고객, 운전자, 차량, 예약번호"/></label>
       {compactFilters && <div className="rental-extra-actions"><BusinessButton aria-expanded={extraOpen} aria-controls="rental-extra-filters" onClick={()=>setExtraOpen(open=>!open)}>추가 조건{extraCount ? ' ('+extraCount+')' : ''}</BusinessButton>
-        <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton></div>}
-      {!compactFilters && <BusinessButton icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>}
+        <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton></div>}
+      {!compactFilters && <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>setFilters(baseFilters)}>조건 초기화</BusinessButton>}
       {compactFilters && <div id="rental-extra-filters" className="rental-extra-filters" hidden={!extraOpen}>{foldPeriod && periodField}{modelAndStatus}</div>}
     </div>
     <section className="rental-workflow-box">

@@ -1,0 +1,122 @@
+/* Rental and freight desktop screens matched to the design mockup (same rules as the corporate
+   fleet-mockup-sync.css). Phones keep their own layout. */
+@media screen and (min-width:768px) {
+  /* G1: content column at most 1240px and centred, unless the wide view is chosen. */
+  .rnt-shell:not([data-wide=true]) .rnt-content>* {max-width:1240px; margin-inline:auto!important}
+  /* G2: menu children like the corporate sidebar. */
+  .rnt-shell .rnt-sidebar .rnt-subnav {margin:3px 0 5px 23px!important; padding-left:0!important; gap:0!important; border-left:1px solid #dde3ed!important}
+  .rnt-shell .rnt-sidebar .rnt-subnav button.rnt-subitem {min-height:33px!important; margin-left:-1px; padding:5px 12px!important; border-left:1px solid transparent!important; border-radius:0!important; background:transparent!important; font-size:12px!important; font-weight:400!important; color:#838b98!important}
+  .rnt-shell .rnt-sidebar .rnt-subnav button.rnt-subitem:hover {color:var(--primary)!important; background:#f0f3f8!important}
+  .rnt-shell .rnt-sidebar .rnt-subnav button.rnt-subitem[aria-current=page] {color:var(--primary)!important; border-left-color:var(--primary)!important; background:transparent!important}
+}
+/* G4/G5: filter labels 11px, table headers 12px, reset as a text link at the row end. */
+.rnt-shell .fleet-filter-reset-link {display:inline-flex!important; align-items:center; gap:4px; margin-left:auto; min-height:0!important; padding:4px 0!important; border:0!important; background:none!important; box-shadow:none!important; font:inherit; font-size:11px!important; font-weight:400!important; color:#7e8998!important; cursor:pointer; white-space:nowrap}
+.rnt-shell .fleet-filter-reset-link:hover:not(:disabled) {color:var(--primary)!important}
+.rnt-shell .fleet-filter-reset-link svg {width:13px; height:13px}
+@media screen and (min-width:768px) {
+  .rnt-shell .rnt-content :is(.rental-workflow-filters,.fr-filters,.fr-candidate-filters,.rfl-filters,.ops-filter-box,.rental-extra-filters,.ro-filters) label {font-size:11px!important}
+  .rnt-shell .rnt-content table th {font-size:12px!important}
+}
+/* rent-live (design): map left and wider, vehicle list right with state badges. */
+@media screen and (min-width:768px) {
+  .rnt-shell .rfl-live[data-mockup] {grid-template-columns:minmax(0,1.6fr) minmax(280px,.8fr)}
+  .rnt-shell .rfl-live[data-mockup] .rfl-map>header {display:flex; align-items:flex-start; justify-content:space-between; padding:16px 18px 10px}
+  .rnt-shell .rfl-live[data-mockup] .rfl-map>header p {margin:3px 0 0; font-size:11px; color:#929ba7}
+  .rnt-shell .rfl-live[data-mockup] .rfl-live-list button {display:flex!important; align-items:center; justify-content:space-between; gap:10px; font-size:13px}
+  .rnt-shell .rfl-live[data-mockup] .rfl-live-list button>span:first-child {min-width:0}
+  .rnt-shell .rfl-live[data-mockup] .rfl-live-list small {font-size:11px}
+}
+/* cargo-live (design): run-state and reception badges, last reception per row, note below. */
+@media screen and (min-width:768px) {
+  .rnt-shell .fr-unit-tags {display:inline-flex; gap:4px; flex-wrap:wrap; justify-content:flex-end}
+  .rnt-shell .fr-unit small.fr-unit-seen {display:block; margin-top:2px; font-size:11px; color:#929ba7}
+  .rnt-shell .fr-live-note {margin:10px 0 0; font-size:11px; color:#929ba7}
+}
+.rnt-shell .fr-dashboard-guide {margin:0; font-size:12px; color:#7e8998; align-self:center}
+.rnt-shell .rfl-caption {margin:0 0 8px; font-size:11px; color:#929ba7}
+.rnt-shell .rnt-policy-note {margin:0; font-size:12px; color:#7e8998}
+.rnt-shell .rnt-policy label small {display:block; margin-top:4px; font-size:11px; color:#929ba7}
+.rnt-shell .fr-setting-description {margin:3px 0 0; font-size:11px; color:#929ba7; font-weight:400}
+/* Summary cards: mockup .stat-top 12px #7d8795, .stat-value 28px/400, .stat-unit 12px #828c9a. */
+@media screen and (min-width:768px) {
+  .rnt-shell .rnt-content :is(.ro-metrics,.fr-stats)>div>dt,
+  .rnt-shell .rnt-content .rental-stage-metrics>div>span {font-size:12px!important; font-weight:400!important; color:#7d8795!important}
+  .rnt-shell .rnt-content :is(.ro-metrics,.fr-stats)>div>dd,
+  .rnt-shell .rnt-content .rental-stage-metrics>div>strong {font-size:28px!important; font-weight:400!important; line-height:1.15; letter-spacing:-.8px}
+  .rnt-shell .rnt-content :is(.fr-stats dd small.fr-stat-unit,.rental-stage-metrics strong small) {font-size:12px!important; color:#828c9a!important; letter-spacing:0}
+}
+/* ── Rental / freight team screens in the corporate layout (TeamMockupViews.jsx) ── */
+.rt-mockup {display:grid; gap:14px; min-width:0}
+.rt-toolbar {display:flex; align-items:center; gap:12px; flex-wrap:wrap; min-height:36px; font-size:13px; color:#596375}
+.rt-actions {display:flex; align-items:center; gap:8px; margin-left:auto}
+.rt-search {display:flex; align-items:center; gap:6px; box-sizing:border-box; width:340px; max-width:100%; height:37px; padding:0 10px; border:1px solid #e2e6ed; border-radius:8px; background:#fff; color:#919dab}
+.rt-search input {flex:1; min-width:0; border:0!important; outline:0; box-shadow:none!important; background:transparent; font:inherit; font-size:12px; color:var(--text)}
+.rt-search:focus-within {outline:2px solid var(--primary); outline-offset:1px}
+.rt-count {font-size:12px; color:#8d98a6}
+.rt-card {border:1px solid #e3e7ee; border-radius:10px; background:#fff; min-width:0; overflow:hidden}
+.rt-card-head {display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; border-bottom:1px solid #eef1f5}
+.rt-card-head h3 {margin:0; font-size:15px; font-weight:500}
+.rt-card-head span {font-size:11px; color:#929ba7}
+.rt-table-wrap {overflow:auto}
+.rt-table {width:100%; border-collapse:collapse; font-size:13px}
+.rt-table th {padding:11px 16px; text-align:left; font-size:12px; font-weight:400; color:#7e8998; background:#f7f8fa; border-bottom:1px solid #eef1f5; white-space:nowrap}
+.rt-table td {padding:12px 16px; border-bottom:1px solid #f0f2f6; vertical-align:middle; color:var(--text)}
+.rt-table td small {display:block; margin-top:2px; font-size:11px; color:#929ba7}
+.rt-table td strong {font-weight:500}
+.rt-empty-row td {padding:28px 12px; text-align:center; color:#929ba7}
+.rt-empty-row p {margin:0}
+.rt-name {display:inline-flex; align-items:center; gap:6px}
+.rt-badge {display:inline-flex; align-items:center; padding:3px 8px; border-radius:5px; font-size:11px; background:#f1f3f7; color:#6b7686}
+.rt-badge.good {background:var(--status-success-bg,#eaf6f0); color:var(--status-success-text,#26856b)}
+.rt-badge.warn {background:var(--status-warning-bg,#fff5e5); color:var(--status-warning-text,#b77923)}
+.rt-row-actions {display:flex; gap:10px}
+.rt-link {padding:0; border:0; background:none; font:inherit; font-size:12px; color:#2f6fed; cursor:pointer}
+.rt-link:disabled {color:#b6bdc8; cursor:default}
+.rt-tabs {display:inline-flex; gap:2px; padding:3px; border-radius:8px; background:#f1f3f7}
+.rt-tabs button {display:inline-flex; align-items:center; gap:5px; min-height:28px; padding:3px 12px; border:1px solid transparent; border-radius:6px; background:transparent; font:inherit; font-size:12px; color:#7e8998}
+.rt-tabs button[aria-pressed=true] {background:#fff; border-color:#e1e5ec; color:var(--text)}
+.rt-tabs small {font-size:11px; color:#929ba7}
+.rt-notes {margin:0; padding:4px 20px 14px; list-style:none}
+.rt-notes li {padding:10px 0; border-top:1px solid #f0f2f6; font-size:13px}
+.rt-notes li:first-child {border-top:0}
+.rt-notes small {display:block; margin-top:2px; font-size:11px; color:#929ba7}
+.rt-role-panel {display:grid; grid-template-columns:240px minmax(0,1fr); border:1px solid #e3e7ee; border-radius:10px; background:#fff; min-width:0}
+.rt-role-list {display:grid; align-content:start; gap:2px; padding:14px; border-right:1px solid #eef1f5}
+.rt-role-list h3 {margin:0 0 6px; padding:0 8px; font-size:12px; font-weight:400; color:#7e8998}
+.rt-role-list button {display:flex; align-items:center; gap:8px; padding:9px 10px; border:0; border-radius:7px; background:transparent; font:inherit; font-size:13px; color:var(--text); text-align:left; cursor:pointer}
+.rt-role-list button small {margin-left:auto; font-size:11px; color:#929ba7}
+.rt-role-list button[aria-pressed=true] {background:#eef4ff; color:#2f6fed}
+.rt-role-detail {padding:22px; min-width:0}
+.rt-role-detail>header {display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+.rt-role-detail>header h3 {margin:0; font-size:16px; font-weight:500}
+.rt-role-detail>header p {margin:3px 0 0; font-size:12px; color:#929ba7}
+.rt-role-fields {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 16px; margin-top:18px}
+.rt-role-fields label {display:grid; gap:7px; font-size:12px; color:#7e8998}
+.rt-role-fields :is(input,select) {box-sizing:border-box; width:100%; min-height:40px; padding:8px 11px; border:1px solid #e1e5ec; border-radius:8px; background:#fff; font:inherit; font-size:13px; color:var(--text)}
+.rt-role-fields :is(input,select):disabled {background:#f8f9fb; color:var(--text-2)}
+.rt-matrix-head {display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:16px; border-top:1px solid #eef1f5}
+.rt-matrix-head h4 {margin:0; font-size:15px; font-weight:400}
+.rt-matrix-row {display:grid; grid-template-columns:140px minmax(0,1fr); gap:12px; padding:16px 0; border-bottom:1px solid #f0f2f6}
+.rt-matrix-row>strong {font-size:14px; font-weight:400; color:#384152}
+.rt-matrix-row ul {display:flex; flex-wrap:wrap; gap:10px 22px; margin:0; padding:0; list-style:none}
+.rt-matrix-row label {display:inline-flex; align-items:center; gap:8px; font-size:13px; cursor:pointer}
+.rt-matrix-row input {position:absolute; opacity:0; width:1px; height:1px; pointer-events:none}
+.rt-check {display:inline-grid; place-items:center; width:18px; height:18px; border:1px solid #cfd6e0; border-radius:4px; background:#fff; color:#fff}
+.rt-matrix-row li:has(input:checked) .rt-check {background:#2f6fed; border-color:#2f6fed}
+.rt-matrix-row label:has(input:focus-visible) .rt-check {outline:2px solid #2f6fed; outline-offset:2px}
+.rt-note {margin:12px 0 0; font-size:11px; color:#929ba7}
+.rt-error {margin:12px 0 0; font-size:12px; color:#c2410c}
+.rt-role-actions {display:flex; justify-content:flex-end; gap:8px; margin-top:18px}
+.rt-company-line {display:flex; align-items:center; gap:12px; padding:20px 20px 6px}
+.rt-company-line span {display:grid; place-items:center; width:46px; height:46px; border-radius:10px; background:#eef4ff; color:#2f6fed}
+.rt-company-line strong {font-size:17px; font-weight:500}
+.rt-facts {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 24px; margin:0; padding:8px 20px 18px}
+.rt-facts div {display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid #f0f2f6; font-size:13px}
+.rt-facts dt {color:#7e8998} .rt-facts dd {margin:0; color:var(--text); text-align:right}
+@media (max-width:767px) {
+  .rt-role-panel {grid-template-columns:minmax(0,1fr)}
+  .rt-role-list {border-right:0; border-bottom:1px solid #eef1f5}
+  .rt-role-fields,.rt-facts {grid-template-columns:minmax(0,1fr)}
+  .rt-matrix-row {grid-template-columns:minmax(0,1fr)}
+  .rt-search {width:100%}
+}

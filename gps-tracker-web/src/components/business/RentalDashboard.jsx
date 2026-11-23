@@ -11,9 +11,9 @@ import RentalDispatchTrend from './RentalDispatchTrend';
 
 const taskHints = {
   assign:'예약 차량을 지정해 주세요.',
-  pickup:'인도 전 계약·운전자 정보를 확인하세요.',
+  pickup:'계약·면허·결제 상태를 확인하세요.',
   return:'반납 또는 연장 내용을 확인하세요.',
-  care:'세차·점검과 사고 조치 일정을 확인하세요.',
+  care:'세차·점검·보류 상태를 확인하세요.',
   signal:'차량 단말기의 최근 수신을 확인하세요.',
 };
 

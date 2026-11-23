@@ -115,7 +115,7 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
         {corporate && <div className="fleet-member-brand"><button type="button" className="fleet-brand-home" aria-label="시리얼링크 운영 현황" onClick={()=>onTab('overview')}><span className="fleet-brand-symbol"><Icon name="car" size={19}/></span>법인운행</button><small>{company} · 업무 공간</small></div>}
         {corporate ? navigation.map(item=>{
           const pages=tabs.filter(t=>(t.group || t.id)===item.id&&t.nav!==false&&menuPage(t));
-          const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].filter(entry=>!entry[2]?.hidden).map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:p.label}]);
+          const links=pages.flatMap(p=>sections?.[p.id]?.length ? sections[p.id].filter(entry=>!entry[2]?.hidden).map(([id,label])=>({page:p.id,id,label})) : [{page:p.id,label:mockupNav&&p.id==='devices'?'차량·단말기 연결':p.label}]);
           if (!links.length) return null;
           const nested=links.length>1, open=mockupNav?expandedGroups.has(item.id):expanded===item.id, current=activeGroup===item.id;
           return <div className="fleet-nav-group" key={item.id}><button type="button" className="business-nav-item" aria-current={current?'page':undefined} aria-expanded={nested?open:undefined} onClick={()=>{

@@ -118,7 +118,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   const exportButton=<FreightButton icon="download" onClick={download} disabled={!rows.length}>CSV 다운로드</FreightButton>;
   const toolbar=<div className="fr-toolbar"><span className="fr-toolbar-caption">{caption}</span><div className="fr-actions">
     {prominentExport&&exportButton}
-    <FreightButton icon="plus" primary onClick={()=>setView({action:'form'})} disabled={!!missing}>{fleet?.[2]||(kind==='rates'?'요율 등록':title+' 등록')}</FreightButton></div></div>;
+    <FreightButton icon="plus" primary onClick={()=>setView({action:'form'})} disabled={!!missing}>{fleet?.[2]||(kind==='rates'?'요율 등록':kind==='locations'?'장소 등록':title+' 등록')}</FreightButton></div></div>;
   const FilterBar=fleet?FleetResourceFilters:FreightFilters;
   const filterControl=f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>;
   const extraFilter=kind==='drivers'?filters.find(f=>f.field==='active'):null;
