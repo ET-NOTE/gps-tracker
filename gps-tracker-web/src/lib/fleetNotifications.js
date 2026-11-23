@@ -1,9 +1,9 @@
 export const notificationTopics = [
-  { key: 'reservation', label: '차량 예약', hint: '예약 승인·반려 결과', icon: 'clock' },
-  { key: 'trip', label: '운행 시작·종료', hint: '예약 운행 상태 변경 및 운행기록부에 감지된 운행', icon: 'route' },
-  { key: 'maintenance', label: '점검 일정', hint: '정비·보험·검사 예정일', icon: 'wrench' },
-  { key: 'connection', label: '단말 수신 이상', hint: '연결된 단말기의 통신·배터리 상태', icon: 'link' },
-  { key: 'expense', label: '지출 승인·반려', hint: '지출 신청의 처리 결과', icon: 'coin' },
+  { key: 'reservation', label: '차량 예약', hint: '예약 승인·반려 결과를 확인합니다.', icon: 'calendar' },
+  { key: 'trip', label: '운행 시작·종료', hint: '차량의 운행 시작과 종료를 확인합니다.', icon: 'route' },
+  { key: 'maintenance', label: '점검 일정', hint: '다가오는 정비·점검 일정을 확인합니다.', icon: 'wrench' },
+  { key: 'connection', label: '단말 수신 이상', hint: '단말 수신 지연과 연결 상태를 확인합니다.', icon: 'wifi' },
+  { key: 'expense', label: '지출 승인·반려', hint: '신청한 지출의 처리 결과를 확인합니다.', icon: 'wallet' },
 ];
 
 export function selectedAttention(events, policy) {

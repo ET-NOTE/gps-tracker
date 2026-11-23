@@ -59,7 +59,7 @@ async function mount(t,{data=reservations,request}={}){
    BusinessWorkspace:noop,BusinessLocation:noop,useBusinessVehicle:noop,BusinessButton:tag('button'),
    BusinessError:({children,onRetry})=>React.createElement('section',{role:'alert'},children,React.createElement('button',{onClick:onRetry},'다시 시도')),
    BusinessEmpty:({title,children})=>React.createElement('section',{},title,children),BusinessSection:body,BusinessMetrics:noop,BusinessTask:noop,BusinessSettings:noop,BusinessVehicles:noop,
-   BusinessCompanyInfo:noop,BusinessSubscription:noop,ageString:noop,classifyDevice:noop,deviceBattery:noop,useBusinessClock:()=>fixedNow,useBusinessSubscription:noop,
+   BusinessCompanyInfo:noop,BusinessSubscription:noop,ageString:noop,classifyDevice:noop,setSignalLossMinutes:noop,useOperatingPolicy:()=>({}),deviceBattery:noop,useBusinessClock:()=>fixedNow,useBusinessSubscription:noop,
    alertDialog:args=>calls.alerts.push(args),confirmDialog:async args=>{calls.confirm.push(args);return state.confirm;},StatCard:noop,StatCardGrid:noop,
    FleetAssets:noop,FleetAssetForm:noop,FleetAssetDetail:noop,useFleetAssets:noop,projectFleetAssets:noop,fleetAssetsKey:[],useAssetStats:noop,
    useFleetReservations:params=>{calls.query.push({...params});return {data:state.data,error:state.error,isLoading:state.isLoading,refetch:()=>{calls.retry++;}};},

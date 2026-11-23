@@ -22,12 +22,17 @@ mod tests {
     #[test]
     fn group_fields_cannot_enable_account_or_billing_management() {
         for key in ["owner","billing","manage_team","unknown"] {
-            let mut group=Group{name:" 제한 ".into(),permissions:vec![key.into()],updated_at:None};
+            let mut group=Group{name:" 제한 ".into(),description:None,permissions:vec![key.into()],updated_at:None};
             assert!(group.validate().is_err());
         }
-        let mut read_only=Group{name:"  조회 ".into(),permissions:vec![],updated_at:None};
+        let mut read_only=Group{name:"  조회 ".into(),description:Some("  ".into()),permissions:vec![],updated_at:None};
         assert!(read_only.validate().is_ok());
         assert_eq!(read_only.name,"조회");
+        assert_eq!(read_only.description.as_deref(),Some(""));
+        let mut long=Group{name:"설명".into(),description:Some("가".repeat(201)),permissions:vec![],updated_at:None};
+        assert!(long.validate().is_err());
+        let parsed:Group=serde_json::from_value(json!({"name":"조회","permissions":[]})).unwrap();
+        assert!(parsed.description.is_none(), "an older client keeps the stored description");
         assert!(serde_json::from_value::<Assignment>(json!({"members":[]})).is_err());
         assert!(serde_json::from_value::<Assignment>(json!({"group_id":null,"members":[]})).is_ok());
     }
@@ -70,12 +75,23 @@ async fn list(
 #[serde(deny_unknown_fields)]
 struct Group {
     name: String,
+    /// Omitted keeps the stored description; an empty text clears it.
+    #[serde(default)]
+    description: Option<String>,
     permissions: Vec<String>,
     updated_at: Option<DateTime<Utc>>,
 }
 impl Group {
     fn validate(&mut self) -> AppResult<()> {
         self.name = self.name.trim().to_owned();
+        if let Some(text) = self.description.as_mut() {
+            *text = text.trim().to_owned();
+            if text.chars().count() > 200 {
+                return Err(AppError::BadRequest(
+                    "그룹 설명은 200자 이내로 입력해 주세요.".into(),
+                ));
+            }
+        }
         if self.name.is_empty() || self.name.chars().count() > 60 {
             return Err(AppError::BadRequest(
                 "그룹명은 1~60자로 입력해 주세요.".into(),
@@ -135,11 +151,11 @@ async fn save(state: &AppState, owner: i64, id: Option<i64>, mut group: Group) -
             return Err(changed());
         }
         before = old;
-        sqlx::query_scalar("UPDATE fleet_permission_groups g SET name=$3,permissions=$4,updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2 RETURNING to_jsonb(g)")
-            .bind(owner).bind(id).bind(group.name).bind(group.permissions).fetch_one(&mut *tx).await.map_err(conflict)?
+        sqlx::query_scalar("UPDATE fleet_permission_groups g SET name=$3,permissions=$4,description=CASE WHEN $5::text IS NULL THEN g.description ELSE NULLIF($5,'') END,updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2 RETURNING to_jsonb(g)")
+            .bind(owner).bind(id).bind(group.name).bind(group.permissions).bind(group.description).fetch_one(&mut *tx).await.map_err(conflict)?
     } else {
-        sqlx::query_scalar("INSERT INTO fleet_permission_groups AS g(owner_id,name,permissions) VALUES($1,$2,$3) RETURNING to_jsonb(g)")
-            .bind(owner).bind(group.name).bind(group.permissions).fetch_one(&mut *tx).await.map_err(conflict)?
+        sqlx::query_scalar("INSERT INTO fleet_permission_groups AS g(owner_id,name,permissions,description) VALUES($1,$2,$3,NULLIF($4,'')) RETURNING to_jsonb(g)")
+            .bind(owner).bind(group.name).bind(group.permissions).bind(group.description).fetch_one(&mut *tx).await.map_err(conflict)?
     };
     let group_id = row["id"]
         .as_i64()

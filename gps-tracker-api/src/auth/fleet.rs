@@ -255,7 +255,7 @@ async fn scoped(state: AppState, req: Request, next: Next) -> AppResult<Response
                 _ => false,
             }
         }
-        ["corporate", "reservation-policy" | "booking-hours"] => read,
+        ["corporate", "reservation-policy" | "booking-hours" | "operating-policy"] => read,
         ["corporate", "trip-purposes", ..] => read || scope.permits("manage_team"),
         ["corporate", "vehicle-reservations", _, "history"] => read,
         ["corporate", "vehicle-reservations", _, "review"] => method == Method::POST && manager,

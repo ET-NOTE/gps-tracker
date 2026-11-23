@@ -38,6 +38,9 @@ async function modules(globals={},phone=false){
 }
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):text(node?.children||[]);
 const findButton=(scope,label)=>scope.find(n=>n.type==='button'&&text(n.children)===label);
+// The 운행일지 group and its first page share a label; pick the group or the page explicitly.
+const groupButton=(scope,label)=>scope.find(n=>n.type==='button'&&n.props.className==='business-nav-item'&&text(n.children)===label);
+const pageButton=(scope,label)=>scope.findAll(n=>n.type==='button'&&n.props.className!=='business-nav-item'&&text(n.children)===label).at(-1);
 const classNode=(scope,className)=>scope.find(n=>typeof n.type==='string'&&n.props.className?.split(' ').includes(className));
 const buttons=scope=>scope.findAllByType('button').map(n=>text(n.children));
 
@@ -57,14 +60,14 @@ async function mount(t,props={},createNodeMock){
 test('corporate groups return to each last selected child without losing the active body',async t=>{
  const {renderer:r,changes}=await mount(t);
  const primary=()=>r.root.findByProps({'aria-label':'법인차 운영 메뉴'});
- await act(async()=>findButton(primary(),'운행일지').props.onClick());
+ await act(async()=>groupButton(primary(),'운행일지').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'report');
  await act(async()=>findButton(r.root.findByProps({'aria-label':'운행일지 하위 메뉴'}),'월간 요약').props.onClick());
  await act(async()=>findButton(primary(),'지출 관리').props.onClick());
  await act(async()=>findButton(r.root.findByProps({'aria-label':'지출 관리 하위 메뉴'}),'항목 관리').props.onClick());
- await act(async()=>findButton(primary(),'운행일지').props.onClick());
+ await act(async()=>groupButton(primary(),'운행일지').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'monthly');
- assert.equal(findButton(primary(),'운행일지').props['aria-current'],'page');
+ assert.equal(groupButton(primary(),'운행일지').props['aria-current'],'page');
  assert.equal(findButton(r.root.findByProps({'aria-label':'운행일지 하위 메뉴'}),'월간 요약').props['aria-current'],'page');
  await act(async()=>findButton(primary(),'지출 관리').props.onClick());
  assert.equal(r.root.findByType('output').children[0],'expense-categories');
@@ -104,7 +107,7 @@ test('corporate tab navigation resets the persistent mobile scroll without reset
  await act(async()=>findButton(classNode(r.root,'business-nav-tools'),'계정 메뉴').props.onClick());
  await act(async()=>findButton(r.root.findByType('aside'),'닫기').props.onClick());
  assert.equal(viewport.scrollTop,180);assert.deepEqual(resets,[0,0]);
- await act(async()=>findButton(primary(),'운행일지').props.onClick());
+ await act(async()=>groupButton(primary(),'운행일지').props.onClick());
  assert.equal(viewport.scrollTop,0);
  viewport.scrollTop=90;
  await act(async()=>findButton(r.root.findByProps({'aria-label':'운행일지 하위 메뉴'}),'월간 요약').props.onClick());
@@ -260,7 +263,7 @@ test('phone menu opens the permitted company sections, reports, and account dest
  assert.equal(r.root.findAllByType('aside').length,0);
  drawer=await open('전체 메뉴');
  await act(async()=>findButton(drawer,'운행일지').props.onClick());
- await act(async()=>findButton(drawer,'운행기록부').props.onClick());
+ await act(async()=>pageButton(drawer,'운행일지').props.onClick());
  assert.equal(changes.at(-1),'report');
  drawer=await open('회사 및 계정 메뉴');
  assert.ok(!buttons(drawer).includes('관리자'));

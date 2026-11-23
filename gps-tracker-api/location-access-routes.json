@@ -535,6 +535,14 @@
     "class": "non_location",
     "reason": "Company notification preferences and delivery availability; no location data."
   },
+  "fleet_operating_policy.rs GET /corporate/operating-policy": {
+    "class": "non_location",
+    "reason": "Company expense approval, trip record rules and terminal reception delay; no location data."
+  },
+  "fleet_operating_policy.rs PUT /corporate/operating-policy": {
+    "class": "non_location",
+    "reason": "Company expense approval, trip record rules and terminal reception delay; no location data."
+  },
   "fleet_reservations.rs GET /corporate/booking-hours": {
     "class": "non_location",
     "reason": "Company booking weekday and time limits; no location data."

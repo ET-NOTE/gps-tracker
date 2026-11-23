@@ -49,7 +49,7 @@ export default function FleetLive({devices, initialId, onRefresh}) {
       {groups.error&&<button type="button" className="business-link" onClick={()=>groups.refetch()}>차량 그룹 다시 불러오기</button>}
     </div>
     <section className="fleet-live-map" aria-label="차량 위치 지도">
-      <header className="fleet-live-panel-head"><h2>차량 위치 <small>{rows.length}대</small></h2></header>
+      <header className="fleet-live-panel-head"><div><h2>차량 위치 <small>{rows.length}대</small></h2><p className="fleet-live-map-hint">차량을 선택하면 아래에서 상세를 열 수 있습니다.</p></div></header>
       <BusinessMap devices={rows} selectedId={selected?.id} onSelect={select} controls="full"/>
       {selected&&<div className="business-map-selection"><div><strong>{corporateVehicleName(selected)}</strong><p>{selected.last_fix_at ? '마지막 위치 '+kstDateTime(selected.last_fix_at) : '수신된 위치 없음'}</p></div><BusinessButton onClick={()=>openVehicle(selected)}>차량 상세</BusinessButton></div>}
     </section>

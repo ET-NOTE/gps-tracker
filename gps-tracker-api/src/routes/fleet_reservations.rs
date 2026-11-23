@@ -183,8 +183,14 @@ async fn save(
             }
         }
     }
+    // Keep an existing commute booking editable; only a new commute purpose is refused.
+    if before.as_ref().map_or(true, |row| row["report_purpose"] != "commute") {
+        super::fleet_operating_policy::read(&mut *tx, owner)
+            .await?
+            .check_purpose(input.report_purpose.as_deref())?;
+    }
     let actor = scope.as_ref().map_or(owner, |s| s.actor);
-    let previous_purpose = before.as_ref().and_then(|row| row["company_purpose_id"].as_i64());
+    let previous_purpose =before.as_ref().and_then(|row| row["company_purpose_id"].as_i64());
     let company_purpose_id = input.company_purpose_id.unwrap_or(previous_purpose);
     super::corporate::trip_purposes::validate_link(&mut tx,owner,company_purpose_id,previous_purpose).await?;
     let guarded = before

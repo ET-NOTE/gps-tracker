@@ -3,7 +3,7 @@ import FleetStaffImport from './FleetStaffImport';
 import FleetOrganizationDirectory from './FleetOrganizationDirectory';
 import {DirectoryGroups} from './DirectoryLayout';
 import FleetPermissionGroups from './FleetPermissionGroups';
-import useBreakpoint from '../../useBreakpoint';
+import FleetRoleWorkspace from './FleetRoleWorkspace';
 import FleetGroupAssignment,{canAssignFleetMember,maxGroupMembers} from './FleetGroupAssignment';
 import {fleetAssetLabel} from '../../lib/fleetAssets';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -88,7 +88,7 @@ export default function FleetPeople({activeTab,onTab,onSites,sites,hideNavigatio
   ...[...(org.data||[]).filter(i=>i.kind==='department').map(i=>({id:String(i.id),label:`${i.name}${!i.active?' (사용 중지)':''}`})),{id:'unassigned',label:'부서 미지정'}]
    .map(i=>({...i,count:ready?groupScope.filter(s=>inDepartment(s,i.id)).length:null})),
  ];
- const roleSelect=<select className="fleet-people-role-filter" aria-label="사용자 권한 필터" value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}><option value="">전체 권한</option>{['admin','department_manager','member'].map(key=><option key={key} value={key}>{fleetRoles[key]}</option>)}{canAssign&&groups.data?.length>0&&<optgroup label="맞춤 권한 그룹">{groups.data.map(g=><option key={g.id} value={'group:'+g.id}>{g.name}</option>)}</optgroup>}</select>;
+ const roleSelect=<select className="fleet-people-role-filter" aria-label="사용자 권한 필터" value={roleFilter} onChange={e=>setRoleFilter(e.target.value)}><option value="">전체 권한 그룹</option>{['admin','department_manager','member'].map(key=><option key={key} value={key}>{fleetRoles[key]}</option>)}{canAssign&&groups.data?.length>0&&<optgroup label="맞춤 권한 그룹">{groups.data.map(g=><option key={g.id} value={'group:'+g.id}>{g.name}</option>)}</optgroup>}</select>;
  const manageOrganization=<button type="button" className="business-button" aria-label="부서·직책 관리" onClick={()=>setTab('organization')}>부서·직책 관리</button>;
  const pendingInvites=(invites.data||[]).filter(i=>!i.accepted_at&&!i.revoked_at&&Date.parse(i.expires_at)>Date.now());
  const editAction=(s,inDetail=false)=><button type="button" className={inDetail?"business-button is-primary":"business-button"} disabled={busy} onClick={()=>setEdit(s)}>{inDetail?'정보 수정':'수정'}</button>;
@@ -108,7 +108,7 @@ export default function FleetPeople({activeTab,onTab,onSites,sites,hideNavigatio
      {(query||department||roleFilter||status!=='all')&&<button type="button" className="fleet-user-reset" onClick={()=>{setQuery('');setDepartment('');setRoleFilter('');setStatus('all');}}>필터 초기화</button>}
     </div>
     <div className="fleet-record-actions"><button type="button" className="business-button fleet-user-export" aria-label="사용자 목록 다운로드" title="사용자 목록 다운로드 · CSV" disabled={!ready||exporting} onClick={downloadUsers}><Icon name="download" size={16}/></button>
-     {access.manage_team&&<><button type="button" aria-label="CSV 일괄 등록" className="business-button" onClick={()=>setImporting(true)}>일괄 등록</button><button type="button" className="business-button is-primary" onClick={()=>setEdit({})}><Icon name="plus" size={15}/>사용자 등록</button></>}</div>
+     {access.manage_team&&<><button type="button" aria-label="CSV 일괄 등록" className="business-button" onClick={()=>setImporting(true)}>일괄 등록</button><button type="button" className="business-button is-primary" onClick={()=>setEdit({})}><Icon name="plus" size={15}/>사용자 추가</button></>}</div>
    </div>
 
    <section className="fleet-people-ledger" aria-label="사용자 목록">
@@ -150,8 +150,8 @@ export default function FleetPeople({activeTab,onTab,onSites,sites,hideNavigatio
      onApplied={({count,confirmed})=>{setCheckedIds([]);setNotice(confirmed+'명 확인 · '+count+'명의 권한 그룹을 변경했습니다.');}}/>}
   </>}
   {tab==='organization'&&(org.error?<BusinessError onRetry={org.refetch}/>:org.isPending?<p className="fleet-team-empty">부서·직책을 불러오는 중…</p>:<FleetOrganizationDirectory items={org.data||[]} roster={roster} ready={ready} onEdit={access.manage_team?setItem:undefined} onSites={onSites} sites={sites}/>)}
-  {hideNavigation&&access.manage_team&&['permissions','audit'].includes(tab)&&<div className="fleet-page-tabs" role="group" aria-label="권한 화면 구분">{[['permissions','권한 그룹'],['audit','변경 이력']].map(([key,label])=><button key={key} type="button" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>}
-  {tab==='permissions'&&<PermissionPanels access={access} onMembers={role=>{setRoleFilter(role);setDepartment('');setStatus('all');setQuery('');setTab('users');}}/>}
+  {hideNavigation&&access.manage_team&&(tab==='audit'||(tab==='permissions'&&mobile))&&<div className="fleet-page-tabs" role="group" aria-label="권한 화면 구분">{[['permissions','권한 그룹'],['audit','변경 이력']].map(([key,label])=><button key={key} type="button" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>}
+  {tab==='permissions'&&<PermissionPanels access={access} onAudit={access.manage_team?()=>setTab('audit'):undefined} onMembers={role=>{setRoleFilter(role);setDepartment('');setStatus('all');setQuery('');setTab('users');}}/>}
   {tab==='audit'&&access.manage_team&&<section className="fleet-people-ledger" aria-label="변경 이력">{audit.error?<BusinessError onRetry={audit.refetch}/>:audit.isPending?<p className="fleet-team-empty">불러오는 중…</p>:<div className="fleet-asset-table-wrap" tabIndex={0} role="region" aria-label="변경 이력 표"><table className="fleet-asset-table"><thead><tr><th>시각</th><th>작업</th><th>작업자 계정</th><th>대상</th></tr></thead><tbody>{audit.data?.map(a=><tr key={a.id}><td>{kstDateTime(a.created_at)}</td><td>{{permission_group:'권한 그룹 변경',permission_assignment:'권한 그룹 배정',site:'지점 변경',site_group:'지점 그룹 변경',staff:'사용자 변경',staff_import:'사용자 일괄 등록',organization:'부서·직책 변경',invite_create:'초대 생성',invite_revoke:'초대 취소',invite_accept:'초대 수락',account_unlink:'계정 연결 해제',delegated_request:'직원 작업'}[a.action]||a.action}{a.action==='delegated_request'&&<small>{a.after_value?.method} · {a.after_value?.status}</small>}</td><td>{a.actor_id??'탈퇴 계정'}</td><td>{a.target_id||'—'}</td></tr>)}</tbody></table>{!audit.data?.length&&<p className="fleet-team-empty">변경 이력이 없습니다.</p>}</div>}</section>}
   {importing&&<FleetStaffImport onClose={()=>setImporting(false)} onSaved={refresh}/>}
   {tab==='users'&&selectedPerson&&<PersonDetails person={selectedPerson} vehicles={vehicles} groupName={groupName(selectedPerson)}
@@ -175,11 +175,14 @@ const roleCapabilities = [
  ['review_expenses','지출 승인·반려',['owner','admin','department_manager']],
  ['billing','이용권 결제',['owner']],
 ];
-function PermissionPanels({access,onMembers}) {
- const mobile=useBreakpoint()==='mobile';
+const roleMenus = [['차량 관리',['manage_vehicles']],['차량 예약',['write_reservations','review_reservations']],['운행기록부',['write_trips','manage_reports']],['지출 관리',['write_expenses','review_expenses']],['관리 설정',['manage_team','billing']]];
+function PermissionPanels({access,onMembers,onAudit}) {
+ const mobile=useCorporatePhone();
+ const withGroups=access.role==='owner'&&access.billing;
+ if(!mobile) return <FleetRoleWorkspace access={access} onMembers={onMembers} onAudit={onAudit} withGroups={withGroups}/>;
  const roles=<RoleAccess key="roles" access={access} onMembers={onMembers}/>;
- const groups=access.role==='owner'&&access.billing?<FleetPermissionGroups key="groups"/>:null;
- return mobile?[groups,roles]:[roles,groups];
+ const groups=withGroups?<FleetPermissionGroups key="groups"/>:null;
+ return [groups,roles];
 }
 
 const roleDescriptions={owner:'회사 계정과 이용권을 포함한 모든 권한을 가집니다.',admin:'전체 차량과 조직의 운영을 관리합니다.',department_manager:'소속 부서의 차량과 사용자를 관리합니다.',member:'본인의 예약, 운행, 지출을 확인합니다.'};
@@ -194,10 +197,12 @@ function RoleAccess({access,onMembers}) {
   </div>
   <div className="fleet-role-detail"><header><div><h3>{fleetRoles[selected]}</h3><p>{roleDescriptions[selected]}</p></div>
    {selected!=='owner'&&access.manage_team&&<button type="button" className="business-button" onClick={()=>onMembers(selected)}>사용자 보기</button>}
-  </header><dl>{roleCapabilities.map(([key,label,roles])=>{
+  </header><h4 className="fleet-role-matrix-title">메뉴별 권한</h4><div className="fleet-role-matrix">{roleMenus.map(([menu,keys])=><div key={menu} className="fleet-role-matrix-row"><strong>{menu}</strong><ul>{keys.map(key=>{
+    const [,label,roles]=roleCapabilities.find(c=>c[0]===key);
     const allowed=own&&typeof access[key]==='boolean'?access[key]:roles.includes(selected);
-    return <div key={key}><dt>{label}</dt><dd className={allowed?'allowed':''}>{allowed?'사용 가능':'권한 없음'}</dd></div>;
-  })}</dl></div>
+    return <li key={key} className={allowed?'allowed':''}><span className="fleet-role-check" aria-hidden="true">{allowed&&<Icon name="check" size={11}/>}</span>{label}<span className="sr-only">{allowed?' 사용 가능':' 권한 없음'}</span></li>;
+  })}</ul></div>)}</div>
+  <p className="fleet-role-matrix-note">기본 권한 그룹의 권한은 고정되어 있습니다. 세부 범위는 맞춤 권한 그룹에서 조정합니다.</p></div>
  </section>;
 }
 

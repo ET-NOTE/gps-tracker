@@ -8,7 +8,7 @@ export const corporateTabs = [
   { id: 'staff', label: '사용자 목록', icon: 'user', group: 'staff' },
   { id: 'sites', label: '지점 관리', icon: 'mapPin', group: 'staff', nav: false },
   { id: 'reservations', label: '차량 예약', icon: 'calendar', group: 'reservations' },
-  { id: 'report', label: '운행기록부', icon: 'route', group: 'driving' },
+  { id: 'report', label: '운행일지', icon: 'route', group: 'driving' },
   { id: 'monthly', label: '월간 요약', icon: 'bar', group: 'driving' },
   { id: 'expenses', label: '지출 내역', icon: 'wallet', group: 'expenses' },
   { id: 'approvals', label: '승인 관리', icon: 'check', group: 'expenses' },
@@ -39,26 +39,26 @@ export function corporateSections(canManageTeam) {
 }
 
 const pageHints = {
-  overview: '차량 위치와 오늘 처리할 업무를 확인하세요.',
-  vehicles: '차량의 기본 정보와 운영 상태를 확인하세요.',
-  live: '차량의 마지막 위치와 수신 상태를 확인하세요.',
-  devices: '단말기의 수신 상태와 차량 연결 이력을 확인하세요.',
-  maintenance: '정비·보험 일정을 관리하고 완료한 점검을 기록하세요.',
-  reservations: '예약 목록과 주간 일정에서 차량별 이용 시간을 확인하세요.',
-  report: '차량·기간별 운행을 조회하고 운전자와 운행 목적을 기록하세요.',
+  overview: '오늘의 차량 운영과 확인할 업무를 한눈에 확인하세요.',
+  vehicles: '차량을 선택해 기본정보와 운행 상태를 확인하고 관리하세요.',
+  live: '단말기에서 수신한 위치와 차량 상태를 확인하는 화면입니다.',
+  devices: '단말기와 차량의 연결, 수신 상태, 연결 이력을 관리하세요.',
+  maintenance: '다가오는 점검과 보험 일정을 확인하고 완료 내역을 기록하세요.',
+  reservations: '차량 이용 일정과 승인 현황을 관리합니다.',
+  report: '운행 목적과 경로를 확인하고 운행 기록을 정리합니다.',
   monthly: '월별 주행거리와 비용을 조회하고 운행기록부를 내려받으세요.',
-  expenses: '차량 운영 지출과 증빙, 승인 현황을 확인하세요.',
-  approvals: '예약과 지출의 요청 내역을 검토하세요.',
+  expenses: '차량 운영에 사용한 비용과 증빙을 관리합니다.',
+  approvals: '예약과 지출 요청을 확인하고 승인 또는 반려합니다.',
   'expense-categories': '지출을 분류할 비용 항목을 관리하세요.',
 };
 const sectionHints = {
-  users:'사용자별 담당 차량, 부서와 권한을 확인하세요.', organization:'사용자와 차량의 소속 정보를 관리하세요.',
-  permissions:'업무에 맞는 권한을 묶어 사용자에게 적용하세요.', audit:'사용자와 권한의 변경 내역을 확인하세요.',
+  users:'소속 조직과 권한 그룹을 관리합니다.', organization:'사용자와 차량의 소속 정보를 관리합니다.',
+  permissions:'업무에 맞는 권한을 묶어 사용자에게 적용합니다.', audit:'사용자와 권한의 변경 내역을 확인하세요.',
   sites:'지점의 위치와 방문 반경을 관리하세요.', visits:'차량별 지점 방문 시각을 확인하세요.', groups:'지점을 그룹으로 분류하세요.',
-  purposes:'회사의 운행 목적을 등록하고 관리하세요.', policy:'예약 승인 기준과 운행 허용 시간을 설정하세요.',
-  notifications:'회사에서 받을 업무 알림을 선택하세요.', company:'회사 기본 정보와 서비스 이용 현황을 확인하세요.',
+  purposes:'예약과 운행일지에서 선택할 목적을 관리합니다.', policy:'예약 가능 시간과 승인 기준을 설정합니다.',
+  notifications:'받을 알림과 수신 방법을 선택합니다.', company:'회사 기본 정보와 서비스 이용 현황을 확인합니다.',
   subscription:'이용 중인 리포트 서비스와 이용 기간을 확인하세요.',
-  trips:'기간별 주행거리와 운행 건수를 비교하세요.', costs:'기간별 지출과 승인된 비용을 확인하세요.',
+  trips:'차량과 운전자별 운행 실적을 기간별로 확인합니다.', costs:'지출 항목과 차량별 비용 변화를 확인합니다.',
 };
 export function corporatePageHint(page,section) {
   return pageHints[page] || sectionHints[section] || '';

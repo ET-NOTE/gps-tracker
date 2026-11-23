@@ -52,6 +52,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const [addGroup,setAddGroup]=useState(false);
   const [department,setDepartment]=useState(mapReturn?.directory?.department || '');
   const [availability,setAvailability]=useState(mapReturn?.directory?.availability || '');
+  const [managerFilter,setManagerFilter]=useState(''),[receptionFilter,setReceptionFilter]=useState('');
   const [exportError,setExportError]=useState(''),[exporting,setExporting]=useState(false);
   const [requestedTerminal,setRequestedTerminal]=useState(null);
   const [detailTab,setDetailTab]=useState(mapReturn?.detailTab ?? 'status');
@@ -62,8 +63,8 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const [filterOpen,setFilterOpen]=useState(false),[draft,setDraft]=useState({...emptyAssetFilters});
   const filterError=assetFilterError(draft);
   const advancedActive=Object.keys(emptyAssetFilters).some(key=>filters[key]!==emptyAssetFilters[key]);
-  const filtered=advancedActive||query.trim()||group!=='all'||department||availability;
-  const reset=()=>{setQuery('');setGroup('all');setDepartment('');setAvailability('');setSort('name');setFilters({...emptyAssetFilters});};
+  const filtered=advancedActive||query.trim()||group!=='all'||department||availability||managerFilter||receptionFilter;
+  const reset=()=>{setQuery('');setGroup('all');setDepartment('');setAvailability('');setManagerFilter('');setReceptionFilter('');setSort('name');setFilters({...emptyAssetFilters});};
   const changeFilter=(key,value)=>setDraft(f=>({...f,[key]:value,...(key==='distance'&&value==='missing'?{minKm:'',maxKm:''}:{})}));
   const openFilters=()=>{setDraft({...filters});setFilterOpen(true);};
   const {data:staff=[]}=useStaff();
@@ -74,7 +75,17 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
     for(const asset of assets){const id=vehicleDepartmentKey(asset);if(id!=='unassigned')groups.set(id,{id,label:asset.department?.trim()||'이름 없는 부서'});}
     return [...groups.values()].sort((a,b)=>a.label.localeCompare(b.label,'ko',{numeric:true}));
   },[assets]);
-  const filteredScope=useMemo(()=>scope.filter(v=>(!department || vehicleDepartmentKey(v)===department) && (!availability || v.enabled===(availability==='enabled'))),[scope,department,availability]);
+  const projected=useMemo(()=>projectFleetAssets(assets,devices),[assets,devices]);
+  const byVehicle=useMemo(()=>new Map(projected.map(d=>[d.id,d])),[projected]);
+  const receptionOf=v=>{
+    if(!v.bindings.some(b=>!b.ended_at))return 'none';
+    const device=byVehicle.get(v.id);
+    if(!device?.has_primary_terminal)return 'check';
+    return ['active','sleeping'].includes(classifyDevice(device,meta[v.id]).id)?'normal':'check';
+  };
+  const filteredScope=useMemo(()=>scope.filter(v=>(!department || vehicleDepartmentKey(v)===department) && (!availability || v.enabled===(availability==='enabled'))
+    && (!managerFilter || (managerFilter==='unassigned'?v.manager_staff_id==null:String(v.manager_staff_id)===managerFilter))
+    && (!receptionFilter || receptionOf(v)===receptionFilter)),[scope,department,availability,managerFilter,receptionFilter,byVehicle,meta]);// eslint-disable-line
   const groupItems=useMemo(()=>{
     const counts=new Map();
     for(const v of filteredScope) counts.set(v.group_id,(counts.get(v.group_id)||0)+1);
@@ -90,8 +101,6 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const createInGroup=()=>setEdit({group_id:groups.data?.find(g=>String(g.id)===group)?.id || null});
   const groupButton=access.manage_vehicles&&<button type="button" className="business-button fleet-add-group" aria-label="차량 그룹 추가" title="차량 그룹 추가" onClick={()=>setAddGroup(true)}><Icon name="plus" size={15}/><span>그룹 추가</span></button>;
   const statusSelect=<select aria-label="등록 차량 운영 상태" value={availability} onChange={e=>setAvailability(e.target.value)}><option value="">전체 상태</option><option value="enabled">사용 가능 ({stateScope.filter(v=>v.enabled).length})</option><option value="disabled">사용 정지 ({stateScope.filter(v=>!v.enabled).length})</option></select>;
-  const projected=useMemo(()=>projectFleetAssets(assets,devices),[assets,devices]);
-  const byVehicle=useMemo(()=>new Map(projected.map(d=>[d.id,d])),[projected]);
   const stats=useAssetStats(projected);
   async function exportVehicles(){
     setExporting(true);setExportError('');
@@ -120,8 +129,8 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
     <section className="fleet-record-filterbox" aria-label="차량 필터 조건">
       <div className="fleet-record-fields">
         <label>차량 소속 부서<select aria-label="등록 차량 부서" value={department} onChange={e=>setDepartment(e.target.value)}><option value="">전체 부서</option>{departments.map(d=><option key={d.id} value={d.id}>{d.label} ({departmentCounts.get(d.id)||0})</option>)}<option value="unassigned">부서 미지정 ({departmentCounts.get('unassigned')||0})</option></select></label>
-        <label>정렬<select aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}>{sortOptions}</select></label>
-        <label>계기판 거리<select aria-label="차량 목록 계기판 거리" value={filters.distance} onChange={e=>setFilters(f=>({...f,distance:e.target.value,...(e.target.value==='missing'?{minKm:'',maxKm:''}:{})}))}><option value="all">전체 차량</option><option value="recorded">거리 등록</option><option value="missing">거리 미등록</option></select></label>
+        <label>차량 담당자<select aria-label="차량 담당자" value={managerFilter} onChange={e=>setManagerFilter(e.target.value)}><option value="">전체 담당자</option>{staff.filter(p=>assets.some(v=>v.manager_staff_id===p.id)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}<option value="unassigned">담당자 미지정</option></select></label>
+        <label>단말 수신 상태<select aria-label="단말 수신 상태" value={receptionFilter} onChange={e=>setReceptionFilter(e.target.value)}><option value="">전체 수신 상태</option><option value="normal">정상 수신</option><option value="check">수신 확인</option><option value="none">단말 미연결</option></select></label>
       </div>
       <div className="fleet-record-filterfoot"><span>전체 {assets.length}대 중 {rows.length}대 조회</span><div>
         {access.manage_vehicles&&<FleetBatchBindings assets={assets} devices={devices} onChanged={onChanged}/>}
@@ -132,7 +141,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
     <DirectoryLayout sidebar={<DirectoryGroups title="차량 그룹" aria-label="차량 그룹 조회" items={groupItems} value={group} onChange={setGroup} action={groupButton}/>}>
     <div className="fleet-assets-content">
     <section className="fleet-assets-ledger" aria-label="차량 목록">
-      <header className="fleet-assets-table-heading"><h2>{groupItems.find(item=>item.id===group)?.label||'차량 목록'}<small>{rows.length}대</small></h2><span className="fleet-assets-hint">행을 누르면 차량 상세가 열립니다.</span></header>
+      <header className="fleet-assets-table-heading"><h2>{groupItems.find(item=>item.id===group)?.label||'차량 목록'}<small>{rows.length}대</small></h2><span className="fleet-assets-hint">행을 누르면 차량 상세가 열립니다.</span><select className="fleet-assets-sort" aria-label="등록 차량 정렬" value={sort} onChange={e=>setSort(e.target.value)}>{sortOptions}</select></header>
       {mobile?<>
       <div className="fleet-mobile-table-scroll" role="region" aria-label="차량 목록 · 좌우 스크롤" tabIndex={0}><div className="fleet-mobile-vehicle-columns" aria-hidden="true"><span>차량</span><span>운영 상태</span><span>단말기</span><span>계기판 거리</span></div><ul className="mobile-fleet-rows">{rows.map(v=>{
         const distance=assetOdometer(v),manager=staff.find(s=>s.id===v.manager_staff_id)?.name;

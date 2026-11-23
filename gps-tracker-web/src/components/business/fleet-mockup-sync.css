@@ -537,3 +537,187 @@
   .business-workspace--corporate .business-section-title .fleet-analytics-tabs button {font-size:12px!important}
   .business-workspace--corporate .fleet-analytics-dates>div>span {font-size:14px; color:#9aa3af}
 }
+
+/* ── Live monitoring: wide map, slim list that matches the map height ──── */
+.fleet-live-map-hint {display:none}
+@media screen and (min-width:1024px) {
+  .business-workspace--corporate .fleet-member-live {grid-template-columns:minmax(0,1fr) minmax(260px,300px); align-items:stretch}
+  .business-workspace--corporate .fleet-member-live .fleet-live-list {display:flex; flex-direction:column; align-self:stretch}
+  .business-workspace--corporate .fleet-member-live .fleet-live-list>ul {flex:1; overflow:auto}
+  .business-workspace--corporate .fleet-live-map-hint {display:block; margin:3px 0 0; font-size:11px; color:#929ba7}
+  .business-workspace--corporate .fleet-live-map .business-map-wrap {border-radius:11px; overflow:hidden}
+}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-dashboard .business-map-wrap {border-radius:11px; overflow:hidden}
+}
+
+/* ── Page column: heading, content and footer share one centred 1240px column ── */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate:not([data-view-width="wide"]) .business-content>* {max-width:1240px; margin-inline:auto!important}
+  .business-workspace--corporate .business-content {padding-top:29px}
+}
+/* ── Screen footer and notification summary link ─────────────────────────── */
+.fleet-screen-footer {display:none}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-screen-footer {display:block; margin-top:25px; padding-bottom:4px; font-size:10px; color:#a1a9b6}
+  .business-workspace--corporate .fleet-dashboard ~ .fleet-screen-footer {margin-top:16px}
+}
+.fleet-notification-policy-link {display:inline-flex; align-items:center; gap:4px; margin-top:12px; padding:0; border:0; background:none; color:#2563eb; font:inherit; font-size:12px; font-weight:500; cursor:pointer}
+.fleet-notification-policy-link:hover {text-decoration:underline}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-notification-settings .business-section>.business-section-title {padding-top:23px!important; padding-bottom:12px!important}
+  .business-workspace--corporate .fleet-notification-settings .fleet-notification-rows {margin:0 23px 23px!important}
+  .business-workspace--corporate .fleet-notification-settings .fleet-notification-row {padding:19px 21px!important}
+  .business-workspace--corporate .fleet-notification-settings .fleet-notification-summary {margin:0 23px!important}
+  .business-workspace--corporate .fleet-notification-settings .fleet-notification-summary div {padding:10px 0}
+  .business-workspace--corporate .fleet-notification-policy-link {margin:24px 23px 23px}
+}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-notification-settings .business-section>.business-section-title {padding-bottom:3px!important}
+  .business-workspace--corporate .fleet-notification-settings .fleet-notification-summary {margin-top:-4px!important}
+  .business-workspace--corporate .fleet-notification-side {gap:12px}
+}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-notification-policy-link {margin:17px 23px 2px}
+}
+/* ── Maintenance cards: short purpose line under the schedule title ───────── */
+.fleet-care-hint {margin:3px 0 0; font-size:11px; color:#929ba7}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-operations .fleet-care-card footer {margin-top:18px}
+  .business-workspace--corporate .fleet-operations .fleet-care-card footer .business-button svg {margin-right:4px; vertical-align:-2px}
+}
+/* ── Approvals: one filter row on wide screens, as in the mockup ───────────── */
+@media screen and (min-width:1200px) {
+  .business-workspace--corporate .business-content .fleet-approval-filters {grid-template-columns:auto repeat(3,minmax(120px,158px)) minmax(180px,1fr) auto!important}
+  .business-workspace--corporate .fleet-approval-filters label:has(.fleet-approval-search) {grid-row:1!important; grid-column:5!important; max-width:none!important}
+  .business-workspace--corporate .business-content .fleet-approval-filters>.business-button {grid-row:1!important; grid-column:6!important; align-self:end; margin-bottom:4px}
+}
+.fleet-purpose-note {margin:14px 0 0; font-size:11px; color:#929ba7}
+/* ── Permission groups: menu-by-menu matrix like the mockup ───────────────── */
+.fleet-role-matrix-title {margin:18px 0 6px; padding-top:16px; border-top:1px solid #eef1f5; font-size:13px; font-weight:500; color:var(--text)}
+.fleet-role-matrix-row {display:grid; grid-template-columns:120px minmax(0,1fr); align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid #f0f2f6}
+.fleet-role-matrix-row>strong {font-size:12px; font-weight:400; color:#596375}
+.fleet-role-matrix-row ul {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 16px; margin:0; padding:0; list-style:none}
+.fleet-role-matrix-row li {display:flex; align-items:center; gap:8px; font-size:12px; color:#9aa3af}
+.fleet-role-matrix-row li.allowed {color:#384152}
+.fleet-role-check {display:inline-grid; place-items:center; flex:none; width:16px; height:16px; border:1px solid #cfd5de; border-radius:4px; background:#fff; color:#fff}
+.fleet-role-matrix-row li.allowed .fleet-role-check {border-color:#2f6fed; background:#2f6fed}
+.fleet-role-matrix-note {margin:12px 0 0; font-size:11px; color:#929ba7}
+.fleet-role-matrix .sr-only {position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+@media (max-width:767px) {
+  .fleet-role-matrix-row {grid-template-columns:minmax(0,1fr)}
+  .fleet-role-matrix-row ul {grid-template-columns:minmax(0,1fr)}
+}
+/* ── Operating policy: two cards on top, booking days full width below ─────── */
+.fleet-policy-field {display:grid; gap:7px; font-size:12px; color:#7e8998}
+.fleet-policy-field select,.fleet-policy-value {box-sizing:border-box; width:100%; min-height:40px; padding:8px 11px; border:1px solid #e1e5ec; border-radius:8px; background:#fff; font:inherit; font-size:13px; color:var(--text)}
+.fleet-policy-value {display:flex; align-items:center}
+.fleet-policy-field select:disabled {background:#f8f9fb; color:var(--text-2); opacity:1}
+.fleet-policy-hint {margin:0; font-size:11px; line-height:1.55; color:#929ba7}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-operating-policy {grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; align-items:stretch}
+  .business-workspace--corporate .fleet-operating-policy>.business-section {margin:0!important}
+  .business-workspace--corporate .fleet-operating-policy>.business-section:last-child {grid-column:1/-1; position:relative}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-controls {gap:10px; padding:4px 22px 22px}
+  .business-workspace--corporate .fleet-operating-policy .business-section-title p {margin:3px 0 0; font-size:11px; color:#929ba7}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours {padding:4px 22px 22px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours>p {font-size:11px; color:#929ba7; margin:0 0 14px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-form legend {font-size:12px; font-weight:400; color:#7e8998}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-form fieldset:first-of-type legend {position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-presets {position:absolute; top:20px; right:22px; margin:0; display:inline-flex; gap:3px; padding:3px; border-radius:8px; background:#f1f3f7}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-presets button {min-height:28px; padding:3px 10px; border:1px solid transparent; border-radius:6px; background:transparent; font-size:12px!important; font-weight:400!important; color:#7e8998}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-presets button[aria-pressed=true] {background:#fff; border-color:#e1e5ec; color:var(--text)}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-days {gap:10px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-days label {position:relative; display:grid; place-items:center; width:60px; height:36px; padding:0; border:1px solid #e1e5ec; border-radius:8px; font-size:13px; color:#7e8998}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-days label:has(input:checked) {background:#eef4ff; border-color:#c9dafb; color:#2f6fed}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-days label input {position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer}
+  .business-workspace--corporate .fleet-operating-policy .fleet-weekday-suffix {display:none}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-time {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-time label {font-size:12px; color:#7e8998; gap:7px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-time input {box-sizing:border-box; width:100%; min-height:40px; border-color:#e1e5ec; border-radius:8px; font-size:13px}
+}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-role-matrix-row {padding:20px 0; grid-template-columns:120px minmax(0,1fr)}
+  .business-workspace--corporate .fleet-role-matrix-row>strong {font-size:13px; color:#384152}
+  .business-workspace--corporate .fleet-role-matrix-row li {font-size:13px}
+  .business-workspace--corporate .fleet-role-check {width:18px; height:18px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-days {gap:12px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-hours-days label {width:76px; height:44px}
+}
+.business-workspace--corporate .fleet-operating-policy .business-section-title p {margin:3px 0 0; font-size:12px; font-weight:400; line-height:1.5; color:#929ba7}
+.fleet-policy-bar {margin:0; font-size:13px; color:#596375}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-operating-policy>.fleet-policy-bar {grid-column:1/-1; display:flex; align-items:center; min-height:36px; margin:0 0 12px}
+}
+/* ── Trip ledger: all vehicles in one table ─────────────────────────────── */
+.fleet-trip-log-missing {color:#c2410c}
+.fleet-trip-log-back {display:inline-flex; align-items:center; gap:4px; margin:0 0 12px; padding:4px 0; border:0; background:none; color:#2f6fed; font:inherit; font-size:12px; cursor:pointer}
+.fleet-trip-log-table td small {display:block; margin-top:2px; font-size:11px; color:#929ba7}
+.fleet-trip-log-tabs {flex-wrap:wrap}
+.fleet-assets-sort {margin-left:12px; min-height:30px; padding:3px 26px 3px 9px; border:1px solid #e1e5ec; border-radius:7px; background-color:#fff; font:inherit; font-size:12px; color:#596375}
+@media (max-width:767px) {.fleet-assets-sort {margin:6px 0 0}}
+/* ── Permission groups: unified list + editor ─────────────────────────────── */
+.fleet-role-workspace {display:grid; gap:14px; min-width:0}
+.fleet-role-toolbar {display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; font-size:13px; color:#596375}
+.fleet-role-list>button small {margin-left:auto}
+.fleet-role-head-actions {display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.fleet-role-icon-button {width:32px; min-width:32px; padding:0!important; justify-content:center}
+.fleet-role-fields {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 16px; margin-top:18px}
+.fleet-role-fields label {display:grid; gap:7px; font-size:12px; color:#7e8998}
+.fleet-role-fields .fleet-role-field-wide {grid-column:1/-1}
+.fleet-role-fields :is(input,select) {box-sizing:border-box; width:100%; min-height:40px; padding:8px 11px; border:1px solid #e1e5ec; border-radius:8px; background:#fff; font:inherit; font-size:13px; color:var(--text)}
+.fleet-role-fields :is(input,select):disabled {background:#f8f9fb; color:var(--text-2); opacity:1}
+.fleet-role-matrix-head {display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid #eef1f5}
+.fleet-role-matrix-head .fleet-role-matrix-title {margin:0; padding:0; border:0}
+.fleet-role-select-all {padding:0; border:0; background:none; color:#2f6fed; font:inherit; font-size:12px; cursor:pointer}
+.fleet-role-matrix-row li label {display:inline-flex; align-items:center; gap:8px; cursor:default}
+.fleet-role-matrix-row li.editable label {cursor:pointer}
+.fleet-role-matrix-row li input {position:absolute; opacity:0; width:1px; height:1px; pointer-events:none}
+.fleet-role-matrix-row li label:has(input:focus-visible) .fleet-role-check {outline:2px solid #2f6fed; outline-offset:2px}
+.fleet-role-actions {display:flex; justify-content:flex-end; gap:8px; margin-top:18px}
+@media (max-width:767px) {.fleet-role-fields {grid-template-columns:minmax(0,1fr)}}
+/* ── Company: service usage card ───────────────────────────────────────── */
+.fleet-company-service>section[aria-label="서비스 이용 현황"] {display:grid; gap:18px}
+.fleet-company-service .business-feature-grid {display:none}
+.fleet-company-service section:has(>.business-feature-grid) {display:none}
+.fleet-service-usage {margin:0!important}
+.fleet-usage-bar {display:grid; gap:8px; padding:0 22px 16px}
+.fleet-usage-bar>div {display:flex; justify-content:space-between; align-items:baseline; font-size:13px; color:var(--text)}
+.fleet-usage-bar strong {font-weight:500} .fleet-usage-bar small {font-size:11px; font-weight:400; color:#929ba7}
+.fleet-usage-bar i {display:block; height:6px; border-radius:99px; background:#eef1f5; overflow:hidden}
+.fleet-usage-bar b {display:block; height:100%; border-radius:inherit; background:#2f6fed}
+.fleet-usage-facts {margin:0; padding:4px 22px 18px}
+.fleet-usage-facts div {display:flex; justify-content:space-between; padding:10px 0; border-top:1px solid #f0f2f6; font-size:12px}
+.fleet-usage-facts dt {color:#7e8998} .fleet-usage-facts dd {margin:0; color:var(--text)}
+.business-workspace--corporate .fleet-service-usage .business-section-title p {margin:3px 0 0; font-size:12px; font-weight:400; line-height:1.5; color:#929ba7}
+.business-workspace--corporate .business-content select.fleet-assets-sort {width:auto; min-height:32px; height:32px; padding:3px 26px 3px 9px; font-size:13px!important}
+@media (max-width:767px) {
+  .business-workspace--corporate .fleet-service-usage .business-section-title {padding:16px 16px 12px}
+  .fleet-usage-bar,.fleet-usage-facts {padding-inline:16px}
+}
+/* ── Operating policy: shared save bar, approval and trip rule cards, reception delay ── */
+.fleet-operating-policy>.fleet-policy-bar {grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; min-height:36px; margin:0}
+.fleet-policy-bar p {margin:0}
+.fleet-policy-bar small {font-size:12px; color:#929ba7}
+.fleet-policy-bar-actions {display:flex; gap:8px}
+.fleet-policy-feedback {grid-column:1/-1; margin:0; font-size:12px; color:#596375}
+.fleet-policy-feedback[role=alert] {color:#c2410c}
+.fleet-operating-policy>.fleet-policy-wide {grid-column:1/-1; position:relative}
+.fleet-policy-toggles {gap:0!important}
+.fleet-policy-toggle {display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-top:1px solid #eef1f5; cursor:pointer}
+.fleet-policy-toggle:first-child {border-top:0; padding-top:4px}
+.fleet-policy-toggle>span {display:grid; gap:3px; min-width:0}
+.fleet-policy-toggle strong {font-size:13px; font-weight:500; color:var(--text)}
+.fleet-policy-toggle small {font-size:11px; line-height:1.55; color:#929ba7}
+.fleet-policy-toggle:has(input:disabled) {cursor:default}
+.fleet-policy-minutes input {box-sizing:border-box; width:100%; max-width:240px; min-height:40px; padding:8px 11px; border:1px solid #e1e5ec; border-radius:8px; background:#fff; font:inherit; font-size:13px; color:var(--text)}
+.fleet-policy-minutes input:disabled {background:#f8f9fb; color:var(--text-2); opacity:1}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-operating-policy>.fleet-policy-bar {margin:0}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-toggles {padding:4px 22px 14px}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-bar-actions .business-button {min-height:36px; padding:6px 14px; font-size:13px}
+}
+@media (max-width:767px) {
+  .fleet-policy-bar-actions {width:100%}
+  .fleet-policy-bar-actions .business-button {flex:1}
+}

@@ -2,21 +2,23 @@ import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
 import { useCorporateInfo, qk } from '../../state';
-import { Modal, FormField, Input, Button, SkeletonList } from '../ui';
+import { Modal, FormField, Input, Select, Button, SkeletonList } from '../ui';
 import { BusinessSection, BusinessButton, BusinessError } from './BusinessWorkspace';
 import { kstDateTime } from '../../lib/businessExport';
 import Icon from '../Icon';
 import './fleet-administration.css';
 
-const fields = [['business_number', '사업자번호', '000-00-00000'], ['company_name', '상호 (회사명)', '회사명'], ['representative', '대표자', '대표자 이름'], ['address', '주소 (선택)', '사업장 주소']];
+const fields = [['business_number', '사업자번호', '000-00-00000'], ['company_name', '상호 (회사명)', '회사명'], ['representative', '대표자', '대표자 이름'], ['address', '주소 (선택)', '사업장 주소'], ['phone', '연락처 (선택)', '02-0000-0000']];
+const timezones = [['Asia/Seoul', '한국 표준시 (Asia/Seoul)'], ['Asia/Tokyo', '일본 표준시 (Asia/Tokyo)'], ['Asia/Shanghai', '중국 표준시 (Asia/Shanghai)'], ['Asia/Singapore', '싱가포르 (Asia/Singapore)'], ['Asia/Ho_Chi_Minh', '베트남 (Asia/Ho_Chi_Minh)'], ['America/Los_Angeles', '미국 서부 (America/Los_Angeles)'], ['America/New_York', '미국 동부 (America/New_York)'], ['Europe/London', '영국 (Europe/London)'], ['UTC', '협정 세계시 (UTC)']];
+const timezoneLabel = zone => timezones.find(([value]) => value === zone)?.[1] || zone;
 export function BusinessCompanyInfo({readOnly=false}) {
   const result = useCorporateInfo(), qc = useQueryClient(), [draft, setDraft] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [saved, setSaved] = useState(false), lock = useRef(false);
   const info = result.data;
   async function save() {
     if (lock.current || !draft || readOnly) return;
     lock.current = true; setBusy(true); setError(''); setSaved(false);
-    try { const value = await api.putCorporateInfo(Object.fromEntries(fields.map(([key]) => [key, String(draft[key] || '').trim() || null]))); qc.setQueryData(qk.corporateInfo(), value); setDraft(null); setSaved(true); }
-    catch { setError('회사 정보를 저장하지 못했습니다. 입력 내용을 유지했습니다. 다시 시도해 주세요.'); }
+    try { const value = await api.putCorporateInfo({ ...Object.fromEntries(fields.map(([key]) => [key, key === 'phone' ? String(draft.phone || '').trim() : String(draft[key] || '').trim() || null])), timezone: draft.timezone || 'Asia/Seoul' }); qc.setQueryData(qk.corporateInfo(), value); setDraft(null); setSaved(true); }
+    catch (cause) { setError(cause?.status === 400 && cause.message ? cause.message : '회사 정보를 저장하지 못했습니다. 입력 내용을 유지했습니다. 다시 시도해 주세요.'); }
     finally { lock.current = false; setBusy(false); }
   }
   if (result.error && !draft) return <BusinessError onRetry={result.refetch}>회사 정보를 불러오지 못했습니다.</BusinessError>;
@@ -26,13 +28,15 @@ export function BusinessCompanyInfo({readOnly=false}) {
     <BusinessSection title="회사 정보" action={!readOnly&&<BusinessButton icon="edit" onClick={()=>{setDraft({...info});setError('');setSaved(false);}}>회사 정보 수정</BusinessButton>}>
       <div className="fleet-company-line"><span><Icon name="office" size={25}/></span><strong>{info?.company_name||'회사명 미등록'}</strong></div>
       <dl className="fleet-company-facts">
-        {[['business_number','사업자등록번호'],['representative','대표자'],['address','사업장 주소']].map(([key,label])=><div key={key}><dt>{label}</dt><dd>{info?.[key]||'미등록'}</dd></div>)}
+        {[['business_number','사업자등록번호'],['representative','대표자'],['address','사업장 주소'],['phone','연락처']].map(([key,label])=><div key={key}><dt>{label}</dt><dd>{info?.[key]||'미등록'}</dd></div>)}
+        <div><dt>사용 시간대</dt><dd>{timezoneLabel(info?.timezone || 'Asia/Seoul')}</dd></div>
       </dl>
       {saved&&<p role="status" className="business-support-success">회사 정보를 저장했습니다.</p>}
     </BusinessSection>
     {draft&&!readOnly&&<Modal open title="회사 정보 수정" onClose={busy?undefined:close}>
       <form className="fleet-company-form" onSubmit={e=>{e.preventDefault();save();}}>
-        <div className="business-support-form">{fields.map(([key,label,placeholder])=><FormField key={key} label={label}><Input value={draft[key]||''} placeholder={placeholder} disabled={busy} onChange={e=>{setError('');setDraft({...draft,[key]:e.target.value});}}/></FormField>)}</div>
+        <div className="business-support-form">{fields.map(([key,label,placeholder])=><FormField key={key} label={label}><Input value={draft[key]||''} placeholder={placeholder} disabled={busy} onChange={e=>{setError('');setDraft({...draft,[key]:e.target.value});}}/></FormField>)}
+          <FormField label="사용 시간대"><Select value={draft.timezone || 'Asia/Seoul'} disabled={busy} onChange={e=>{setError('');setDraft({...draft,timezone:e.target.value});}}>{(timezones.some(([value]) => value === (draft.timezone || 'Asia/Seoul')) ? timezones : [[draft.timezone, draft.timezone], ...timezones]).map(([value,label])=><option key={value} value={value}>{label}</option>)}</Select></FormField></div>
         {error&&<BusinessError>{error}</BusinessError>}
         <span className="business-note">저장한 회사 정보는 운행기록부에 표시됩니다.</span>
         <div className="business-dialog-actions"><Button type="button" variant="ghost" disabled={busy} onClick={close}>취소</Button><Button type="submit" busy={busy}>회사 정보 저장</Button></div>

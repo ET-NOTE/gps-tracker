@@ -136,6 +136,7 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
         {corporate && <header className="fleet-page-title fleet-member-heading no-print"><div><h1>{pageLabel}</h1><p>{corporatePageHint(tab,section)}</p></div><time>{calendarLabel}</time></header>}
         {!corporate && <div className="business-page-heading no-print"><h2>{active.label}</h2>{active.description && <p>{active.description}</p>}</div>}
         {children}
+        {corporate && <footer className="fleet-screen-footer no-print">시리얼링크 · 차량 운영 관리</footer>}
       </div>
     </div>
     {onNavigate && !(corporate && phone) && <nav className="app-bottom-nav business-mobile-nav no-print" aria-label={`${title} 빠른 메뉴`}>

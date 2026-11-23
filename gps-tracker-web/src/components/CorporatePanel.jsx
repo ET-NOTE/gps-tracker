@@ -19,8 +19,10 @@ import FleetSites from './business/FleetSites';
 import FleetExpenses from './business/FleetExpenses';
 import FleetAnalytics from './business/FleetAnalytics';
 import FleetLive from './business/FleetLive';
-import FleetReservationPolicy from './business/FleetReservationPolicy';
+import FleetOperatingPolicy, { useOperatingPolicy } from './business/FleetReservationPolicy';
 import FleetTripPurposes from './business/FleetTripPurposes';
+import FleetTripLog from './business/FleetTripLog';
+import FleetServiceUsage from './business/FleetServiceUsage';
 import FleetNotificationSettings from './business/FleetNotificationSettings';
 import FleetBookingHours from './business/FleetBookingHours';
 import {TripAssignmentModal,TripRulesModal,TripAssignmentHistory} from './business/FleetTripAssignments';
@@ -34,7 +36,7 @@ import { corporateAttention, corporateVehicleName, terminalName, missingMaintena
 import { corporateGroups, corporateTabs, corporateSections } from '../lib/corporateNavigation';
 import { ntsTripReport, reportVehicleLabel } from '../lib/ntsReport';
 import { validateOdometerInput, odometerSummary } from '../lib/tripOdometer';
-import { classifyDevice, ageString } from '../colors';
+import { classifyDevice, ageString, setSignalLossMinutes } from '../colors';
 import { deviceBattery } from '../lib/battery';
 import { kstDateTime } from '../lib/businessExport';
 import { useBusinessClock, useBusinessSubscription } from './business/useBusinessData';
@@ -89,6 +91,9 @@ function reportMonthError(month) {
 
 function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice, onVehiclesChange, onNavigate, globalNavigation, meta: personalMeta, toolbar, companyLabel, routeSearch, onRoute, mapReturn, onMapReturnUsed }) {
   const access=useFleetAccess();
+  // 회사 운영 정책의 수신 지연 기준을 이 화면의 단말 상태 판단에 적용한다.
+  const offlineMinutes=useOperatingPolicy().data?.offline_minutes;
+  useEffect(()=>{setSignalLossMinutes(offlineMinutes);return ()=>setSignalLossMinutes();},[offlineMinutes]);
   const terminals=useQuery({queryKey:['fleet-terminals'],queryFn:()=>api.fleetTerminals(),refetchInterval:30000,structuralSharing:false});
   const subjectScoped=Boolean(terminals.data?.subjectScope);
   const rawDevices=terminals.data||[],rawMeta=access.billing&&!subjectScoped?personalMeta:{},rawOnMap=access.billing&&!subjectScoped?personalMap:undefined;
@@ -175,11 +180,11 @@ function CorporatePanel({ devices: personalDevices, onMap: personalMap, onDevice
       {subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 상태를 확인하지 못했습니다. 다시 조회해 주세요.</BusinessError>
         : !subscription.data ? <SkeletonList count={2} itemHeight={140} />
         : !subscription.data.active ? <><div className="fleet-report-access"><span>이 회사의 리포트 이용권이 필요합니다.</span><a href={(import.meta.env?.BASE_URL||'/')+'demo/corporate?view='+(tab==='analytics'?'trip-stats':'trips')} target="_blank" rel="noopener noreferrer">예시 리포트 미리보기 ↗</a></div><SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} report /></>
-        : tab==='analytics' ? <FleetAnalytics key="trips" section="trips" initialPeriod={analyticsPeriod} devices={devices} onReport={report}/> : tab === 'report' ? <ReportTab devices={devices} initialDeviceId={reportDevice} initialFilter={reportFilter} /> : <MonthlyReportTab devices={devices} />}</>}
-    {tab==='settings' && sectionTabs.settings==='policy' && <div className="fleet-operating-policy"><FleetReservationPolicy/><FleetBookingHours/></div>}
+        : tab==='analytics' ? <FleetAnalytics key="trips" section="trips" initialPeriod={analyticsPeriod} devices={devices} onReport={report}/> : tab === 'report' ? <TripLogTab key={String(reportDevice)+JSON.stringify(reportFilter)} devices={devices} initialDeviceId={reportDevice} initialFilter={reportFilter} /> : <MonthlyReportTab devices={devices} />}</>}
+    {tab==='settings' && sectionTabs.settings==='policy' && <FleetOperatingPolicy/>}
     {tab==='settings' && sectionTabs.settings==='purposes' && <FleetTripPurposes access={access}/>}
-    {tab==='settings' && sectionTabs.settings==='notifications' && <FleetNotificationSettings/>}
-    {tab === 'settings' && sectionTabs.settings==='company' && <div className="fleet-company-service"><section aria-label="회사 정보"><InfoTab readOnly={!access.manage_team} /></section><section aria-label="서비스 이용 현황">{subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />}</section></div>}
+    {tab==='settings' && sectionTabs.settings==='notifications' && <FleetNotificationSettings onPolicy={()=>setTab('settings','policy')}/>}
+    {tab === 'settings' && sectionTabs.settings==='company' && <div className="fleet-company-service"><section aria-label="회사 정보"><InfoTab readOnly={!access.manage_team} /></section><section aria-label="서비스 이용 현황"><FleetServiceUsage subscription={subscription.data}/>{subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />}</section></div>}
     {tab === 'settings' && sectionTabs.settings==='subscription' && <BusinessSettings activeTab={sectionTabs.settings} onTab={selectSection} hideNavigation company={<InfoTab readOnly={!access.manage_team} />} subscription={subscription.error ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError> : <SubTab canBuy={access.billing} sub={subscription.data} onChange={updateSub} />} />}
     </>}
   </BusinessWorkspace>;
@@ -277,6 +282,12 @@ const tripViews = [
   {id:'review',label:'확인 필요',matches:t=>!reportIncluded(t)&&t.quality?.status!=='running'},
   {id:'confirmed',label:'기록 확정',matches:reportIncluded},
 ];
+function TripLogTab({ devices, initialDeviceId, initialFilter }) {
+  const [opened,setOpened]=useState(initialDeviceId!=null?{id:initialDeviceId,filter:initialFilter}:null);
+  if(!opened) return <FleetTripLog devices={devices} onOpenVehicle={(id,filter)=>setOpened({id,filter})}/>;
+  return <><button type="button" className="fleet-trip-log-back no-print" onClick={()=>setOpened(null)}><Icon name="prev" size={14}/>전체 운행</button>
+    <ReportTab key={opened.id} devices={devices} initialDeviceId={opened.id} initialFilter={opened.filter}/></>;
+}
 function ReportTab({ devices, initialDeviceId, initialFilter }) {
   const access=useFleetAccess();
   const mobile=useCorporatePhone();
@@ -1000,7 +1011,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
       <FleetRecordMetrics label="조회된 예약 요약" items={[
         {name:'조회된 예약',value:shown?.length,unit:'건',icon:'clock'},
         {name:'승인 대기',value:known?searched.filter(r=>r.status==='pending').length:null,unit:'건',tone:'amber'},
-        {name:'오늘 이용',value:shown&&bookingsOn(shown,reservationDay).filter(r=>['planned','in_progress','completed'].includes(r.status)).length,unit:'건',tone:'blue'},
+        {name:'오늘 이용 예정',value:shown&&bookingsOn(shown,reservationDay).filter(r=>['planned','in_progress','completed'].includes(r.status)).length,unit:'건',tone:'blue'},
         {name:'이용 완료',value:shown?.filter(r=>r.status==='completed').length,unit:'건',tone:'green'},
       ]}/>
       <div className="fleet-booking-query">
@@ -1012,7 +1023,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
           </div>}
           <div className="fleet-record-actions">{viewMode==='calendar' && <input className="corporate-reservation-month" type="month" aria-label="예약 조회 월" value={calYm} onChange={e=>setCalYm(e.target.value||calYm)}/>}
           <ExportButtons csvOnly report={report} disabled={!shown?.length}/>
-          {canWrite&&!requestsOnly&&<BusinessButton primary icon="plus" onClick={()=>setEditing('new')}>새 예약</BusinessButton>}</div>
+          {canWrite&&!requestsOnly&&<BusinessButton primary icon="plus" onClick={()=>setEditing('new')}>차량 예약</BusinessButton>}</div>
         </div>
         {filtersOpen&&<div className="fleet-record-fields fleet-booking-query-fields">
           {viewMode==='list'&&<div className="fleet-date-field"><span>이용 기간</span><div>
@@ -1021,11 +1032,11 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
           </div></div>}
           {viewMode==='list'&&<label>예약 상태<select aria-label="예약 상태 필터" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active','예정·진행',activeCount],['completed','완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled','취소',cancelledCount]].map(([value,label,count])=><option key={value} value={value}>{label} ({known?count:'—'})</option>)}</select></label>}
           <label>차량<select value={vehicleFilter} onChange={e=>setVehicleFilter(e.target.value)}><option value="">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{reportVehicleLabel(d)}</option>)}</select></label>
-          <label>운전자<select value={driverFilter} onChange={e=>setDriverFilter(e.target.value)}><option value="">전체 운전자</option><option value="unassigned">미지정</option>{staffAll?.map(s=><option value={s.id} key={s.id}>{s.name}{s.active===false?' (비활성)':''}</option>)}</select></label>
-          <label>운전자 부서<select value={driverDepartment} onChange={e=>setDriverDepartment(e.target.value)}><option value="">전체 부서</option>{departmentOptions.map(name=><option key={name}>{name}</option>)}</select></label>
+          <label>예약 운전자<select value={driverFilter} onChange={e=>setDriverFilter(e.target.value)}><option value="">전체 예약 운전자</option><option value="unassigned">미지정</option>{staffAll?.map(s=><option value={s.id} key={s.id}>{s.name}{s.active===false?' (비활성)':''}</option>)}</select></label>
+          <label>예약 운전자 부서<select value={driverDepartment} onChange={e=>setDriverDepartment(e.target.value)}><option value="">전체 부서</option>{departmentOptions.map(name=><option key={name}>{name}</option>)}</select></label>
           <label>운행목적<select value={purposeFilter} onChange={e=>setPurposeFilter(e.target.value)}><option value="">전체 운행목적</option>{purposeOptions.includes(purposeFilter)||!purposeFilter?null:<option>{purposeFilter}</option>}{purposeOptions.map(name=><option key={name}>{name}</option>)}</select></label>
         </div>}
-        <div className="fleet-record-filterfoot"><label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량·운전자·목적 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label><div>
+        <div className="fleet-record-filterfoot"><label className="fleet-inline-search"><Icon name="search" size={16}/><input type="search" aria-label="예약 차량·사용자 검색" placeholder="차량번호, 운전자, 운행목적 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label><div>
           <BusinessButton icon="filter" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>필터</BusinessButton>
           <BusinessButton onClick={()=>{setVehicleFilter('');setDriverFilter('');setDriverDepartment('');setPurposeFilter('');setQuery('');setStatusFilter(requestsOnly?'pending':'all');if(viewMode==='list')setDates({from:shiftBookingDay(reservationDay,-7),to:shiftBookingDay(reservationDay,60)});}}>필터 초기화</BusinessButton>
         </div></div>

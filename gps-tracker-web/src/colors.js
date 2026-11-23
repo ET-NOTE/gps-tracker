@@ -102,6 +102,15 @@ export const STATUS = {
 };
 
 const MIN  = 60 * 1000;
+const DEFAULT_SIGNAL_LOSS_MIN = 5;
+let signalLossMin = DEFAULT_SIGNAL_LOSS_MIN;
+
+// 회사 운영 정책의 '수신 지연 판단 시간'. 법인 화면이 열려 있는 동안만 적용하고,
+// 화면을 벗어나면 기본값(5분)으로 되돌린다. 오프라인 판단은 이 값보다 짧아지지 않는다.
+export function setSignalLossMinutes(minutes) {
+  const value = Number(minutes);
+  signalLossMin = Number.isFinite(value) && value >= 1 && value <= 240 ? value : DEFAULT_SIGNAL_LOSS_MIN;
+}
 
 export function classifyDevice(dev, meta, now = Date.now()) {
   if (!dev?.last_seen_at) return STATUS.UNKNOWN;
@@ -119,8 +128,8 @@ export function classifyDevice(dev, meta, now = Date.now()) {
     return STATUS.SLEEPING;
   }
   // 3) 긴 무소식
-  if (seenAge > 30 * MIN) return STATUS.OFFLINE;
-  if (seenAge >  5 * MIN) return STATUS.SIGNAL_LOSS;
+  if (seenAge > Math.max(30, signalLossMin) * MIN) return STATUS.OFFLINE;
+  if (seenAge > signalLossMin * MIN) return STATUS.SIGNAL_LOSS;
   const battery = deviceBattery(dev, meta);
   if (battery.state === 'overcharge') return STATUS.OVERCHARGE;
   if (battery.state === 'critical') return STATUS.CRITICAL_BATT;

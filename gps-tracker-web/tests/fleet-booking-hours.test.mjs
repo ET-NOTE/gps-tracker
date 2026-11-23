@@ -8,7 +8,7 @@ import {act,create} from 'react-test-renderer';
 import {transform} from 'esbuild';
 import * as hoursLib from '../src/lib/fleetBookingHours.js';
 
-async function mount(t, role='owner', hintOnly=false, overrides={}, interval={}) {
+async function mount(t, role='owner', hintOnly=false, overrides={}, interval={}, fields=false) {
   const context=vm.createContext({});
   const source=await readFile(new URL('../src/components/business/FleetBookingHours.jsx',import.meta.url),'utf8');
   const code=await transform(source,{loader:'jsx',jsx:'automatic',format:'esm'});
@@ -25,13 +25,15 @@ async function mount(t, role='owner', hintOnly=false, overrides={}, interval={})
   },{context}));
   await mod.evaluate();
   let renderer;
-  await act(()=>{renderer=create(React.createElement(mod.namespace.default,{hintOnly,...interval}));});
+  const Fields=()=>{const [draft,setDraft]=React.useState(()=>mod.namespace.hoursDraft(data));
+    return React.createElement(mod.namespace.BookingHoursFields,{hours:data,draft,onChange:setDraft});};
+  await act(()=>{renderer=create(fields?React.createElement(Fields):React.createElement(mod.namespace.default,{hintOnly,...interval}));});
   t.after(()=>act(()=>renderer.unmount()));
-  return {renderer,saved};
+  return {renderer,saved,mod};
 }
 
-test('weekday preset and midnight end save the company revision with an exclusive end of day',async t=>{
-  const {renderer,saved}=await mount(t);
+test('weekday preset and midnight end produce the saved hours with an exclusive end of day',async t=>{
+  const {renderer,mod}=await mount(t,'owner',false,{},{},true);
   const root=renderer.root;
   await act(()=>root.findByProps({'aria-pressed':false,children:'평일'}).props.onClick());
   const allDay=root.findAllByType('label').find(n=>n.children.includes('하루 종일')).findByType('input');
@@ -39,11 +41,12 @@ test('weekday preset and midnight end save the company revision with an exclusiv
   const [start,end]=root.findAllByProps({type:'time'});
   await act(()=>end.props.onChange({target:{value:'08:30'}}));
   assert.match(root.findByProps({role:'alert'}).children[0],/종료 시간/);
-  assert.equal(root.findByProps({type:'submit'}).props.disabled,true);
   await act(()=>start.props.onChange({target:{value:'17:30'}}));
   await act(()=>end.props.onChange({target:{value:'00:00'}}));
-  await act(()=>root.findByType('form').props.onSubmit({preventDefault(){}}));
-  assert.deepEqual(saved,[{week_mask:31,open_minute:1050,close_minute:1440,revision:4}]);
+  assert.equal(root.findAllByProps({role:'alert'}).length,0);
+  const draft=renderer.root.findByType(mod.namespace.BookingHoursFields).props.draft;
+  assert.deepEqual(JSON.parse(JSON.stringify(mod.namespace.hoursFromDraft(draft))),{week_mask:31,open_minute:1050,close_minute:1440});
+  assert.equal(mod.namespace.hoursChanged({week_mask:127,open_minute:0,close_minute:1440},draft),true);
 });
 test('a member can see the saved policy without editing it',async t=>{
   const {renderer}=await mount(t,'member');

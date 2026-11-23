@@ -834,6 +834,8 @@ export const api = {
   fleetBookingHours: () => req('GET','/corporate/booking-hours'),
   setFleetBookingHours: body => req('PUT','/corporate/booking-hours',body),
   setFleetReservationPolicy: body => req('PUT','/corporate/reservation-policy',body),
+  fleetOperatingPolicy: () => req('GET','/corporate/operating-policy'),
+  setFleetOperatingPolicy: body => req('PUT','/corporate/operating-policy',body),
   reviewFleetReservation: (id,body) => req('POST',`/corporate/vehicle-reservations/${id}/review`,body),
   fleetReservationHistory: id => req('GET',`/corporate/vehicle-reservations/${id}/history`),
   // 법인운행 — 회사 정보 / 직원

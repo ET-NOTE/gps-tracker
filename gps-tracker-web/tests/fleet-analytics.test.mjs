@@ -11,12 +11,15 @@ test('analytics uses confirmed distances including measured zero, KST dates and 
     {...base,allocation_status:'boundary_review'},
     {...base,ended_at:null},
   ], {id:1,vehicle_name:'업무 차량',department:'영업부'});
-  assert.equal(rows.length,2);
-  assert.equal(rows[0].date,'2026-11-02');
-  assert.equal(rows[0].minutes,70);
-  assert.equal(groupAnalytics(rows,'driver').length,2);
-  assert.deepEqual(groupAnalytics(rows,'vehicle')[0],{id:'1',label:'업무 차량',count:2,amount:1.5,minutes:140});
-  assert.deepEqual(trendSeries(rows,'2026-11-01','2026-11-03',true).map(p=>p.value),[0,2,0]);
+  // Every ended trip is listed; only report-included ones are marked confirmed (기록 확정 filter).
+  assert.equal(rows.length,4);
+  const confirmed=rows.filter(r=>r.confirmed);
+  assert.equal(confirmed.length,2);
+  assert.equal(confirmed[0].date,'2026-11-02');
+  assert.equal(confirmed[0].minutes,70);
+  assert.equal(groupAnalytics(confirmed,'driver').length,2);
+  assert.deepEqual(groupAnalytics(confirmed,'vehicle')[0],{id:'1',label:'업무 차량',count:2,amount:1.5,minutes:140});
+  assert.deepEqual(trendSeries(confirmed,'2026-11-01','2026-11-03',true).map(p=>p.value),[0,2,0]);
 });
 
 test('costs keep general expenses and historical category IDs distinct across a year boundary',()=>{

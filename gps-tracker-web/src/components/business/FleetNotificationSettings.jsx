@@ -6,6 +6,7 @@ import { notificationTopics } from '../../lib/fleetNotifications';
 import Icon from '../Icon';
 import { BusinessError, BusinessSection } from './BusinessWorkspace';
 import { useFleetAccess } from './FleetAccess';
+import { useOperatingPolicy } from './FleetReservationPolicy';
 import './fleet-settings-controls.css';
 import './fleet-notifications.css';
 
@@ -32,8 +33,8 @@ function Mailbox() {
   </BusinessSection>;
 }
 
-export default function FleetNotificationSettings() {
-  const q=useNotificationPolicy(),cache=useQueryClient(),access=useFleetAccess();
+export default function FleetNotificationSettings({onPolicy}) {
+  const q=useNotificationPolicy(),operating=useOperatingPolicy(),cache=useQueryClient(),access=useFleetAccess();
   const [message,setMessage]=useState('');
   const save=useMutation({mutationFn:api.setFleetNotificationPolicy,
     onSuccess:async (data,change)=>{
@@ -52,19 +53,21 @@ export default function FleetNotificationSettings() {
   const selected=notificationTopics.filter(t=>p[t.key]).length;
   return <div className="fleet-notification-settings">
     <div className="fleet-notification-grid">
-      <BusinessSection title="업무 알림" action={<small>{canEdit?'변경 즉시 회사 전체에 적용':'회사 소유자가 수신 항목을 설정합니다.'}</small>}>
+      <BusinessSection title="업무 알림" action={<small>{canEdit?'변경 즉시 저장':'회사 소유자가 수신 항목을 설정합니다.'}</small>}>
         <div className="fleet-notification-rows">
         {notificationTopics.map(({key,...topic})=><Switch key={key} {...topic} {...configure(key)}/>)}</div>
       </BusinessSection>
       <div className="fleet-notification-side">
         <BusinessSection title="수신 방법"><div className="fleet-notification-rows">
-          <Switch label="앱 알림" hint="상단의 운영 알림에서 확인합니다." {...configure('in_app')}/>
+          <Switch label="앱 알림" hint="알림 목록에서 확인합니다." {...configure('in_app')}/>
           <Switch label="이메일" hint={p.email_mode==='preview'?'이메일은 미리보기로만 제공됩니다. 운행 알림은 예약 상태가 바뀔 때 생성됩니다.':p.email_available?'등록 이메일로 보냅니다. 운행 메일은 예약 상태 변경 시 생성됩니다.':'메일 발송 서버 연결이 필요합니다.'}
             {...configure('email')} disabled={!canEdit||save.isPending||(!p.email_available&&!p.email)}/></div>
         </BusinessSection>
         <BusinessSection title="현재 설정">
           <dl className="fleet-notification-summary"><div><dt>선택한 업무 알림</dt><dd>{selected}개</dd></div>
-            <div><dt>수신 방법</dt><dd>{[p.in_app&&'앱 알림',p.email&&'이메일'].filter(Boolean).join(' · ')||'선택 없음'}</dd></div></dl>
+            <div><dt>수신 방법</dt><dd>{[p.in_app&&'앱 알림',p.email&&'이메일'].filter(Boolean).join(' · ')||'선택 없음'}</dd></div>
+            <div><dt>단말 수신 지연 기준</dt><dd>{operating.data?.offline_minutes??'—'}분</dd></div></dl>
+          {onPolicy&&<button type="button" className="fleet-notification-policy-link" onClick={onPolicy}>운영 정책에서 기준 변경 <span aria-hidden="true">→</span></button>}
         </BusinessSection>
         {p.email_mode==='preview'&&p.email&&<Mailbox/>}
       </div>

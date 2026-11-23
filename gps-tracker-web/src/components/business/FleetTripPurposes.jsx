@@ -96,6 +96,7 @@ export default function FleetTripPurposes() {
           </tr>)}</tbody>
         </table></div>:<BusinessEmpty compact title={items.length?'검색 결과가 없습니다.':'등록된 운행 목적이 없습니다.'}/>}
     </BusinessSection>
+    <p className="fleet-purpose-note">기존 예약이나 운행 기록에서 사용한 목적은 삭제 대신 사용 중지됩니다.</p>
     {message&&<p className="fleet-purpose-info" role="status">{message}</p>}
     {error&&!draft&&!selected&&<BusinessError>{error}</BusinessError>}
     {selected&&<BusinessDrawer title="운행 목적 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}>

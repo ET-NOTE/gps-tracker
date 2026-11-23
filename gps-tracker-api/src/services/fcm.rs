@@ -740,6 +740,7 @@ mod tests {
               signal_loss_alert bool,online_alert bool,sleep_alert bool,wake_alert bool,cycle_first_fix_alert bool,
               geofence_alert bool,device_health_alert bool,motion_alert bool,low_batt_threshold_mv integer,
               signal_loss_minutes integer,offline_minutes integer,updated_at timestamptz DEFAULT now());
+          CREATE TABLE fleet_operating_policy(owner_id bigint PRIMARY KEY,offline_minutes integer NOT NULL);
           CREATE TABLE vehicle_reservations(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,starts_at timestamptz,ends_at timestamptz,fleet_vehicle_id bigint);
           CREATE TABLE fleet_vehicle_bindings(vehicle_id bigint,owner_id bigint,device_id bigint,is_primary boolean,ended_at timestamptz);
           CREATE TABLE rental_contracts(id bigint PRIMARY KEY,user_id bigint,device_id bigint,status text,ends_at timestamptz);

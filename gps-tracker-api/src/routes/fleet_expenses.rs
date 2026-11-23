@@ -79,7 +79,8 @@ fn visible(s: &FleetScope, r: &Value) -> bool {
 }
 fn editable(s: &FleetScope, r: &Value) -> bool {
     s.permits("write_expenses") && visible(s, r)
-        && matches!(r["status"].as_str(), Some("pending" | "rejected"))
+        && (matches!(r["status"].as_str(), Some("pending" | "rejected"))
+            || r["status"] == "approved" && r["auto_approved"] == true)
         && (s.admin()
             || r["created_by"].as_i64() == Some(s.actor)
             || r["staff_id"].as_i64() == s.staff && s.staff.is_some())
@@ -542,10 +543,14 @@ async fn save(
             }
         }
     }
+    // Without required approval the saved expense is approved at once (no reviewer).
+    let auto_approve = !super::fleet_operating_policy::read(&mut *tx, s.owner)
+        .await?
+        .expense_approval_required;
     let after: Value = if let Some(id) = id {
-        sqlx::query_scalar("UPDATE fleet_expenses e SET spent_on=$3,category_id=$4,category_name=$5,group_name=$6,category_kind=$7,staff_id=$8,staff_name=$9,department_id=$10,department_name=$11,vehicle_id=$12,vehicle_name=$13,amount_krw=$14,payment_method=$15,note=$16,status='pending',reviewed_by=NULL,reviewed_at=NULL,review_note='',updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2 RETURNING to_jsonb(e)").bind(s.owner).bind(id).bind(p.spent_on).bind(p.category_id).bind(category_name).bind(group_name).bind(kind).bind(p.staff_id).bind(staff_name).bind(department.as_i64()).bind(department_name).bind(p.vehicle_id).bind(vehicle_name).bind(p.amount_krw).bind(p.payment_method).bind(note).fetch_one(&mut *tx).await?
+        sqlx::query_scalar("UPDATE fleet_expenses e SET spent_on=$3,category_id=$4,category_name=$5,group_name=$6,category_kind=$7,staff_id=$8,staff_name=$9,department_id=$10,department_name=$11,vehicle_id=$12,vehicle_name=$13,amount_krw=$14,payment_method=$15,note=$16,status=CASE WHEN $17 THEN 'approved' ELSE 'pending' END,auto_approved=$17,reviewed_by=NULL,reviewed_at=CASE WHEN $17 THEN clock_timestamp() END,review_note='',updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2 RETURNING to_jsonb(e)").bind(s.owner).bind(id).bind(p.spent_on).bind(p.category_id).bind(category_name).bind(group_name).bind(kind).bind(p.staff_id).bind(staff_name).bind(department.as_i64()).bind(department_name).bind(p.vehicle_id).bind(vehicle_name).bind(p.amount_krw).bind(p.payment_method).bind(note).bind(auto_approve).fetch_one(&mut *tx).await?
     } else {
-        sqlx::query_scalar("INSERT INTO fleet_expenses AS e(owner_id,created_by,request_id,request_value,spent_on,category_id,category_name,group_name,category_kind,staff_id,staff_name,department_id,department_name,vehicle_id,vehicle_name,amount_krw,payment_method,note,source_device_id,binding_id,trip_started_at) VALUES($1,$2,$3::text::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING to_jsonb(e)").bind(s.owner).bind(s.actor).bind(&p.request_id).bind(request).bind(p.spent_on).bind(p.category_id).bind(category_name).bind(group_name).bind(kind).bind(p.staff_id).bind(staff_name).bind(department.as_i64()).bind(department_name).bind(p.vehicle_id).bind(vehicle_name).bind(p.amount_krw).bind(p.payment_method).bind(note).bind(p.source_device_id).bind(p.binding_id).bind(p.trip_started_at).fetch_one(&mut *tx).await?
+        sqlx::query_scalar("INSERT INTO fleet_expenses AS e(owner_id,created_by,request_id,request_value,spent_on,category_id,category_name,group_name,category_kind,staff_id,staff_name,department_id,department_name,vehicle_id,vehicle_name,amount_krw,payment_method,note,source_device_id,binding_id,trip_started_at,status,auto_approved,reviewed_at) VALUES($1,$2,$3::text::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,CASE WHEN $22 THEN 'approved' ELSE 'pending' END,$22,CASE WHEN $22 THEN clock_timestamp() END) RETURNING to_jsonb(e)").bind(s.owner).bind(s.actor).bind(&p.request_id).bind(request).bind(p.spent_on).bind(p.category_id).bind(category_name).bind(group_name).bind(kind).bind(p.staff_id).bind(staff_name).bind(department.as_i64()).bind(department_name).bind(p.vehicle_id).bind(vehicle_name).bind(p.amount_krw).bind(p.payment_method).bind(note).bind(p.source_device_id).bind(p.binding_id).bind(p.trip_started_at).bind(auto_approve).fetch_one(&mut *tx).await?
     };
     let eid = after["id"].as_i64().unwrap();
     if let Some(start) = p.trip_started_at.filter(|_| kind == "fuel") {
@@ -594,7 +599,7 @@ async fn review(
         return Err(AppError::Forbidden);
     }
     let note = text(&p.note, 500, p.status != "approved")?;
-    let after:Value=sqlx::query_scalar("UPDATE fleet_expenses e SET status=$3,review_note=$4,reviewed_by=$5,reviewed_at=clock_timestamp(),updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2 RETURNING to_jsonb(e)").bind(s.owner).bind(id).bind(&p.status).bind(note).bind(s.actor).fetch_one(&mut *tx).await?;
+    let after:Value=sqlx::query_scalar("UPDATE fleet_expenses e SET status=$3,auto_approved=false,review_note=$4,reviewed_by=$5,reviewed_at=clock_timestamp(),updated_at=clock_timestamp() WHERE owner_id=$1 AND id=$2 RETURNING to_jsonb(e)").bind(s.owner).bind(id).bind(&p.status).bind(note).bind(s.actor).fetch_one(&mut *tx).await?;
     if p.status == "cancelled" {
         sqlx::query("UPDATE trip_annotations SET fuel_expense_id=NULL,fuel_cost=NULL,updated_at=clock_timestamp() WHERE user_id=$1 AND fuel_expense_id=$2").bind(s.owner).bind(id).execute(&mut *tx).await?;
     }

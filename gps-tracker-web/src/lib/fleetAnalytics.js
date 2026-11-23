@@ -5,7 +5,7 @@ import { fleetAssetLabel } from './fleetAssets.js';
 import { expenseDepartmentKey } from './fleetExpenses.js';
 
 export const analyticGroups = {
-  trips: {vehicle:'차량', driver:'운전자', department:'차량 부서'},
+  trips: {vehicle:'차량', driver:'사용자', department:'차량 부서'},
   costs: {category:'지출 항목', vehicle:'차량', department:'지출 부서'},
 };
 
@@ -23,12 +23,14 @@ export function analyticsPeriodError(from, to) {
 export function tripAnalyticsRows(trips, device) {
   const vehicle = String(device.id);
   const vehicleLabel = device.asset ? fleetAssetLabel(device.asset) : device.license_plate || device.vehicle_name || `차량 ${device.id}`;
-  return trips.filter(reportIncluded).map(trip => {
+  // Ended trips only; `confirmed` marks those that count toward the official record.
+  const ended = trip => Boolean(trip.ended_at) && Date.parse(trip.ended_at) > Date.parse(trip.started_at) && Number.isFinite(trip.distance_m) && trip.distance_m >= 0;
+  return trips.filter(ended).map(trip => {
     const annotation = trip.annotation || {};
     const driverLabel = annotation.driver_name || '운전자 미지정';
     const category = annotation.purpose || 'unspecified';
     return {
-      date:businessDate(trip.started_at), amount:trip.distance_m / 1000,
+      date:businessDate(trip.started_at), amount:trip.distance_m / 1000, confirmed:reportIncluded(trip),
       minutes:Number.isFinite(trip.duration_min) ? trip.duration_min : (Date.parse(trip.ended_at) - Date.parse(trip.started_at)) / 60000,
       vehicle, vehicleLabel, driver:tripDriverKey(annotation), driverLabel,
       category:annotation.company_purpose_id==null?category:'company:'+annotation.company_purpose_id,

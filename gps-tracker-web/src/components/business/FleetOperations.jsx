@@ -15,6 +15,7 @@ import sedan from '../entry/login-vehicle.png';
 import {CompletionEditor,MaintenanceHistory,maintenanceKinds} from './FleetMaintenanceHistory';
 import './fleet-operation-layout.css';
 
+const careHints={next_service_date:'엔진오일 및 소모품 점검',insurance_expiry:'보험 갱신 서류 확인',inspection_expiry:'자동차 정기 검사'};
 export default function FleetOperations({mode,assets,devices,departments,staff,canManage,canRegisterTerminal,openDetail,editSchedule,refreshAssets}){
   const now=useBusinessClock(),today=businessDate(now),terminals=mode==='devices';
   const client=useQueryClient();
@@ -105,7 +106,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
         <button type="button" className="fleet-terminal-open" aria-label={r.name+' 단말기 상세 열기'} onClick={()=>setTerminalId(r.id)}/>
         <header><i><Icon name="antenna" size={21}/></i><span className={'business-badge '+(r.offline?'warning':'good')}>{r.device.unavailable?'통신 정보 확인 불가':r.reading.label}</span></header>
         <h3>{r.name}</h3><p>{r.asset?(r.asset.license_plate||r.asset.name||'차량 정보 미등록')+(r.primary?' · 대표':' · 보조'):'연결된 차량 없음'}</p>
-        <dl><div><dt>마지막 통신</dt><dd>{kstDateTime(r.device.last_seen_at)||'—'}</dd></div><div><dt>단말기 배터리</dt><dd>{battery.percent!=null?'약 '+battery.percent+'%':'—'}</dd></div></dl>
+        <dl><div><dt>마지막 수신</dt><dd>{kstDateTime(r.device.last_seen_at)||'—'}</dd></div><div><dt>단말기 배터리</dt><dd>{battery.percent!=null?'약 '+battery.percent+'%':'—'}</dd></div></dl>
         <footer><small>{battery.voltage}</small>{canManage&&(r.asset?<button type="button" className="business-button" onClick={()=>openDetail(r.asset.id,'connections')}><Icon name="link" size={13}/>연결 관리</button>:assets.length>0&&<button type="button" className="business-button" onClick={()=>chooseVehicle(r)}><Icon name="link" size={13}/>차량 연결</button>)}</footer>
       </article>;
     })}</div>:<div className="fleet-care-grid">{schedules.map(({asset,key,label,date})=><article className="fleet-care-card" key={asset.id+'-'+key}>
@@ -113,9 +114,9 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
       <header><time dateTime={date||undefined}><Icon name="calendar" size={15}/>{date||'일정 미등록'}</time>{date&&<span className={'business-badge '+(date<today?'urgent':'info')}>{date<today?'기한 경과':'예정'}</span>}</header>
       <div className="fleet-care-vehicle"><CarImage vehicleId={asset.id} version={asset.profile?.car_image_url} fallback={<Icon name="car" size={24}/>}/>
         <div><strong>{fleetAssetLabel(asset)}</strong>{(asset.car_model||asset.department)&&<small>{[asset.car_model,asset.department].filter(Boolean).join(' · ')}</small>}</div></div>
-      <h3>{label}</h3>
-      <footer><button type="button" className="business-button" onClick={()=>canManage?editSchedule(asset,key):openDetail(asset.id)}>{canManage?(date?'일정 수정':'일정 등록'):'차량 상세'}</button>
-        {date&&canManage&&<button type="button" className="business-button is-primary" onClick={()=>setCompletion({schedule:{asset,key,label,date}})}>완료 처리</button>}</footer>
+      <h3>{label}</h3><p className="fleet-care-hint">{careHints[key]}</p>
+      <footer><button type="button" className="business-button" onClick={()=>canManage?editSchedule(asset,key):openDetail(asset.id)}>{canManage?(date?'수정':'일정 등록'):'차량 상세'}</button>
+        {date&&canManage&&<button type="button" className="business-button is-primary" onClick={()=>setCompletion({schedule:{asset,key,label,date}})}><Icon name="check" size={13}/>완료 처리</button>}</footer>
     </article>)}</div>}
     {!(terminals?visibleTerminals:schedules).length&&<div className="business-empty"><strong>{terminals?'표시할 단말기가 없습니다.':'해당하는 일정이 없습니다.'}</strong></div>}
     </>}
@@ -137,7 +138,7 @@ function TerminalDetail({row,staff,onClose,openVehicle,canManage,connect}) {
   const manager=asset&&staff.find(person=>person.id===asset.manager_staff_id);
   const sections=[
     ['단말기 정보',[['단말기 식별명',row.name],['연결 차량',asset?fleetAssetLabel(asset):'미연결'],['차종',asset?.car_model],['담당자',manager?.name]]],
-    ['수신 정보',[['마지막 통신',kstDateTime(device.last_seen_at)],['단말기 배터리',battery.percent!=null?'약 '+battery.percent+'%':undefined],['전압',battery.voltage]]],
+    ['수신 정보',[['마지막 수신',kstDateTime(device.last_seen_at)],['단말기 배터리',battery.percent!=null?'약 '+battery.percent+'%':undefined],['전압',battery.voltage]]],
   ];
   return <BusinessDrawer title="단말기 상세" subtitle={row.name} onClose={onClose}>
     <div className="fleet-care-detail fleet-terminal-detail"><div className="fleet-care-body">

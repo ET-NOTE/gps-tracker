@@ -40,12 +40,14 @@ pub async fn scan(pool: &PgPool) -> anyhow::Result<()> {
     let candidates: Vec<SilentDevice> = sqlx::query_as(
         r#"SELECT d.id,d.owner_id,d.last_seen_at,
            floor(extract(epoch FROM (now()-d.last_seen_at))/60)::bigint AS silence_min,
-           COALESCE(ns.signal_loss_minutes,5) AS signal_min,
+           COALESCE(op.offline_minutes,ns.signal_loss_minutes,5) AS signal_min,
            COALESCE(ns.offline_minutes,1440) AS offline_min,
            COALESCE(life.kind='sleep_enter',false) AS sleeping,
            life.occurred_at AS sleep_at, d.last_stationary
          FROM gps_read_devices d JOIN users u ON u.id=d.owner_id
          LEFT JOIN notification_settings ns ON ns.user_id=d.owner_id
+         -- A saved company operating policy sets the reception delay for its terminals.
+         LEFT JOIN fleet_operating_policy op ON op.owner_id=d.owner_id
          LEFT JOIN LATERAL (
            SELECT kind,occurred_at FROM gps_read_events
            WHERE device_id=d.id AND user_id=d.owner_id AND kind IN ('sleep_enter','wake')
@@ -279,6 +281,19 @@ pub async fn check_episode_lifecycle(pool: &PgPool) {
     .unwrap();
     scan(pool).await.unwrap();
     assert_eq!(count(6).await, 1, "custom threshold is honored");
+    // A company operating policy replaces the account's reception delay.
+    sqlx::raw_sql("INSERT INTO fleet_operating_policy(owner_id,offline_minutes) VALUES(2,10); INSERT INTO devices(id,owner_id,last_seen_at) VALUES(8,2,now()-interval '7 minutes')")
+        .execute(pool).await.unwrap();
+    let delayed = || async {
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM gps_read_events WHERE device_id=8 AND kind='signal_loss'")
+            .fetch_one(pool).await.unwrap()
+    };
+    scan(pool).await.unwrap();
+    assert_eq!(delayed().await, 0, "company delay of 10 minutes is not reached");
+    sqlx::query("UPDATE fleet_operating_policy SET offline_minutes=5 WHERE owner_id=2")
+        .execute(pool).await.unwrap();
+    scan(pool).await.unwrap();
+    assert_eq!(delayed().await, 1, "company delay of 5 minutes is reached");
 }
 
 #[cfg(test)]

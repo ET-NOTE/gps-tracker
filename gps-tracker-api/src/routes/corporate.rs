@@ -73,6 +73,8 @@ struct CorporateInfo {
     company_name: Option<String>,
     address: Option<String>,
     representative: Option<String>,
+    phone: Option<String>,
+    timezone: String,
     updated_at: DateTime<Utc>,
 }
 
@@ -82,6 +84,33 @@ struct UpdateInfo {
     company_name: Option<String>,
     address: Option<String>,
     representative: Option<String>,
+    /// Omitted keeps the stored contact; an empty text clears it.
+    phone: Option<String>,
+    timezone: Option<String>,
+}
+
+impl UpdateInfo {
+    fn validate(&mut self) -> AppResult<()> {
+        if let Some(phone) = self.phone.as_mut() {
+            *phone = phone.trim().to_owned();
+            if phone.chars().count() > 30
+                || !phone
+                    .chars()
+                    .all(|c| c.is_ascii_digit() || matches!(c, '-' | '+' | '(' | ')' | ' '))
+            {
+                return Err(AppError::BadRequest(
+                    "연락처는 숫자와 - + ( ) 로 30자 이내로 입력해 주세요.".into(),
+                ));
+            }
+        }
+        if let Some(zone) = self.timezone.as_mut() {
+            *zone = zone.trim().to_owned();
+            if zone.is_empty() || zone.chars().count() > 64 {
+                return Err(AppError::BadRequest("사용 시간대를 확인해 주세요.".into()));
+            }
+        }
+        Ok(())
+    }
 }
 
 async fn get_info(State(state): State<AppState>, user: AuthUser) -> AppResult<Json<CorporateInfo>> {
@@ -90,7 +119,7 @@ async fn get_info(State(state): State<AppState>, user: AuthUser) -> AppResult<Js
         .execute(&state.db)
         .await?;
     let row: CorporateInfo = sqlx::query_as(
-        r#"SELECT user_id, business_number, company_name, address, representative, updated_at
+        r#"SELECT user_id, business_number, company_name, address, representative, phone, timezone, updated_at
              FROM corporate_info WHERE user_id = $1"#,
     )
     .bind(user.user_id)
@@ -102,16 +131,29 @@ async fn get_info(State(state): State<AppState>, user: AuthUser) -> AppResult<Js
 async fn put_info(
     State(state): State<AppState>,
     user: AuthUser,
-    Json(req): Json<UpdateInfo>,
+    Json(mut req): Json<UpdateInfo>,
 ) -> AppResult<Json<CorporateInfo>> {
+    req.validate()?;
+    if let Some(zone) = req.timezone.as_deref() {
+        let known: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_timezone_names WHERE name=$1)")
+                .bind(zone)
+                .fetch_one(&state.db)
+                .await?;
+        if !known {
+            return Err(AppError::BadRequest("사용 시간대를 확인해 주세요.".into()));
+        }
+    }
     sqlx::query(
-        r#"INSERT INTO corporate_info (user_id, business_number, company_name, address, representative, updated_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())
+        r#"INSERT INTO corporate_info (user_id, business_number, company_name, address, representative, phone, timezone, updated_at)
+           VALUES ($1, $2, $3, $4, $5, NULLIF($6,''), COALESCE($7,'Asia/Seoul'), NOW())
            ON CONFLICT (user_id) DO UPDATE SET
              business_number = COALESCE(EXCLUDED.business_number, corporate_info.business_number),
              company_name    = COALESCE(EXCLUDED.company_name,    corporate_info.company_name),
              address         = COALESCE(EXCLUDED.address,         corporate_info.address),
              representative  = COALESCE(EXCLUDED.representative,  corporate_info.representative),
+             phone           = CASE WHEN $6::text IS NULL THEN corporate_info.phone ELSE NULLIF($6,'') END,
+             timezone        = COALESCE($7, corporate_info.timezone),
              updated_at      = NOW()"#,
     )
     .bind(user.user_id)
@@ -119,6 +161,8 @@ async fn put_info(
     .bind(req.company_name)
     .bind(req.address)
     .bind(req.representative)
+    .bind(req.phone)
+    .bind(req.timezone)
     .execute(&state.db).await?;
     get_info(State(state), user).await
 }
@@ -805,6 +849,22 @@ pub(super) async fn save_annotation(
 
     let mut tx = state.db.begin().await?;
     super::fleet_expenses::lock(&mut tx, user.user_id).await?;
+    if purpose == "commute" {
+        // An already recorded commute stays editable; only a new commute purpose is refused.
+        let stored: Option<String> = sqlx::query_scalar(
+            "SELECT purpose FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3",
+        )
+        .bind(user.user_id)
+        .bind(device_id)
+        .bind(req.trip_started_at)
+        .fetch_optional(&mut *tx)
+        .await?;
+        if stored.as_deref() != Some("commute") {
+            super::fleet_operating_policy::read(&mut *tx, user.user_id)
+                .await?
+                .check_purpose(Some(purpose.as_str()))?;
+        }
+    }
     if let Some(Some(target)) = req.company_purpose_id {
         let previous = sqlx::query_scalar::<_,Option<i64>>(
             "SELECT company_purpose_id FROM trip_annotations WHERE user_id=$1 AND device_id=$2 AND trip_started_at=$3"
@@ -2104,3 +2164,31 @@ fn parse_date_or_rfc3339_end(s: &str) -> AppResult<DateTime<Utc>> {
 }
 
 type TripEndpointRows = Vec<(i32, Option<f64>, Option<f64>, Option<f64>, Option<f64>)>;
+
+#[cfg(test)]
+mod info_tests {
+    use super::UpdateInfo;
+
+    fn info(phone: Option<&str>, timezone: Option<&str>) -> UpdateInfo {
+        UpdateInfo {
+            business_number: None,
+            company_name: None,
+            address: None,
+            representative: None,
+            phone: phone.map(str::to_owned),
+            timezone: timezone.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn contact_and_timezone_are_trimmed_and_bounded() {
+        let mut ok = info(Some(" 02-1234-5678 "), Some(" Asia/Seoul "));
+        assert!(ok.validate().is_ok());
+        assert_eq!(ok.phone.as_deref(), Some("02-1234-5678"));
+        assert_eq!(ok.timezone.as_deref(), Some("Asia/Seoul"));
+        assert!(info(Some(""), None).validate().is_ok(), "an empty contact clears it");
+        assert!(info(Some("010-abc"), None).validate().is_err());
+        assert!(info(Some(&"1".repeat(31)), None).validate().is_err());
+        assert!(info(None, Some("  ")).validate().is_err());
+    }
+}

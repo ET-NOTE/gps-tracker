@@ -13,6 +13,7 @@ pub mod diag;
 pub mod documents;
 pub mod fleet_expenses;
 pub mod fleet_media;
+pub mod fleet_operating_policy;
 pub mod fleet_reservations;
 pub mod fleet_sites;
 mod fleet_subject_readers;
@@ -85,6 +86,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(fleet_sites::router())
         .merge(fleet_expenses::router())
         .merge(fleet_reservations::router())
+        .merge(fleet_operating_policy::router())
         .merge(fleet_trip_assignment::router())
         .merge(fleet_trip_quality::router())
         .merge(rentcar::router())

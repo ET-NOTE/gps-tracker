@@ -83,6 +83,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const [vehicle,setVehicle] = useState(initialView?.vehicle||''), [status,setStatus] = useState(initialView?.status??'approved');
   const [dimension,setDimension] = useState(initialView?.dimension||''), [group,setGroup] = useState(initialView?.group||(trips?'all':'category'));
   const [department,setDepartment] = useState(initialView?.department||'');
+  const [recordState,setRecordState] = useState(initialView?.recordState||'all');
   const [metric,setMetric] = useState('amount'), [exporting,setExporting] = useState(false), [exportMessage,setExportMessage] = useState('');
   const live = useRef(true), exportRequest = useRef(null);
   useEffect(()=>{live.current=true; return ()=>{live.current=false;exportRequest.current?.abort();};},[]);
@@ -103,7 +104,8 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const departments = groupAnalytics(allRows,'department').sort((a,b)=>a.label.localeCompare(b.label,'ko'));
   const inDepartment = row=>!department || department===row.department;
   const options = groupAnalytics(allRows.filter(inDepartment),filterBy).sort((a,b)=>a.label.localeCompare(b.label,'ko'));
-  const filterRows = source=>source.filter(row=>row.date>=from && row.date<=to && inDepartment(row) && (!dimension || row[filterBy]===dimension));
+  const inRecordState = row=>!trips || recordState==='all' || (recordState==='confirmed'?row.confirmed:!row.confirmed);
+  const filterRows = source=>source.filter(row=>row.date>=from && row.date<=to && inDepartment(row) && inRecordState(row) && (!dimension || row[filterBy]===dimension));
   const rows = filterRows(allRows);
   const sum = rows.reduce((total,row)=>total+row.amount,0);
   const vehicles = new Set(rows.map(r=>r.vehicle).filter(id=>id!=='general')).size;
@@ -129,7 +131,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
         label:g.label,count:g.count,amount:Number(g.amount.toFixed(3)),time:duration(g.minutes),
         average:Number((g.amount/g.count).toFixed(trips?3:0)),share:total?Number((100*g.amount/total).toFixed(1)):'',
       }));
-      const range = [from+' ~ '+to, trips?'확정 운행':expenseStatus[status]||'전체 지출 상태', groupName+'별'];
+      const range = [from+' ~ '+to, trips?({all:'완료 운행 전체',confirmed:'기록 확정',review:'확인 필요'}[recordState]):expenseStatus[status]||'전체 지출 상태', groupName+'별'];
       if (dimension) range.push(options.find(o=>o.id===dimension)?.label || dimension);
       if (department) range.push(departments.find(o=>o.id===department)?.label || department);
       const report = subjectReport({title,filename:`${title}_${from}_${to}`,csvPreamble:[range],columns,rows:csvRows},fresh.scoped);
@@ -143,7 +145,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const driverLeaders = trips && group==='all' ? groupAnalytics(rows,'driver').slice(0,5) : [];
   const series = !periodError && rows.length ? trendSeries(rows,from,to,trips&&metric==='count') : [];
   const metrics = trips ? [
-    {label:'확정 운행',value:number(rows.length),unit:'건',icon:'route'},
+    {label:recordState==='confirmed'?'확정 운행':recordState==='review'?'확인 필요 운행':'완료 운행',value:number(rows.length),unit:'건',icon:'route'},
     {label:'총 주행거리',value:rows.length?distance(sum):null,unit:'km'},{label:'총 운행시간',value:rows.length?duration(rows.reduce((s,r)=>s+r.minutes,0)):null,icon:'clock'},
     {label:'운행 차량',value:number(vehicles),unit:'대',icon:'list'},
   ] : [
@@ -152,7 +154,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
     {label:'건당 평균',value:rows.length?number(sum/rows.length):null,unit:'원'},
   ];
   function openGroup(g) {
-    if (trips) { const device=devices.find(d=>String(d.id)===g.id); if(device)onReport(device,{from,to,driver:dimension,confirmed:true}); return; }
+    if (trips) { const device=devices.find(d=>String(d.id)===g.id); if(device)onReport(device,{from,to,driver:dimension,confirmed:recordState==='confirmed'}); return; }
     onExpenses({view:{from,to,vehicle,status,dimension,group,department},ledger:{status,filters:{from,to,vehicle_id:g.id,
       ...(dimension?{category_id:dimension}:{}),...(department?{department_id:department}:{})}}});
   }
@@ -179,15 +181,18 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       <Filter label={trips?'운전자':'지출 항목'} value={dimension} disabled={!ready} onChange={e=>setDimension(e.target.value)}>
         <option value="">전체 {trips?'운전자':'항목'}</option>{options.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}
       </Filter>
+      {trips&&<Filter label="기록 상태" value={recordState} onChange={e=>setRecordState(e.target.value)}>
+        <option value="all">완료 운행 전체</option><option value="confirmed">기록 확정</option><option value="review">확인 필요</option>
+      </Filter>}
       {!trips&&<Filter label="지출 상태" value={status} onChange={e=>{setStatus(e.target.value);setDepartment('');setDimension('');}}>
         <option value="">전체 상태</option>{Object.entries(expenseStatus).map(([id,label])=><option key={id} value={id}>{label}</option>)}
       </Filter>}</div>
-      <BusinessButton icon="refresh" onClick={()=>{setFrom(initialPeriod?.from||today.slice(0,7)+'-01');setTo(initialPeriod?.to||today);setVehicle('');setStatus('approved');setDepartment('');setDimension('');}}>조건 초기화</BusinessButton>
+      <BusinessButton icon="refresh" onClick={()=>{setFrom(initialPeriod?.from||today.slice(0,7)+'-01');setTo(initialPeriod?.to||today);setVehicle('');setStatus('approved');setDepartment('');setDimension('');setRecordState('all');}}>조건 초기화</BusinessButton>
     </section>
     {periodError?<BusinessError>{periodError}</BusinessError>:result.error?<BusinessError onRetry={result.refetch}>{result.error.message||'통계를 불러오지 못했습니다.'}</BusinessError>:result.isPending?<p role="status" className="fleet-analytics-note">통계를 불러오는 중…</p>:<>
       {(result.data.failed>0)&&<BusinessError onRetry={result.refetch}>차량 {selected.length}대 중 {result.data.failed}대를 조회하지 못했습니다. 아래는 조회된 차량의 부분 합계입니다.</BusinessError>}
       {result.data.scoped&&<p className="fleet-analytics-note">{subjectScopeNote}</p>}
-      {result.data.excluded>0&&<p className="fleet-analytics-note">조회한 차량의 미확정 운행 {number(result.data.excluded)}건은 합계에서 제외했습니다.</p>}
+      {result.data.excluded>0&&<p className="fleet-analytics-note">아직 끝나지 않았거나 시간이 확인되지 않은 운행 {number(result.data.excluded)}건은 합계에서 제외했습니다.</p>}
       <FleetRecordMetrics label={trips?'운행 통계 요약':'지출 통계 요약'} items={metrics.map(({label,...metric})=>({name:label,...metric}))}/>
       <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} description={trips?(metric==='count'?'날짜별 운행 건수':'날짜별 주행거리'):'날짜별 지출 금액'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
         {series.length?<Trend series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}

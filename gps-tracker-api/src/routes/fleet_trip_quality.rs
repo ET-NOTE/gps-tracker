@@ -307,6 +307,13 @@ async fn locks(tx: &mut Transaction<'_, Postgres>, owner: i64, vehicle: i64) -> 
     .await?;
     Ok(())
 }
+/// A trip has a purpose when it names a report purpose or a company purpose.
+fn has_purpose(annotation: &Value) -> bool {
+    matches!(
+        annotation["purpose"].as_str(),
+        Some("commute" | "business" | "other")
+    ) || annotation["company_purpose_id"].as_i64().is_some()
+}
 async fn correct(
     State(state): State<AppState>,
     user: AuthUser,
@@ -342,6 +349,16 @@ async fn correct(
         sources.push(t.clone());
     }
     sources.sort_by_key(|t| date(&t["started_at"]));
+    if matches!(p.action.as_str(), "confirm" | "adjust")
+        && super::fleet_operating_policy::read(&mut *tx, s.owner)
+            .await?
+            .trip_purpose_required
+        && !sources.iter().all(|t| has_purpose(&t["annotation"]))
+    {
+        return Err(invalid(
+            "회사 운영 정책에 따라 운행 목적을 먼저 입력한 뒤 확정해 주세요.",
+        ));
+    }
     if sources.windows(2).any(|p| {
         p[0]["source_device_id"] != p[1]["source_device_id"]
             || p[0]["binding_id"] != p[1]["binding_id"]
@@ -659,6 +676,13 @@ async fn restore(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn purpose_is_a_report_or_company_purpose() {
+        assert!(!has_purpose(&Value::Null));
+        assert!(!has_purpose(&json!({"purpose":"unspecified"})));
+        assert!(has_purpose(&json!({"purpose":"business"})));
+        assert!(has_purpose(&json!({"purpose":"unspecified","company_purpose_id":3})));
+    }
     #[test]
     fn old_open_trip_is_not_driving() {
         let now = Utc::now();
