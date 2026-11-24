@@ -119,7 +119,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
         {(!foldUsage||mockup)&&!hideUsage&&usage}
         <Search value={query} setValue={setQuery} label={kind==='accounts'?'거래처, 담당자, 등록번호 검색':kind==='templates'?'양식 이름, 내용 검색':mockup&&kind==='customers'?'이름, 연락처, 거래처 검색':mockup&&kind==='rates'?'차종 이름 검색':titles[kind]+' 검색'}/>
         {directory ? <div className="rental-extra-actions">{foldUsage&&!mockup&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={clearFilters}>초기화</BusinessButton></div> :
-          !ratesDesk&&(mockup||query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>초기화</button>}
+          (mockup||query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>초기화</button>}
         {foldUsage&&<div className="rental-extra-filters" id="rental-directory-extra" hidden={!extraOpen}>{usage}
           {kind==='customers'&&<BusinessButton onClick={()=>setHistory(true)}>계약 이력·경고 관리</BusinessButton>}
         </div>}

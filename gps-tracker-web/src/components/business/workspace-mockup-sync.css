@@ -375,3 +375,9 @@
   .rt-import-ok { color: var(--text); display: flex; align-items: center; gap: 8px; }
   .rt-import-actions { display: flex; justify-content: flex-end; gap: 8px; }
 }
+/* Round 20: caption and button sizes like the design (PC) */
+@media screen and (min-width: 768px) {
+  .rnt-shell .rfl-toolbar-caption { font-size: 11px; }
+  .rt-toolbar .rt-small-button { min-height: 28px !important; height: auto; padding: 5px 9px !important; font-size: 11px !important; }
+  .rt-toolbar .business-button.is-primary { min-height: 35px; padding: 8px 13px; font-size: 12px; font-weight: 400; }
+}

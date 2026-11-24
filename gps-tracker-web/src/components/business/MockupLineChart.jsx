@@ -16,7 +16,7 @@ export default function MockupLineChart({ points, unit, format = v => v.toLocale
     <span className="mlc-unit" aria-hidden="true">{unit}</span>
     <div className="mlc-y" aria-hidden="true">{ticks.map(t => <span key={t} style={{ bottom: 100 * t / top + '%' }}>{t.toLocaleString('ko-KR')}</span>)}</div>
     <div className="mlc-plot">
-      {ticks.map(t => <i key={t} className="mlc-grid" style={{ bottom: 100 * t / top + '%' }} aria-hidden="true"/>)}
+      {ticks.map(t => <div key={t} className="mlc-grid" style={{ bottom: 100 * t / top + '%' }} aria-hidden="true"/>)}
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <polyline points={line} fill="none" stroke="#3676e5" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
       </svg>

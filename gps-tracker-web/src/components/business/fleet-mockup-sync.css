@@ -881,3 +881,7 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
 .mlc-x span[data-edge=start] {transform:none}
 .mlc-x span[data-edge=end] {transform:translateX(-100%)}
 .mlc-sr {position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
+/* Round 20: keep the line chart parts clear of surrounding element rules */
+.mlc .mlc-grid {display:block; width:auto; height:1px; margin:0; padding:0; border-radius:0; background:#e8edf2}
+.mlc .mlc-point {display:block; flex:none; padding:0}
+.mlc .mlc-y span, .mlc .mlc-x span, .mlc .mlc-unit {display:block; width:auto; height:auto; background:none; border-radius:0}

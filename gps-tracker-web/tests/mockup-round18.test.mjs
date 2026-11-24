@@ -53,6 +53,11 @@ test('desktop line chart draws points with tooltips, edge-aligned date labels an
   assert.equal(labels[0].props['data-edge'],'start');assert.equal(labels.at(-1).props['data-edge'],'end');
   assert.deepEqual(r.root.findByProps({className:'mlc-y'}).findAllByType('span').map(n=>text(n.children)),['0','100','200','300']);
   assert.equal(r.root.findByType('table').findAllByType('tr').length,7);
+  // The dashboard styles every <i> as a 27px tile; the chart must not use <i> so its grid stays 1px lines.
+  assert.equal(r.root.findAllByType('i').length,0);
+  assert.ok(r.root.findAllByProps({className:'mlc-grid'}).every(n=>n.type==='div'));
+  const css=await readFile(new URL('../src/components/business/fleet-mockup-sync.css',import.meta.url),'utf8');
+  assert.match(css,/.mlc .mlc-grid {[^}]*height:1px[^}]*border-radius:0/);
 });
 
 async function mountMaintenance(){
