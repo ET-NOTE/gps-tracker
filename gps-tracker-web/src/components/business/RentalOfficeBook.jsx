@@ -127,8 +127,8 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
       <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</BusinessButton>
     </div>
     <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw)),'wallet'],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
-      isPayments?[['조회 청구액',won(sum(contracts,c=>c.billed_krw)),'wallet'],['이용료 순수납액',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보유 보증금',won(sum(contracts,c=>c.held_krw))]]:
-      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw)),'wallet'],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['현재 처리 대기',returns.length+'건']]}/>
+      isPayments?[['조회 청구액',won(sum(contracts,c=>c.billed_krw)),'wallet'],['이용료 순수납액',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보유 보증금',won(sum(contracts,c=>c.held_krw)),undefined,'이용료와 별도']]:
+      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw)),'wallet'],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['현재 처리 대기',returns.length+'건',undefined,{text:'초과수납 · 반환 대상 보증금',tone:'amber'}]]}/>
     {isRefunds&&<>
       <div className="ro-refund-actions"><span>보증금은 이용료 수납액과 매출에 포함되지 않습니다.</span><div>{actions}</div></div>
       <section className="ro-panel"><header className="ro-section-heading"><div><h2>현재 환불·반환 대기</h2><p>현재 잔액 기준 · 아래 거래 기록의 기간·구분 필터와 별도입니다.</p></div><span>{returns.length}건</span></header>
@@ -141,7 +141,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
     {/* Desktop design: the count line and buttons sit above the table card, like the freight lists. */}
     {desk&&!isRefunds&&<div className="ro-desk-toolbar"><span>{rows.length.toLocaleString('ko-KR')}건 조회{isPayments?' · 실제 결제 승인 없이 내역을 기록합니다.':''}</span><div>{actions}</div></div>}
     <section className="ro-panel">{isRefunds?<header className="ro-section-heading"><h2>거래 기록</h2><span>{rows.length}건</span></header>:!desk&&<Toolbar count={rows.length}>{actions}</Toolbar>}
-      <Table columns={cols} rows={rows} onRecord={isCost?openCost:isPayments?setDetail:setEntry} empty={isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
+      <Table columns={cols} rows={rows} onRecord={isCost?openCost:isPayments?setDetail:setEntry} empty={desk?(isCost?'조회된 운영비가 없습니다.':isPayments?'조회된 청구 내역이 없습니다.':'조회된 결제 기록이 없습니다.'):isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
     {costDetail&&<RentalRecordDrawer title="운영비 상세" subtitle={costKinds[costDetail.category]+' · '+won(costDetail.amount_krw)} onClose={()=>setCostId(null)}
       footer={<><RentalOfficeDelete kind="costs" row={costDetail} onDeleted={()=>setCostId(null)}/>
         <Button variant="primary" icon={<Icon name="pencil" size={15}/>} onClick={()=>setEditing(costDetail)}>운영비 수정</Button></>}>

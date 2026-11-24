@@ -128,7 +128,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
       {ratesDesk&&<><p className="ro-desk-notice"><Icon name="info" size={15}/>요금표 수정은 신규 견적에 적용되며, 기존 계약의 약정 금액은 변경되지 않습니다.</p>
         <div className="ro-desk-toolbar is-end"><div><BusinessButton primary icon="plus" onClick={()=>setEdit(null)}>요금표 등록</BusinessButton></div></div></>}
       <section className="ro-panel">{!directory&&!ratesDesk&&toolbar}
-        <Table columns={tableColumns} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
+        <Table columns={tableColumns} rows={rows} empty={mockup?({customers:'조회된 고객이 없습니다.',accounts:'조회된 거래처가 없습니다.',rates:'조회된 요금표가 없습니다.',templates:'조회된 양식이 없습니다.'})[kind]:'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
     </>}
     {selected&&kind==='rates'&&<RentalRecordDrawer title="요금표 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}
       footer={<Button variant="primary" onClick={()=>setEdit(selected)}>요금 수정</Button>}>

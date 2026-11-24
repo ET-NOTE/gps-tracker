@@ -39,7 +39,7 @@ export default function FreightCharges({data,save,onPage,onOpenFinance}) {
     <div className="fr-toolbar"><span className="fr-toolbar-caption">승인한 비용만 정산 합계에 포함됩니다.</span><div className="fr-actions"><FreightButton icon="download" onClick={()=>downloadRows('추가 비용',headings,rows.map(values))} disabled={!rows.length}>CSV 다운로드</FreightButton>
       <FreightButton primary icon="plus" disabled={!data.shipments.length||!data.codes.chargeTypes.length} onClick={()=>setView({action:'form'})}>추가 비용 등록</FreightButton></div></div>
     {!data.shipments.length&&<div className="fr-card fr-toolbar"><span>배차한 운송 건에 추가 비용을 등록할 수 있습니다.</span><FreightButton onClick={()=>onPage('cargo-dispatch')}>통합 배차</FreightButton></div>}
-    <FreightTable columns={['운송번호 / 화주','항목 / 발생 일시','화주 청구액','운송비 지급액','회사 부담액','확인 상태']} rows={rows.map(x=>({id:x.id,onOpen:()=>setView({id:x.id,action:'detail'}),cells:[
+    <FreightTable deskEmpty='조회된 추가 비용이 없습니다.' columns={['운송번호 / 화주','항목 / 발생 일시','화주 청구액','운송비 지급액','회사 부담액','확인 상태']} rows={rows.map(x=>({id:x.id,onOpen:()=>setView({id:x.id,action:'detail'}),cells:[
       <><button className="fr-link" onClick={()=>setView({action:'detail',id:x.id})}>{shipments.get(x.shipmentId)?.number||'—'}</button><small>{parties.get(x.shipmentId)||'—'}</small></>,
       <>{x.kind}<small>{timeLabel(x.at)}</small></>,...amounts.map(([key])=>costLabel(x[key])),<FreightBadge tone={tones[x.status]}>{chargeStates[x.status]}</FreightBadge>
     ]}))} empty="조회 조건에 해당하는 추가 비용이 없습니다."/>

@@ -66,7 +66,7 @@ function DashboardView({data,devices,onPage,actions}) {
     ['today','오늘 주문',todayOrders.length,'오늘 상차 예정'],
     ['unassigned','미배차',unassigned.length,'차량·기사 배정 필요'],
     ['moving','상차·운송 중',moving.length,'현재 진행 중인 운송'],
-    ['attention','확인할 업무',count,'수락·증빙·지연·수신'],
+    ['attention','확인할 업무',count,mockup?'수락 · 증빙 · 지연 · 수신':'수락·증빙·지연·수신'],
   ];
   const taskButtons=<div className="fr-dashboard-tasks">{tasks.map(([id,label,items,,icon,description])=><button type="button" className="fr-task" key={id} onClick={()=>setView(id)}>
     <i><Icon name={icon} size={16}/></i>
@@ -79,7 +79,7 @@ function DashboardView({data,devices,onPage,actions}) {
   const open=(kind,id)=>{setView('');actions.open(kind,id);};
   return <div className="fr-page fr-dashboard">
     <div className="fr-stats fr-summary" aria-label="화물배차 요약">{metrics.map(([key,label,value,note])=><button type="button" className="fr-metric" key={key} aria-label={label+' '+value+'건 더보기'} onClick={()=>setView(key)}>
-      <span>{label}<small>더보기 ›</small></span><strong>{value}<em>건</em></strong>
+      <span>{label}<small>{mockup?'더보기':'더보기 ›'}</small></span><strong>{value}<em>건</em></strong>
       <span className="fr-metric-note">{note}</span>
     </button>)}</div>
     <div className="fr-toolbar fr-dashboard-tools">{mockup?<p className="fr-dashboard-guide">운송 주문부터 정산까지 한 흐름으로 관리합니다.</p>:<button type="button" className="fr-monitor-link" onClick={()=>onPage('cargo-live')}><Icon name="map" size={14}/>실시간 관제</button>}<div className="fr-actions"><FreightField label="운영 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>

@@ -502,3 +502,76 @@
   .rnt-shell .rental-stage-tabs[aria-label="배차 화면"] { flex-wrap: nowrap !important; overflow-x: auto; }
   .rnt-shell .rental-stage-tabs[aria-label="배차 화면"] button { flex: none; white-space: nowrap; }
 }
+/* Round 24: design comparison follow-up — rental and freight */
+.rnt-shell .rfl-badge[data-tone=neutral] { color: #6d7787; background: #f0f2f6; }
+.rnt-shell .mockup-empty.is-panel { background: #fff; border: 1px solid #e7eaf0; border-radius: 12px; }
+.rt-table:has(.rt-empty-row) thead { display: none; }
+.rt-empty-row td { padding: 0 !important; border: 0 !important; }
+@media screen and (min-width: 768px) {
+  /* 1-1 Rental live: map + 295px list */
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] { display: grid !important; grid-template-columns: minmax(0, 1fr) 295px !important; gap: 16px; }
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] .rfl-map :is(.business-map, .business-map-frame, .leaflet-container) { height: 440px !important; }
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] .rfl-map > :not(header) { margin: 0 14px 14px; }
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] .rfl-live-list { max-height: 485px; overflow: auto; padding: 8px !important; }
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] .rfl-live-item { display: flex !important; align-items: center; gap: 11px; width: 100%; padding: 12px 9px !important; border: 0 !important; border-radius: 9px; background: #fff; text-align: left; }
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] .rfl-live-item:hover { background: #f4f7fd; }
+  .rnt-shell[data-page="live"] .rfl-live[data-mockup] .rfl-live-item[aria-pressed=true] { background: #edf3ff; }
+  .rnt-shell .rfl-live-art { flex: none; width: 54px; height: 29px; display: grid; place-items: center; overflow: hidden; }
+  .rnt-shell .rfl-live-art img { width: 100%; height: 100%; object-fit: contain; }
+  .rnt-shell .rfl-live-item .car-info { flex: 1; min-width: 0; display: grid; }
+  .rnt-shell .rfl-live-item .car-info strong { font-size: 12px; font-weight: 400; color: #414c5c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rnt-shell .rfl-live-item .car-info small { display: block; font-size: 11px; line-height: 1.55; color: #929aa7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rnt-shell .rfl-live-item .rfl-badge { flex: none; white-space: nowrap; }
+  /* 1-2 Freight live */
+  .rnt-shell[data-page="cargo-live"] .fr-live-grid { grid-template-columns: minmax(0, 1fr) 295px !important; gap: 16px; }
+  .rnt-shell[data-page="cargo-live"] .fr-live-map { margin: 0 14px 14px; }
+  .rnt-shell[data-page="cargo-live"] .fr-live-map :is(.business-map, .business-map-frame, .leaflet-container) { height: 470px !important; }
+  .rnt-shell[data-page="cargo-live"] .fr-resource-filters { padding: 14px 17px 10px; border: 1px solid #e7eaf0; border-radius: 11px; background: #fafbfd; margin-bottom: 16px; }
+  .rnt-shell[data-page="cargo-live"] .fr-resource-filters > .fr-resource-fields { display: flex !important; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .rnt-shell[data-page="cargo-live"] .fr-resource-filters > .fr-resource-fields > .fr-field { display: flex; flex: 1 1 150px; min-width: 140px; flex-direction: column; gap: 6px; color: #7e8998; font-size: 11px; }
+  .rnt-shell[data-page="cargo-live"] .fr-resource-filters > .fr-resource-fields > .fr-resource-search { flex: 1 1 220px; }
+  .rnt-shell[data-page="cargo-live"] .fr-resource-filter-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 11px; font-size: 11px; color: #8d98a6; line-height: 1.55; }
+  .rnt-shell[data-page="cargo-live"] .fr-resource-filter-meta button { border: 0; background: none; padding: 0; color: #3676e5; font-size: 11px; }
+  .rnt-shell .cf-live-list { max-height: 490px; overflow: auto; padding: 6px; }
+  .rnt-shell .cf-live-row { display: block; width: 100%; text-align: left; border: 1px solid transparent; border-radius: 9px; background: transparent; padding: 12px 10px; cursor: pointer; }
+  .rnt-shell .cf-live-row:hover, .rnt-shell .cf-live-row[aria-pressed=true] { border-color: #d8e4f7; background: #f5f8fd; }
+  .rnt-shell .cf-live-row .cell-car { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .rnt-shell .cf-live-row .cf-truck { flex: none; width: 60px; height: 35px; display: grid; place-items: center; border-radius: 8px; background: #f3f5f8; color: #7e8998; }
+  .rnt-shell .cf-live-row .cell-primary { font-size: 12px; font-weight: 400; color: #414c5c; }
+  .rnt-shell .cf-live-row .cell-secondary { font-size: 11px; color: #929aa7; }
+  .rnt-shell .cf-live-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0 7px; }
+  .rnt-shell .cf-live-row .caption { display: block; font-size: 11px; color: #8d98a6; }
+  /* [2] Rental dashboard tasks */
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rfl-task { display: flex; align-items: center; gap: 9px; padding: 13px 0 !important; border-bottom: 1px solid #e7eaf0; font-size: 12px; color: #353b45; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rfl-task > i { width: 30px; height: 30px; border-radius: 9px; background: #f8f9fb !important; color: #7b8a9e !important; display: grid; place-items: center; flex: none; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rental-task-copy { font-size: 12px; color: #353b45; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rental-task-copy small { font-size: 11px; color: #77808e; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rfl-task > b { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 5px; font-size: 10px; font-weight: 400; color: #6d7787; background: #f0f2f6; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rfl-task > b::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rfl-task > b[data-active=true] { color: #916015; background: #fff2d7; }
+  .rnt-shell[data-page="fleet"] .rfl-tasks .rfl-task > svg { width: 13px; height: 13px; color: #b6bec9; }
+  /* [2] Summary card notes, rental device link cell, freight stage chart */
+  .rnt-shell .ro-metrics .stat-change { display: block; margin-top: 3px; font-size: 10px; color: #909aa7; }
+  .rnt-shell .ro-metrics .stat-change.is-amber { color: #b77923; }
+  .rnt-shell[data-page="devices"] .rfl-table td:nth-child(2) .rfl-link { color: #414c5c !important; font-weight: 400 !important; font-size: 12px; text-decoration: none; }
+  .rnt-shell .fr-stage-chart { max-height: 150px; overflow: auto; }
+  .rnt-shell .fr-stage-chart li { min-height: 35px; }
+  /* Common bar charts */
+  .rnt-shell .ops-bars li > div { font-size: 13px; color: #4e5865; }
+  .rnt-shell .ops-bars li > div > span:last-child { color: #56606c; font-variant-numeric: tabular-nums; }
+  .rnt-shell .ops-bars .ops-track { height: 7px !important; border-radius: 4px; background: #eef1f5; }
+  .rnt-shell .ops-bars .ops-track i { background: #3676e5; opacity: .84; border-radius: 4px; }
+  /* [3] List tables */
+  .rnt-shell .rnt-content :is(.ro-table, .rfl-table, .fr-table, .rental-stage-table table, .rt-table) { font-size: 12px; }
+  .rnt-shell .rnt-content :is(.ro-table, .rfl-table, .fr-table, .rental-stage-table table, .rt-table) th { background: #f8f9fc; font-weight: 400; color: #8a93a1 !important; font-size: 11px !important; padding: 12px 17px !important; border-top: 1px solid #e7eaf0; border-bottom: 1px solid #e7eaf0; text-align: left; white-space: nowrap; }
+  .rnt-shell .rnt-content :is(.ro-table, .rfl-table, .fr-table, .rental-stage-table table, .rt-table) td { padding: 14px 17px !important; border-bottom: 1px solid #f0f2f6; color: #586171; vertical-align: middle; text-align: left; }
+  .rnt-shell .rnt-content :is(.ro-table, .rfl-table, .fr-table, .rental-stage-table table, .rt-table) tbody tr:last-child td { border-bottom: 0; }
+  .rnt-shell[data-page="fleet"] .rfl-timeline td { padding: 11px 14px !important; }
+  .rnt-shell[data-page="cargo-dashboard"] .fr-table td { padding: 10px 13px !important; }
+}
+/* Freight dispatch head (PC and phone): row 1 title + 더보기, row 2 description */
+.pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header { display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; align-items: start; column-gap: 10px; }
+.pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header > div { display: contents !important; }
+.pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header h2 { grid-column: 1; grid-row: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header p { grid-column: 1 / -1; grid-row: 2; margin: 4px 0 0; font-size: 11px; }
+.pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header > .fr-link { grid-column: 2; grid-row: 1; white-space: nowrap; }

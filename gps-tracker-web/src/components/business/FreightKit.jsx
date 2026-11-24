@@ -35,7 +35,8 @@ export function FreightForm({title,subtitle,onClose,onSubmit,submitLabel='저장
 }
 export function FreightStats({items,unit}){
   const desk=!useCorporatePhone()&&hideOutsideMockup;
-  const show=value=>{const m=desk&&!unit&&typeof value==='string'&&value.match(statUnit);return m?<>{m[1]}<small className="fr-stat-unit">{m[2]}</small></>:value;};
+  // Freight amounts always keep '원' attached at full size (design C.money); only counts get the small unit.
+  const show=value=>{const m=desk&&!unit&&typeof value==='string'&&value.match(statUnit);return m&&m[2]!=='원'?<>{m[1]}<small className="fr-stat-unit">{m[2]}</small></>:value;};
   return <dl className="fr-stats">{items.map(([label,value,note,icon])=><div key={label}><dt>{desk&&icon&&<Icon name={icon} size={15}/>}{label}</dt><dd>{show(value)}{unit&&<small className="fr-stat-unit">{unit}</small>}{note&&<small className="fr-metric-note">{note}</small>}</dd></div>)}</dl>;
 }
 export function FreightBadge({children,tone='neutral'}) {
@@ -51,9 +52,9 @@ export function FreightDrawer({title,subtitle,onClose,footer,children}) {
     <div className="fr-drawer-inner"><div>{children}</div><footer>{footer}</footer></div>
   </BusinessDrawer>;
 }
-export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.'}){
+export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.',deskEmpty='조회된 내역이 없습니다.'}){
   const desk=!useCorporatePhone()&&hideOutsideMockup;
-  if(desk&&!rows.length)return <div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>{empty}</strong><small>조회 조건을 바꾸거나 새 항목을 등록해 주세요.</small></div>;
+  if(desk&&!rows.length)return <div className="mockup-empty is-panel" role="status"><Icon name="search" size={31}/><strong>{deskEmpty}</strong><small>조회 조건을 바꾸거나 새 항목을 등록해 주세요.</small></div>;
   return <div className="fr-list" role="region" aria-label={columns[0]+'별 목록'} tabIndex={0}><table className="fr-table"><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead>
     <tbody>{rows.map(({id,cells,onOpen})=><tr key={id} className={onOpen?'fr-open-row':undefined} onClick={onOpen?event=>{
       if(!event.target.closest('button,a,input,select,textarea,label')&&!window.getSelection()?.toString())onOpen();
@@ -90,10 +91,11 @@ export function FreightOptions({rows,blank,label='name'}){
 }
 
 export function FreightStageChart({ships}) {
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const counts = Object.entries(shipStates).filter(([status])=>status!=='cancelled').map(([status,label])=>({status,label,count:ships.filter(s=>s.status===status).length}));
   const max = Math.max(1,...counts.map(item=>item.count));
   return <ul className="fr-stage-chart" aria-label="운송 단계별 건수">
-    {counts.map(({status,label,count})=><li key={status}><span>{label}</span><span>{count}건</span>
+    {counts.map(({status,label,count})=><li key={status}><span>{label}</span><span>{count}{desk?' 건':'건'}</span>
       <div className="fr-stage-track" aria-hidden="true"><i style={{width: (100*count/max)+'%'}}/></div></li>)}
   </ul>;
 }

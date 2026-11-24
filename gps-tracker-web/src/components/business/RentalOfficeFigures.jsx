@@ -81,7 +81,7 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
   const exportReport=usage?csv('차량 가동·운영비',period,usageColumns,usageRows.map(r=>[r.name,r.intervals.length,r.hours.toFixed(1),r.utilization.toFixed(1)+'%',
     workStatus||r.completedHours.toFixed(1),workStatus||r.scheduledHours.toFixed(1),r.cost,distanceStatus||distanceText(r),r.revenue])):
     csv('차종별 대여·매출',period,groupColumns,groups.map(g=>[g.id,g.contracts.length,g.amount,g.paid,g.cost]));
-  const stats=usage?[['차량 시간 가동률',dec(usageRows.length?total(usageRows,r=>r.utilization)/usageRows.length:0)+'%','barAxis'],['총 대여 시간',dec(total(usageRows,r=>r.hours))+'시간','clock'],[mockup?'운영비':'차량 운영비',won(total(usageRows,r=>r.cost)),'wallet'],['반납 기록 주행거리',distanceStatus||distanceText(mileage),'route']]:
+  const stats=usage?[['차량 시간 가동률',dec(usageRows.length?total(usageRows,r=>r.utilization)/usageRows.length:0)+'%','barAxis'],['총 대여 시간',dec(total(usageRows,r=>r.hours))+'시간','clock'],[mockup?'운영비':'차량 운영비',won(total(usageRows,r=>r.cost)),'wallet'],['반납 기록 주행거리',distanceStatus||(mockup&&!mileage.measured?'0km':distanceText(mileage)),'route']]:
     [['기간 내 시작 계약',started.length+'건','file'],['대여료 순수납',won(pay),'wallet'],['운영 지출',won(cost),'wrenchSmall'],['수납 − 지출',won(pay-cost),'barAxis']];
   const selected=(usage?usageRows:groups).find(row=>row.id===detail);
   const asset=usage&&selected?vehicles.find(v=>v.id===selected.id):null;
@@ -99,7 +99,7 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
     {usage?<ChartPanel title="차량별 가동률" subtitle="가동률이 높은 차량 최대 6대"><ReportBars values={usageRows.slice(0,6).map(r=>({label:r.name,value:Number(r.utilization.toFixed(1))}))} unit="%" height={170} empty="조회된 차량이 없습니다."/></ChartPanel>:
       <RentalOfficeCharts figures={daily} groups={groups} period={period}/>}
     <section className="ops-table-panel"><header className="ops-table-head"><h2>{usage?'차량별 운영 내역':'차종별 내역'}</h2>{!usage&&<small>{mockup?'행을 누르면 연결 계약이 열립니다.':'차종을 누르면 연결 계약을 확인할 수 있습니다.'}</small>}</header>
-      <Table columns={usage?(mockup?deskUsageColumns:usageColumns):groupColumns} rows={usage?usageRows:groups} onRecord={openRow} empty="조회 기간에 집계할 내역이 없습니다."/></section>
+      <Table columns={usage?(mockup?deskUsageColumns:usageColumns):groupColumns} rows={usage?usageRows:groups} onRecord={openRow} empty={mockup?'통계 내역이 없습니다.':'조회 기간에 집계할 내역이 없습니다.'}/></section>
     {mockup&&<p className="ops-form-hint">{usage?'가동률은 선택 기간의 전체 차량 시간 대비 대여 시간입니다. 오늘은 현재 시각까지 집계합니다. 인도·반납 시각을 우선하며 기록이 없으면 계약 시각을 사용합니다. 주행거리는 기간 내 반납 기록 기준입니다.':'대여료 순수납은 선택 기간의 결제·환불 기록이며 보증금은 제외합니다. 계약 금액은 선택 기간에 시작한 계약의 확정 금액입니다. 수납과 지출의 차액은 회계상 이익을 뜻하지 않습니다.'}</p>}
     {!usage&&!mockup&&<section className="ops-table-panel"><header className="ops-table-head"><h2>일별 수납·지출</h2><ExportButtons csvOnly disabled={pending} report={daysCsv}/></header>
       <Table columns={dayColumns} rows={daily} empty="조회 기간에 이용료 수납·환불 또는 지출이 없습니다."/></section>}

@@ -202,7 +202,7 @@ export default function CorporateAccountPanel({defaultOwner,allowedMemberships,.
 }
 
 function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSchedules, onVehicles, onExpenses, onLive, onWeeklyReport, onCreate, setup }) {
-  const deskOverview=!useCorporatePhone()&&hideOutsideMockup;
+  const deskOverview=!useCorporatePhone()&&hideOutsideMockup, companyName=useCorporateInfo()?.data?.company_name?.trim();
   const now=useBusinessClock(), period=businessPeriod(now), openVehicle=useBusinessVehicle();
   const tasksRef=useRef(null), [weekly,setWeekly]=useState(null), [showVehicles,setShowVehicles]=useState(false);
   const reservations=useReservations({from:period.todayStart,to:period.todayEnd},{refetchInterval:60000});
@@ -216,43 +216,57 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
   const available=devices.filter(d=>d.enabled!==false).length;
   const tasks=corporateAttention(devices,now,{classify:classifyDevice,battery:deviceBattery});
   const attention=summary?.complete&&pending!=null?tasks.length+missing.length+pending+summary.missing:null;
+  // Desktop design: three attention items (trip records, expense approvals, terminal reception) and their total.
+  const signalCount=tasks.filter(t=>t.id.startsWith('signal-')).length;
+  const deskAttention=summary?.complete&&pending!=null?summary.missing+pending+signalCount:null;
+  const running=summary?.complete?summary.running:null, inService=devices.filter(d=>d.enabled===false).length;
+  const todayBookings=reservations.error?null:reservations.data?.filter(r=>!['cancelled','rejected'].includes(r.status)).length;
   const cards=[
     {label:'전체 차량',value:devices.length,unit:'대',icon:'car',note:'등록된 법인 차량',onClick:onVehicles},
     {label:'운행 중',value:summary?.complete?summary.running:null,unit:'대',icon:'route',tone:'green',note:'운행 기록 기준',onClick:onLive},
-    {label:'오늘 예약',value:reserved,unit:'건',icon:'calendar',note:'예정·이용 중 예약',onClick:()=>onReserve({})},
-    {label:'확인할 일',value:attention,unit:'건',icon:'warn',tone:'amber',note:'운행 확인 · 결재 · 수신',onClick:()=>{tasksRef.current?.focus({preventScroll:true});tasksRef.current?.scrollIntoView({block:'nearest'});}},
+    {label:'오늘 예약',value:deskOverview?todayBookings:reserved,unit:'건',icon:'calendar',note:deskOverview?'취소·반려 예약 제외':'예정·이용 중 예약',onClick:()=>onReserve({})},
+    {label:'확인할 일',value:deskOverview?deskAttention:attention,unit:'건',icon:'warn',tone:'amber',note:'운행 확인 · 결재 · 수신',onClick:()=>{tasksRef.current?.focus({preventScroll:true});tasksRef.current?.scrollIntoView({block:'nearest'});}},
   ];
   const days=Array.from({length:7},(_,i)=>businessDate(now-(6-i)*86400000));
   const distanceLabel=stats.error?'조회 실패':stats.loading?'조회 중':stats.todayKm!=null?stats.todayKm.toLocaleString()+' km':stats.pending?'집계 대기':'수신 없음';
   return <div className="business-overview fleet-dashboard">
     <div className="fleet-dashboard-toolbar">
-      <div><time dateTime={period.day}><Icon name="calendar" size={15}/>{period.day.replaceAll('-','.')} · 오늘</time></div>
+      <div><time dateTime={period.day}><Icon name="calendar" size={15}/>{period.day.replaceAll('-','.')} · 오늘</time>{deskOverview&&companyName&&<span className="pill">{companyName}</span>}</div>
       <div>{onWeeklyReport&&<BusinessButton icon="bar" onClick={onWeeklyReport}>운행 리포트</BusinessButton>}{onCreate&&<BusinessButton primary icon="plus" onClick={onCreate}>차량 등록</BusinessButton>}</div>
     </div>
     <div className="fleet-dashboard-metrics">{cards.map(card=><button type="button" key={card.label} className={card.tone||''} onClick={card.onClick} disabled={!card.onClick}>
       <span><i><Icon name={card.icon} size={15}/></i>{card.label}<span className="fleet-metric-more">더보기 <Icon name="chevron-right" size={12}/></span></span><strong>{card.value??'—'}{card.value!=null&&<small>{card.unit}</small>}</strong>{card.note&&<em className="fleet-metric-note">{card.note}</em>}
     </button>)}</div>
     <div className="business-overview-grid fleet-dashboard-grid">
-      <BusinessLocation devices={devices} onLive={onLive}/>
-      <div className="fleet-dashboard-tasks" tabIndex={-1} ref={tasksRef}><BusinessSection title="확인할 일" action={attention>0&&<span className="business-badge warning fleet-dashboard-task-count">{attention}건</span>}>
+      <BusinessLocation devices={devices} onLive={onLive} fleetSummary={deskOverview?{running,idle:running==null?null:Math.max(0,devices.length-running-inService),check:signalCount}:undefined}/>
+      {deskOverview?<div className="fleet-dashboard-tasks" tabIndex={-1} ref={tasksRef}><BusinessSection title="확인할 일" action={<div className="row">{deskAttention!=null&&<span className="business-badge warning">{deskAttention}건</span>}<button type="button" className="fleet-dashboard-link" onClick={onWeeklyReport||onLive}>더보기 <Icon name="chevron-right" size={14}/></button></div>}>
+        <div hidden><FleetIncompleteTrips devices={devices} onReport={onReport} now={now} onSummary={setWeekly}/></div>
+        <div className="attention-list">
+          <button type="button" className="attention-item" onClick={onWeeklyReport||onLive}><span className="attention-icon"><Icon name="route" size={18}/></span><span><div className="attention-item-title">운행 기록 확인</div><div className="attention-item-desc">운전자·운행 목적을 확인해 주세요.</div></span><span className={'business-badge '+(summary?.missing?'warning':'')}>{summary?.complete?summary.missing:'—'}건</span></button>
+          {onExpenses&&<button type="button" className="attention-item" onClick={onExpenses}><span className="attention-icon is-blue"><Icon name="wallet" size={18}/></span><span><div className="attention-item-title">지출 승인 요청</div><div className="attention-item-desc">증빙을 확인하고 요청을 처리하세요.</div></span><span className={'business-badge '+(pending?'info':'')}>{pending==null?'—':pending}건</span></button>}
+          <button type="button" className="attention-item" onClick={onLive}><span className="attention-icon"><Icon name="wifi" size={18}/></span><span><div className="attention-item-title">단말기 수신 확인</div><div className="attention-item-desc">마지막 수신 시각과 연결을 확인하세요.</div></span><span className={'business-badge '+(signalCount?'warning':'')}>{signalCount}대</span></button>
+        </div>
+        {expenses.error&&<BusinessError onRetry={expenses.refetch}>승인 대기 건수를 불러오지 못했습니다.</BusinessError>}
+      </BusinessSection></div>
+      :<div className="fleet-dashboard-tasks" tabIndex={-1} ref={tasksRef}><BusinessSection title="확인할 일" action={attention>0&&<span className="business-badge warning fleet-dashboard-task-count">{attention}건</span>}>
         <FleetIncompleteTrips devices={devices} onReport={onReport} now={now} onSummary={setWeekly}/>
         {onExpenses&&<BusinessTask icon="coin" title="지출 승인 요청" description="이번 달 승인 대기" label={pending==null?'—':pending+'건'} action="지출 보기" onClick={onExpenses}/>}
         {expenses.error&&<BusinessError onRetry={expenses.refetch}>승인 대기 건수를 불러오지 못했습니다.</BusinessError>}
         {tasks.length>0&&<details className="fleet-dashboard-issues"><summary><Icon name="antenna" size={18}/><span>단말기·점검 확인</span><b>{tasks.length}건</b></summary>{tasks.map(t=><BusinessTask key={t.id} title={corporateVehicleName(t.device)+' · '+terminalName(t.device)} description={t.description+(t.id.startsWith('signal-')&&t.device.last_seen_at?' · 마지막 통신 '+ageString(t.device.last_seen_at):'')+(t.id.startsWith('battery-')&&(t.device.last_battery_at||t.device.last_seen_at)?' · '+kstDateTime(t.device.last_battery_at||t.device.last_seen_at):'')} label={t.label} tone={t.tone} action="차량 확인" onClick={()=>openVehicle(t.device)}/>)}</details>}
         {missing.length>0&&<BusinessTask icon="wrench" title="점검 일정 미등록" description="정비·보험·검사" label={missing.length+'대'} action="미등록 차량 보기" onClick={onMissingSchedules}/>}
-      </BusinessSection></div>
+      </BusinessSection></div>}
     </div>
     {reservations.error&&<BusinessError onRetry={reservations.refetch}>오늘 예약 수를 불러오지 못했습니다.</BusinessError>}
     <div className="fleet-dashboard-grid fleet-dashboard-bottom">
-      <BusinessSection title="차량 목록" description={'등록 차량 '+devices.length+'대'+(devices.length>3?' 중 3대 미리보기':'')} action={onVehicles&&<button type="button" className="fleet-dashboard-link" onClick={onVehicles}>더보기 <Icon name="chevron-right" size={14}/></button>}>
+      <BusinessSection title="차량 목록" description={'등록 차량 '+devices.length+'대'+(devices.length>3?' 중 3대 미리보기':deskOverview?' 미리보기':'')} action={onVehicles&&<button type="button" className="fleet-dashboard-link" onClick={onVehicles}>더보기 <Icon name="chevron-right" size={14}/></button>}>
         <div className="fleet-dashboard-vehicles"><div className="fleet-dashboard-row-head" aria-hidden="true"><span>차량</span><span>담당자</span><span>운영 상태</span><span>이번 달 거리</span><span>단말 수신</span></div>{devices.slice(0,3).map(d=>{
           const month=stats.byVehicle?.get(d.id)?.total_distance_m;
           return <button type="button" key={d.id} onClick={()=>openVehicle(d)}>
             <span className="fleet-dashboard-vehicle-name"><i><CarImage vehicleId={d.fleet_vehicle_id} deviceId={d.source_device_id||d.id} version={d.car_image_url} fallback={<Icon name="car" size={20}/>}/></i><span><strong>{d.car_plate||corporateVehicleName(d)}</strong><small>{d.car_model||terminalName(d)}</small></span></span>
             <span className="fleet-dashboard-manager">{staff.find(s=>s.id===d.asset?.manager_staff_id)?.name||'미지정'}<small>{d.department||''}</small></span>
-            <span><small className={'fleet-dashboard-availability business-badge '+(d.enabled===false?'':'good')}>{d.enabled===false?'사용 정지':'사용 가능'}</small></span>
-            <span className="fleet-dashboard-km">{Number.isFinite(month)?(month/1000).toLocaleString('ko-KR',{maximumFractionDigits:1})+' km':'—'}</span>
-            <span className="fleet-dashboard-reception"><small className={'business-badge '+(!d.has_primary_terminal||d.terminal_status_label?'':receptionToneOf(classifyDevice(d,undefined,now)))}>{!d.has_primary_terminal?'미연결':d.terminal_status_label||classifyDevice(d,undefined,now).label}</small></span>
+            <span>{deskOverview?(([label,tone])=><small className={'fleet-dashboard-availability business-badge '+tone}>{label}</small>)(d.enabled===false?['점검 중','warning']:d.has_primary_terminal&&['active','gps_loss','low_batt','critical_batt','overcharge'].includes(classifyDevice(d,undefined,now).id)?['운행 중','good']:['대기','']):<small className={'fleet-dashboard-availability business-badge '+(d.enabled===false?'':'good')}>{d.enabled===false?'사용 정지':'사용 가능'}</small>}</span>
+            <span className="fleet-dashboard-km">{Number.isFinite(month)?<>{(month/1000).toLocaleString('ko-KR',{maximumFractionDigits:1})}{deskOverview?<span className="caption"> km</span>:' km'}</>:'—'}</span>
+            <span className="fleet-dashboard-reception">{deskOverview?<small className={'business-badge '+(d.has_primary_terminal&&['active','sleeping'].includes(classifyDevice(d,undefined,now).id)?'good':'warning')}>{!d.has_primary_terminal?'미연결':['active','sleeping'].includes(classifyDevice(d,undefined,now).id)?'정상 수신':'수신 확인'}</small>:<small className={'business-badge '+(!d.has_primary_terminal||d.terminal_status_label?'':receptionToneOf(classifyDevice(d,undefined,now)))}>{!d.has_primary_terminal?'미연결':d.terminal_status_label||classifyDevice(d,undefined,now).label}</small>}</span>
           </button>;
         })}</div>
         {!devices.length&&<BusinessEmpty compact title="등록된 차량이 없습니다."/>}
@@ -261,7 +275,7 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
       <BusinessSection title="최근 7일 운행" description={deskOverview?'완료 운행의 일별 주행거리':'운행기록부 반영 거리'} action={onWeeklyReport&&<button type="button" className="fleet-dashboard-link" onClick={onWeeklyReport}>{deskOverview?'더보기':'리포트'} <Icon name="chevron-right" size={14}/></button>}>
         {summary?.checked>0?<FleetWeekChart days={days} distances={summary.days}/>:<BusinessEmpty compact title={!summary?.finished?'운행 조회 중…':!devices.length?'등록된 차량이 없습니다.':'운행 기록을 조회하지 못했습니다.'}/>}
         {summary?.checked>0&&!summary.complete&&<p className="fleet-dashboard-partial">조회된 {summary.checked}/{summary.total}대 기준</p>}
-        <div className="fleet-dashboard-totals"><span>오늘 운행거리{stats.partial?' (일부)':''}<b>{distanceLabel}</b></span><span>점검 예정<b>{maintenance.length}건</b></span><span>사용 가능<b>{available}대</b></span></div>
+        {!deskOverview&&<div className="fleet-dashboard-totals"><span>오늘 운행거리{stats.partial?' (일부)':''}<b>{distanceLabel}</b></span><span>점검 예정<b>{maintenance.length}건</b></span><span>사용 가능<b>{available}대</b></span></div>}
         {stats.error&&<BusinessError onRetry={stats.refetch}>운행 통계를 불러오지 못했습니다.</BusinessError>}
       </BusinessSection>
     </div>

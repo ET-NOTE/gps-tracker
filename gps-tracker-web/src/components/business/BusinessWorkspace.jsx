@@ -183,7 +183,8 @@ export function BusinessWorkspace({ initialVehicleId = null, renderVehicleDetail
     {selected && (renderVehicleDetail ? renderVehicleDetail(selected,()=>setSelectedId(null)) : <BusinessVehicleDetail key={selected.id} device={selected} meta={meta[selected.id]} kind={kind} onClose={() => setSelectedId(null)} onMap={onMap} onAction={onVehicleAction} onManage={onManageVehicle} onUpdated={onVehiclesChange} />)}
   </section></VehicleContext.Provider></SelectionContext.Provider>;
 }
-export function BusinessLocation({ devices, onLive }) {
+// `fleetSummary` (desktop design): {running, idle, check} shown under the map instead of location freshness.
+export function BusinessLocation({ devices, onLive, fleetSummary }) {
   const openVehicle = useContext(VehicleContext);
   const selection = useContext(SelectionContext), now = useBusinessClock();
   const counts = locationSummary(devices, now);
@@ -194,10 +195,11 @@ export function BusinessLocation({ devices, onLive }) {
     selectedLocation = selected.last_fix_at ? `마지막 위치 ${kstDateTime(selected.last_fix_at)}` : '마지막 위치 수신 시각 없음';
   }
   const positions = `현재 수신 ${counts.current} · 오래된 위치 ${counts.old} · 위치 없음 ${counts.none}`;
-  return <BusinessSection title="차량 위치" className={corporate ? 'fleet-location-panel' : undefined} description={corporate ? `위치 표시 ${counts.current + counts.old}대 · 전체 ${devices.length}대` : positions}
+  return <BusinessSection title="차량 위치" className={corporate ? 'fleet-location-panel' : undefined} description={corporate ? (fleetSummary ? `${counts.current + counts.old}대 미리보기 · 전체 ${devices.length}대` : `위치 표시 ${counts.current + counts.old}대 · 전체 ${devices.length}대`) : positions}
     action={onLive && <button className="fleet-dashboard-link" type="button" aria-label="실시간 관제" onClick={onLive}>{corporate ? '더보기' : '실시간 관제'} <Icon name="chevron-right" size={14}/></button>}>
     <BusinessMap devices={devices} onSelect={selection?.focusVehicle || openVehicle} selectedId={selection?.focusedId} controls={corporate?'compact':undefined} />
-    {corporate ? <div className="fleet-location-counts" aria-label="차량 위치 수신 현황">
+    {corporate && fleetSummary ? <div className="fleet-summary"><div className="mini-stat"><span><strong className="text-green">{fleetSummary.running ?? '—'}</strong> 운행 중</span><span><strong>{fleetSummary.idle ?? '—'}</strong> 대기</span><span><strong className="text-amber">{fleetSummary.check}</strong> 수신 확인</span></div><span>전체 차량 기준</span></div>
+    : corporate ? <div className="fleet-location-counts" aria-label="차량 위치 수신 현황">
       <span>현재 수신 <b>{counts.current}</b></span><span>오래된 위치 <b>{counts.old}</b></span><span>위치 없음 <b>{counts.none}</b></span>
     </div> : <p className="business-map-note">현재 수신: 최근 5분 내 위치 · 지도는 마지막 수신 위치를 표시합니다.</p>}
     {selected && <div className="business-map-selection"><div><strong>{corporateVehicleName(selected)}</strong><p>{terminalName(selected)} · {selectedLocation}</p></div><BusinessButton onClick={() => openVehicle?.(selected)}>차량 상세</BusinessButton></div>}

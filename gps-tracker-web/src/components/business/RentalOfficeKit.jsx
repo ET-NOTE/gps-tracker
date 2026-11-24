@@ -54,7 +54,7 @@ const unitPattern=/^([-−]?[\d,.]+)\s*(원|명|건|대|곳|%|시간|일|km)$/;
 export function Metrics({items,smallMoney=false}) {
   const desk=useDesk();
   const show=value=>{const m=desk&&typeof value==='string'&&value.match(unitPattern);return m&&(m[2]!=='원'||smallMoney)?<>{m[1]}<small>{m[2]}</small></>:value;};
-  return <dl className="ro-metrics" data-desk={desk||undefined}>{items.map(([label,value,icon])=><div key={label}><dt>{desk&&icon&&<Icon name={icon} size={15}/>}{label}</dt><dd>{show(value)}</dd></div>)}</dl>;
+  return <dl className="ro-metrics" data-desk={desk||undefined}>{items.map(([label,value,icon,note])=><div key={label}><dt>{desk&&icon&&<Icon name={icon} size={15}/>}{label}</dt><dd>{show(value)}</dd>{desk&&note&&<small className={'stat-change'+(note.tone?' is-'+note.tone:'')}>{note.text||note}</small>}</div>)}</dl>;
 }
 export function FormModal({title,onClose,save,children,canSave=true,size=720,submitLabel='저장'}) {
   const [busy,setBusy] = useState(false), [error,setError] = useState('');

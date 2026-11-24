@@ -5,6 +5,9 @@ import { agreementTotal, workflowStatus } from '../../lib/rentalWorkflow';
 import { agreedPrice, isAssigned } from '../../lib/rentalInventory';
 import { won } from '../../lib/rentalOffice';
 import { BusinessButton } from './BusinessWorkspace';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
+import MockupEmpty, { EMPTY_RENTAL } from './MockupEmpty';
 
 const statusTone = {'예약':'blue','배차 대기':'amber','예약 접수':'blue','출고 준비':'blue','대여 중':'green','반납 지연':'red','반납 완료':'amber','미방문':'amber'};
 export function StageBadge({contract, now, summary=false}) {
@@ -28,6 +31,7 @@ function PaymentBadge({balance}) {
 }
 
 export default function RentalStageTable({stage, rows, now, balances, devices, checksFor, onDetail, onAction}) {
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   function cells(c) {
     const name=c.license_plate || c.device_name || '차량 미배정', balance=balances.get(c.id);
     const vehicle=devices.find(d=>d.id===c.device_id);
@@ -51,6 +55,7 @@ export default function RentalStageTable({stage, rows, now, balances, devices, c
       <>{bill}<small>{balance ? '보증금 '+won(balance.held_krw):'보증금 확인 전'}</small></>,button(c.status==='returned'?(agreedPrice(c) && !c.settled_at?'대여료 정산':'정산 확인'):'반납 접수',c.status==='returned'?(agreedPrice(c) && !c.settled_at?'settle':null):'return')];
     return [...head,period,bill,badge,payment];
   }
+  if (desk && !rows.length) return <MockupEmpty title="조회된 내역이 없습니다." description={EMPTY_RENTAL}/>;
   return <div className="rental-stage-table" role="region" aria-label={columns[stage][0]+'별 목록'} tabIndex={0}>
     <table><thead><tr>{columns[stage].map(label=><th scope="col" key={label}>{label}</th>)}</tr></thead>
       <tbody>{rows.length ? rows.map(c=><tr key={c.id} onClick={event=>{

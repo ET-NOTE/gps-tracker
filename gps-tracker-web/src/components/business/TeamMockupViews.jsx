@@ -16,7 +16,7 @@ export function TeamPeopleLedger({rows, total, query, onQuery, action, extra, fi
       {filters}{!filters&&<span className="rt-count">전체 {total}명 중 {rows.length}명</span>}<div className="rt-actions">{action}</div></div>
     <section className="rt-card" aria-label="사용자 목록">{filters&&<header className="rt-card-head rt-ledger-head"><div><h3>사용자 {rows.length}명</h3><p>{caption||'전체 · 전체 '+total+'명'}</p></div>{headAction}</header>}<div className="rt-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="rt-table">
       <thead><tr>{selection&&<th scope="col" className="rt-check-col"><input type="checkbox" aria-label="현재 목록 전체 선택" checked={allOn} onChange={selection.onToggleAll}/></th>}{['사용자','지점','권한 그룹','계정 상태','수정'].map(label=><th key={label} scope="col">{label}</th>)}</tr></thead>
-      <tbody>{rows.length===0&&<tr className="rt-empty-row"><td colSpan={selection?6:5}><p>조회된 사용자가 없습니다.</p></td></tr>}
+      <tbody>{rows.length===0&&<tr className="rt-empty-row"><td colSpan={selection?6:5}><div className="mockup-empty"><Icon name="search" size={31}/><strong>사용자를 찾을 수 없습니다.</strong><small>검색어나 조직·상태·권한 조건을 변경해 주세요.</small></div></td></tr>}
         {rows.map(r=><tr key={r.id}>{selection&&<td className="rt-check-col"><input type="checkbox" aria-label={r.name+' 선택'} checked={selection.selected.has(r.id)} onChange={()=>selection.onToggle(r.id)}/></td>}<td><strong>{r.name}</strong><small>{r.email}</small></td><td>{r.branch}</td><td>{r.group}</td>
           <td><span className={'rt-badge '+r.tone}>{r.state}</span></td><td><div className="rt-row-actions">{r.actions}</div></td></tr>)}</tbody>
     </table></div></section>
@@ -32,7 +32,7 @@ export function TeamBranchDirectory({branches, onAdd, onEdit, note='지점에 �
     <section className="rt-card" aria-label="지점 관리"><header className="rt-card-head"><h3>지점 목록</h3><span>{note}</span></header>
       <div className="rt-table-wrap" tabIndex={0} role="region" aria-label="지점 표"><table className="rt-table">
         <thead><tr><th scope="col">지점 이름</th><th scope="col">소속 사용자</th><th scope="col">사용 현황</th>{onEdit&&<th scope="col"><span className="rt-visually-hidden">관리</span></th>}</tr></thead>
-        <tbody>{branches.length===0&&<tr className="rt-empty-row"><td colSpan={onEdit?4:3}><p>등록된 지점이 없습니다.</p></td></tr>}
+        <tbody>{branches.length===0&&<tr className="rt-empty-row"><td colSpan={onEdit?4:3}><div className="mockup-empty"><Icon name="search" size={31}/><strong>등록된 지점이 없습니다.</strong><small>지점을 추가해 주세요.</small></div></td></tr>}
           {branches.map(b=><tr key={b.id}><td><strong className="rt-name"><Icon name="mapPin" size={15}/>{b.name}</strong></td><td>{b.members}</td><td>{b.usage}</td>
             {onEdit&&<td><button type="button" className="rt-link" aria-label={b.name+' 지점 수정'} onClick={()=>onEdit(b)}>수정</button></td>}</tr>)}</tbody>
       </table></div></section>

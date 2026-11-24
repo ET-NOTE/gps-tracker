@@ -151,7 +151,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const series = !periodError && rows.length ? trendSeries(rows,from,to,trips&&metric==='count') : [];
   const metrics = trips ? [
     {label:recordState==='confirmed'?'확정 운행':recordState==='review'?'확인 필요 운행':'완료 운행',value:number(rows.length),unit:'건',icon:'route'},
-    {label:'총 주행거리',value:rows.length?distance(sum):null,unit:'km'},{label:'총 운행시간',value:rows.length?duration(rows.reduce((s,r)=>s+r.minutes,0)):null,icon:desk?undefined:'clock'},
+    {label:'총 주행거리',value:rows.length?distance(sum):desk?'0.0':null,unit:'km'},{label:'총 운행시간',value:rows.length?duration(rows.reduce((s,r)=>s+r.minutes,0)):desk?'0시간 0분':null,icon:desk?undefined:'clock'},
     {label:'운행 차량',value:number(vehicles),unit:'대',icon:desk?undefined:'list'},
   ] : [
     // Desktop design: amounts keep '원' attached; only the first card has an icon.
@@ -211,7 +211,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
         <tbody>{groups.map((g,index)=><tr key={g.id} className={interactiveGroups?'has-detail':undefined} onClick={interactiveGroups?()=>openGroup(g):undefined}>
           {trips&&<td>{index+1}</td>}<th scope="row">{interactiveGroups?<button type="button" onClick={e=>{e.stopPropagation();openGroup(g);}}>{g.label}</button>:g.label}</th>
           <td>{number(g.count)}건</td><td>{amount(g.amount)}{desk&&!trips?'':' '}{unit}</td>{trips&&<td>{duration(g.minutes)}</td>}<td>{amount(g.amount/g.count)}{desk&&!trips?'':' '}{unit}</td>
-          <td><span className="fleet-analytics-share">{!trips&&<i aria-hidden="true"><b style={{width:(sum?100*g.amount/sum:0)+'%'}}/></i>}{sum?number(100*g.amount/sum,1)+'%':'—'}</span></td></tr>)}
+          <td><span className="fleet-analytics-share">{!trips&&<i aria-hidden="true"><b style={{width:(sum?100*g.amount/sum:0)+'%'}}/></i>}{sum?(desk?(100*g.amount/sum).toFixed(1):number(100*g.amount/sum,1))+'%':'—'}</span></td></tr>)}
           {!groups.length&&<tr><td colSpan={columns.length+Number(trips)}><BusinessEmpty compact title="표시할 집계 결과가 없습니다."/></td></tr>}</tbody></table></div>
       </BusinessSection>
       {driverLeaders.length>0&&<BusinessSection title="사용자별 주행거리" description="상위 5명"><RankingBars groups={driverLeaders} field="amount" format={distance} unit="km" height={190}/></BusinessSection>}

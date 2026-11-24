@@ -138,7 +138,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
     </FilterBar>
     {!fleet&&toolbar}
     {missing&&<div className="fr-setup-hint"><span>{missing}</span><FreightButton onClick={()=>onPage(!readyBranch?'organization':'cargo-vehicles')}>{!readyBranch?'지점 관리':'차량 목록'}</FreightButton></div>}
-    <FreightTable columns={display?.headers||headings} rows={rows.map(row=>({id:row.id,onOpen:()=>toDetail(row.id),cells:display?display.cells(row):columns.map((column,i)=>tableCell(row,column,i))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
+    <FreightTable deskEmpty={({shippers:'조회된 거래처가 없습니다.',carriers:'조회된 거래처가 없습니다.',locations:'조회된 장소가 없습니다.',rates:'조회된 요율이 없습니다.'})[kind]||'조회된 내역이 없습니다.'} columns={display?.headers||headings} rows={rows.map(row=>({id:row.id,onOpen:()=>toDetail(row.id),cells:display?display.cells(row):columns.map((column,i)=>tableCell(row,column,i))}))} empty={data[kind].length?'조회 조건에 맞는 항목이 없습니다.':'등록된 '+title+' 정보가 없습니다.'}/>
     {!prominentExport&&exportButton&&<div className="fr-catalog-export">{exportButton}</div>}
     {view&&<FreightCatalogDialogs {...{kind,data,save,view,setView,onOpenRecord}}/>}
   </section>;

@@ -177,10 +177,10 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
       <div className="fleet-asset-table-wrap" role="region" aria-label="차량 목록 표" tabIndex={0}><table className="fleet-asset-table fleet-assets-cartax-table fleet-assets-reference-table"><thead><tr>{['차량','담당자 / 부서','운영 상태','이번 달 거리',...(filters.missingSchedulesOnly?['미등록 일정']:[]),'단말 수신'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{rows.map(v=><tr key={v.id} tabIndex={0} aria-label={`${fleetAssetLabel(v)} 상세 열기`} onClick={e=>{if(!e.target.closest('button,a,input,select,textarea,label'))openDetail(v.id);}} onKeyDown={e=>{if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openDetail(v.id);}}}>
         <td><div className="fleet-assets-identity"><span className="fleet-assets-thumbnail" aria-hidden="true"><CarImage vehicleId={v.id} version={v.profile?.car_image_url} fallback={<Icon name="car" size={24}/>}/></span><div><button type="button" className="business-link" aria-label={`${fleetAssetLabel(v)} 상세`} onClick={()=>openDetail(v.id)}>{v.license_plate||v.name||'차량 정보 미등록'}</button><small>{[...new Set([v.car_model,v.name].filter(x=>x&&x!==(v.license_plate||v.name)))].join(' · ')||''}</small></div></div></td>
         <td>{staff.find(s=>s.id===v.manager_staff_id)?.name||'담당자 미지정'}<small>{v.department||'부서 미지정'}</small></td>
-        <td><span className={`business-badge ${v.enabled?'good':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span></td>
+        <td>{mockup?(([label,tone])=><span className={'business-badge '+tone}>{label}</span>)(deskVehicleState(v.enabled,byVehicle.get(v.id))):<span className={`business-badge ${v.enabled?'good':''}`}>{v.enabled?'사용 가능':'사용 정지'}</span>}</td>
         <td className="is-number">{Number.isFinite(stats.byVehicle.get(v.id)?.total_distance_m)?(stats.byVehicle.get(v.id).total_distance_m/1000).toLocaleString("ko-KR",{maximumFractionDigits:1})+" km":"—"}</td>
         {filters.missingSchedulesOnly&&<td>{access.manage_vehicles&&<button type="button" className="business-link" aria-label={`${fleetAssetLabel(v)} 점검 일정 등록`} onClick={()=>editSchedule(v,'missing')}>일정 등록</button>}<small>{missingScheduleFields(v.profile).map(([,label])=>label).join(' · ')}</small></td>}
-        <td><TerminalReception vehicle={v} device={byVehicle.get(v.id)} meta={meta[v.id]}/></td>
+        <td><TerminalReception desk={mockup} vehicle={v} device={byVehicle.get(v.id)} meta={meta[v.id]}/></td>
       </tr>)}</tbody></table></div>{empty}
       </>}
       <footer className="fleet-assets-footer"><span role="status">{countLabel}</span><span className="fleet-assets-footnote">차량 정보와 단말 수신 상태는 별도로 관리합니다.</span></footer>
@@ -203,8 +203,17 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
 }
 // Reception pill for the vehicle list; terminal names stay as a quiet second line.
 const receptionTone={active:'good',sleeping:'info',gps_loss:'warning',signal_loss:'warning',low_batt:'warning',offline:'urgent',lost:'urgent',critical_batt:'urgent',overcharge:'urgent'};
-function TerminalReception({vehicle,device,meta}) {
+// Desktop design: three reception badges only (정상 수신 / 수신 확인 / 미연결), no terminal name line.
+const deskReception=(linked,device,meta)=>{
+  if(!linked)return ['미연결','warning'];
+  const id=device?.has_primary_terminal?classifyDevice(device,meta).id:null;
+  return ['active','sleeping'].includes(id)?['정상 수신','good']:['수신 확인','warning'];
+};
+const RUNNING=['active','gps_loss','low_batt','critical_batt','overcharge'];
+export const deskVehicleState=(enabled,device)=>enabled===false?['점검 중','warning']:device?.has_primary_terminal&&RUNNING.includes(classifyDevice(device).id)?['운행 중','good']:['대기',''];
+function TerminalReception({vehicle,device,meta,desk=false}) {
   const linked=vehicle.bindings.filter(b=>!b.ended_at);
+  if(desk){const [label,tone]=deskReception(linked.length>0,device,meta);return <span className={'business-badge '+tone}>{label}</span>;}
   if(!linked.length)return <span className="business-badge">미연결</span>;
   const status=device?.has_primary_terminal?classifyDevice(device,meta):null;
   const names=linked.map(b=>b.terminal_name+(b.is_primary&&linked.length>1?' (대표)':'')).join(' · ');

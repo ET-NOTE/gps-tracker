@@ -10,6 +10,7 @@ import { BusinessButton, BusinessEmpty } from './BusinessWorkspace';
 import BusinessDrawer from './BusinessDrawer';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
+import MockupEmpty, { EMPTY_RENTAL } from './MockupEmpty';
 
 export const fleetWorkKey = () => [authScope(), 'rental-fleet-work'];
 
@@ -101,17 +102,17 @@ export default function RentalFleetWork({ incident, devices, branches=[], contra
       <label>차량<select aria-label="차량" value={deviceId} onChange={e => setDeviceId(e.target.value)}><option value="">전체 차량</option>{eligible.map(d => <option key={d.id} value={d.id}>{rentalFleetLabel(d)}</option>)}</select></label>
       <label>{incident?'접수 구분':'작업 구분'}<select value={kind} onChange={e => setKind(e.target.value)}><option value="">{desk&&!incident?'전체 작업':'전체 구분'}</option>{Object.entries(repairNames).filter(([k]) => isIncident(k) === incident).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
       <label>{incident?'처리 상태':'진행 상태'}<select value={status} onChange={e => setStatus(e.target.value)}><option value="open">{incident ? (desk?'처리 중':'처리·점검 중') : '예정·진행'}</option><option value="done">완료</option><option value="all">전체 상태</option></select></label>
-      <div className="rfl-filter-summary"><span>전체 {matching.length}건 중 {rows.length}건 조회</span><BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setBranch('');setDeviceId('');setKind('');setStatus('open');}}>필터 초기화</BusinessButton></div>
+      <div className="rfl-filter-summary"><span>{`전체 ${matching.length}건 중 ${rows.length}건 조회`}</span><BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setBranch('');setDeviceId('');setKind('');setStatus('open');}}>필터 초기화</BusinessButton></div>
     </div>
     {!desk&&<p className="rfl-caption">{caption}</p>}
     <section className="rfl-card rfl-list-card" aria-label={incident ? '사고·고장 내역' : '세차·정비 내역'}>
-      <div className="rfl-table-scroll" tabIndex={0} role="region" aria-label={incident?'사고·고장 목록':'세차·정비 목록'}>
+      {!(desk&&!rows.length)&&<div className="rfl-table-scroll" tabIndex={0} role="region" aria-label={incident?'사고·고장 목록':'세차·정비 목록'}>
         <table className="rfl-table"><thead><tr>{(incident?['발생 일시','차량','구분','연결 계약','상태','발생 내용']:['차량','작업','시작','종료','상태','작업 내용']).map(label=><th key={label} scope="col">{label}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id}>
           {incident&&<td>{kstDateTime(row.starts_at)}</td>}<td><button className="rfl-link" onClick={() => setId(row.id)}>{nameOf(row)} <span aria-hidden="true">›</span></button></td>
           <td>{repairNames[row.kind]}</td>{incident?<td>{row.contract_id?'R-'+row.contract_id:'미연결'}</td>:<><td>{kstDateTime(row.starts_at)}</td><td>{row.closed_at||row.ends_at?kstDateTime(row.closed_at||row.ends_at):'—'}</td></>}
           <td><span className="rfl-badge" data-tone={workState(row)==='done'?'ready':'service'}>{workStageName(row)}</span></td><td>{row.note || '—'}</td>
-        </tr>)}</tbody></table></div>
-      {!rows.length&&<BusinessEmpty title={devices.length ? '조회된 내역이 없습니다.' : '등록된 렌트카 차량이 없습니다.'} />}
+        </tr>)}</tbody></table></div>}
+      {!rows.length&&(desk?<MockupEmpty title={incident?'조건에 맞는 접수 내역이 없습니다.':'조건에 맞는 일정이 없습니다.'} description={EMPTY_RENTAL}/>:<BusinessEmpty title={devices.length ? '조회된 내역이 없습니다.' : '등록된 렌트카 차량이 없습니다.'} />)}
     </section>
     {current && <BusinessDrawer title={repairNames[current.kind] + ' 상세'} subtitle={nameOf(current)} onClose={() => setId(null)}>
       <dl className="rfl-facts">

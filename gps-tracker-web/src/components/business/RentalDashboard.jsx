@@ -10,6 +10,7 @@ import { ReportBars } from './OperationsChart';
 import RentalDispatchTrend from './RentalDispatchTrend';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
+import MockupEmpty, { EMPTY_RENTAL } from './MockupEmpty';
 
 const taskHints = {
   assign:'예약 차량을 지정해 주세요.',
@@ -36,8 +37,8 @@ export default function RentalDashboard({ devices, contracts, work, now, onTab, 
   const desk = !useCorporatePhone() && hideOutsideMockup;
   const taskRows = desk ? data.actions.filter(task => task.key !== 'signal') : data.actions;
   const metrics = [
-    ['active', '대여 중', data.summary.occupied.size, '대', 'car', '현재 대여 차량'], ['pickup', '오늘 출고', data.pickups.length, '건', 'route', '오늘 인도·출고 예정'],
-    ['return', '오늘 반납', data.returns.length, '건', 'clock', '반납 완료·예정 포함'], ['tasks', '확인할 일', data.taskCount, '건', 'warn', '배차·반납·차량 준비'],
+    ['active', '대여 중', data.summary.occupied.size, '대', 'car', desk ? '현재 대여 계약' : '현재 대여 차량'], ['pickup', '오늘 출고', data.pickups.length, '건', 'route', '오늘 인도·출고 예정'],
+    ['return', '오늘 반납', data.returns.length, '건', 'clock', '반납 완료·예정 포함'], ['tasks', '확인할 일', data.taskCount, '건', 'warn', desk ? '배차 · 출고 · 차량 준비' : '배차·반납·차량 준비'],
   ];
   const groups = detail === 'tasks' ? data.actions : data.actions.filter(task => detail === 'task-' + task.key);
   const groupRows = groups.flatMap(group => group.rows.map(item => ({ ...item, label: group.label, key: group.key })));
@@ -63,15 +64,15 @@ export default function RentalDashboard({ devices, contracts, work, now, onTab, 
       <span><Icon name={icon} size={15}/><span>{label}</span><small className="rfl-metric-link">더보기 <Icon name="chevron-right" size={12}/></small></span><strong>{value.toLocaleString()}<small>{unit}</small></strong><span className="rfl-metric-note">{hint}</span>
     </button>)}</section>
     <div className="rfl-dashboard-grid"><section className="rfl-card"><header><div><h2>오늘 인도·반납</h2><p className="rnt-section-caption">시간 순서로 진행할 업무</p></div><ActionLink onClick={() => onTab('contracts')}>더보기</ActionLink></header>
-      <div className="rfl-table-scroll" role="region" aria-label="오늘 인도·반납 일정" tabIndex={0}><table className="rfl-table rfl-timeline"><thead><tr><th>시간</th><th>구분</th><th>고객</th><th>차량</th><th>상태</th></tr></thead><tbody>
+      {desk&&!data.timeline.length?<MockupEmpty title="오늘 인도·반납 내역이 없습니다." description={EMPTY_RENTAL}/>:<div className="rfl-table-scroll" role="region" aria-label="오늘 인도·반납 일정" tabIndex={0}><table className="rfl-table rfl-timeline"><thead><tr><th>시간</th><th>구분</th><th>고객</th><th>차량</th><th>상태</th></tr></thead><tbody>
         {data.timeline.slice(0, 7).map(({ at, type, row }) => <tr key={type + row.id} onClick={() => onContracts({ contract: row })}><td data-label="시간">{kstDateTime(at).slice(-5)}</td>
           <td data-label="구분"><span className="rfl-badge" data-tone={type === '출고' ? 'active' : 'ready'}>{type}</span></td>
           <td data-label="고객"><button type="button" className="rfl-link" aria-label={row.renter_name + ' 계약 상세'}>{row.renter_name}</button></td>
           <td data-label="차량">{row.license_plate || row.device_name || '배차 대기'}</td><td data-label="상태">{contractStage(row, now)}</td></tr>)}
         {!data.timeline.length && <tr><td className="rental-list-empty" colSpan={5}>오늘 인도·반납 내역이 없습니다.</td></tr>}
-      </tbody></table></div></section>
+      </tbody></table></div>}</section>
     <section className="rfl-card"><header><h2>확인할 일</h2><ActionLink onClick={() => setDetail('tasks')}>더보기</ActionLink></header>
-      <div className="rfl-tasks">{taskRows.map(task => <button type="button" className="rfl-task" key={task.key} onClick={() => setDetail('task-' + task.key)}><i><Icon name={task.icon} size={17}/></i><span className="rental-task-copy">{task.label}<small>{taskHints[task.key]}</small></span><b data-active={task.rows.length > 0}>{task.rows.length}건</b><Icon name="chevron-right" size={15}/></button>)}</div></section>
+      <div className="rfl-tasks">{taskRows.map(task => <button type="button" className="rfl-task" key={task.key} onClick={() => setDetail('task-' + task.key)}><i><Icon name={desk && task.key === 'assign' ? 'file' : task.icon} size={17}/></i><span className="rental-task-copy">{task.label}<small>{taskHints[task.key]}</small></span><b data-active={task.rows.length > 0}>{task.rows.length}건</b><Icon name="chevron-right" size={15}/></button>)}</div></section>
     </div><div className="rfl-dashboard-grid rfl-dashboard-bottom"><section className="rfl-card"><header><div><h2>차량 준비 현황</h2><details className="rnt-section-caption"><summary>선택한 지점의 차량 {filteredDevices.length}대</summary>세차·점검 {data.counts.service}대 · 배차 보류 {data.counts.hold}대</details></div><ActionLink onClick={() => onTab('vehicles')}>더보기</ActionLink></header>
       <div className="rental-chart-pad rfl-bar-chart"><ReportBars values={capacity} unit="대" height={125}/></div></section>
     <section className="rfl-card"><header><div><h2>최근 7일 출고</h2><p className="rnt-section-caption">인도 완료와 예약 시작일 기준</p></div><ActionLink onClick={() => onTab('rent-reports')}>더보기</ActionLink></header>

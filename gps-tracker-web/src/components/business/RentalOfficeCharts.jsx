@@ -1,9 +1,22 @@
 import {useEffect,useRef} from 'react';
 import {won} from '../../lib/rentalOffice';
 import {ChartPanel,ReportBars} from './OperationsChart';
+import MockupLineChart from './MockupLineChart';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
+
+// Desktop design trend: always drawn, in buckets of max(1, ceil(days / 28)) days named by their first day;
+// each value is payments minus refunds in that bucket.
+export function revenueBuckets(figures,period) {
+  const totals=new Map(figures.map(r=>[r.id,r.payment-r.refund])),days=[];
+  for(let day=Date.parse(period.from);day<=Date.parse(period.to);day+=86400000)days.push(new Date(day).toISOString().slice(0,10));
+  const size=Math.max(1,Math.ceil(days.length/28)),points=[];
+  for(let i=0;i<days.length;i+=size)points.push({day:days[i],value:days.slice(i,i+size).reduce((s,d)=>s+(totals.get(d)||0),0)});
+  return points;
+}
 
 function RevenueLine({figures,period}) {
-  const ref=useRef(null);
+  const ref=useRef(null), desk=!useCorporatePhone()&&hideOutsideMockup;
   useEffect(()=>{
     const canvas=ref.current;
     if(!canvas) return;
@@ -39,6 +52,7 @@ function RevenueLine({figures,period}) {
     const observer=new ResizeObserver(paint);observer.observe(canvas);paint();
     return ()=>observer.disconnect();
   },[figures,period]);
+  if(desk)return <ChartPanel title="기간별 대여료 수납" subtitle="결제 기록에서 환불을 차감한 금액"><MockupLineChart points={revenueBuckets(figures,period)} unit="원" height={175} label="기간별 대여료 수납"/></ChartPanel>;
   return <ChartPanel title="기간별 대여료 수납" subtitle="결제 기록에서 환불을 차감한 금액">
     {figures.some(r=>r.payment||r.refund)?<canvas ref={ref} style={{height:175}} role="img" aria-label={'일별 순수납 추이. 조회 기간 합계 '+won(figures.reduce((s,r)=>s+r.payment-r.refund,0))+'. 일별 수치는 아래 표에서 확인할 수 있습니다.'}/>:
       <p className="ops-chart-empty" style={{height:175}}>조회 기간에 이용료 수납·환불 기록이 없습니다.</p>}</ChartPanel>;

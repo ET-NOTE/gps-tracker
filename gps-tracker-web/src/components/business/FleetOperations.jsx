@@ -113,7 +113,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
       const battery=deviceBattery(r.device);
       return <article className="fleet-operations-card" key={r.id}>
         <button type="button" className="fleet-terminal-open" aria-label={r.name+' 단말기 상세 열기'} onClick={()=>setTerminalId(r.id)}/>
-        <header><i><Icon name="antenna" size={21}/></i><span className={'business-badge '+(r.offline?'warning':'good')}>{r.device.unavailable?'통신 정보 확인 불가':r.reading.label}</span></header>
+        <header><i><Icon name="antenna" size={21}/></i><span className={'business-badge '+(r.offline?'warning':'good')}>{deskOps?(r.offline?'수신 확인':'정상 수신'):r.device.unavailable?'통신 정보 확인 불가':r.reading.label}</span></header>
         <h3>{r.name}</h3><p>{r.asset?(r.asset.license_plate||r.asset.name||'차량 정보 미등록')+(r.primary?' · 대표':' · 보조'):'연결된 차량 없음'}</p>
         <dl><div><dt>마지막 수신</dt><dd>{(deskOps?dotDateTime:kstDateTime)(r.device.last_seen_at)||'—'}</dd></div><div><dt>단말기 배터리</dt><dd>{battery.percent!=null?(deskOps?'':'약 ')+battery.percent+'%':'—'}</dd></div></dl>
         <footer><small>{battery.voltage}</small>{canManage&&(r.asset?<button type="button" className="business-button" onClick={()=>openDetail(r.asset.id,'connections')}><Icon name="link" size={13}/>{deskOps?'차량 연결':'연결 관리'}</button>:assets.length>0&&<button type="button" className="business-button" onClick={()=>chooseVehicle(r)}><Icon name="link" size={13}/>차량 연결</button>)}</footer>
