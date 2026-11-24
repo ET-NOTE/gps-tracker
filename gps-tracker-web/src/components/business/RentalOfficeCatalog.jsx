@@ -98,6 +98,9 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
   const statusRow=mockup?[['상태',statusCell(selected||{})]]:[];
   const filter=(label,selected,onChange,items)=><Field label={label}><select value={selected} onChange={e=>onChange(e.target.value)}><Options items={items}/></select></Field>;
   const foldUsage=kind==='accounts'||kind==='customers';
+  // Desktop design: no 사용 여부 filter on customers, accounts and rates (status stays 'all'); the rate
+  // list shows the search, a notice line and the table with the register button above it.
+  const hideUsage=mockup&&['customers','accounts','rates'].includes(kind), ratesDesk=mockup&&kind==='rates';
   const directory=foldUsage||kind==='templates';
   const usage=filter('사용 여부',status,setStatus,{all:kind==='templates'?'전체 양식':'전체',active:'사용 중',inactive:'사용 중지'});
   const clearFilters=()=>{setQuery('');setStatus('all');setType('all');setAccount('all');setLicense('all');};
@@ -107,22 +110,24 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
   return <div className={'rental-office'+(directory?' rental-directory':'')}>
     {history&&<div className="ro-tabs"><button onClick={()=>setHistory(false)}>고객 명부</button><button aria-pressed="true" onClick={()=>setHistory(true)}>계약 이력·경고 관리</button></div>}
     {history?<BusinessRenters/>:<>
-      {kind==='customers'&&<Metrics items={[['조회 고객',rows.length+'명'],['법인 고객',rows.filter(c=>c.kind==='business').length+'명'],['면허 확인 필요',rows.filter(c=>!c.license_checked).length+'명']]}/>}
+      {kind==='customers'&&<Metrics items={[['조회 고객',rows.length+'명','users'],['법인 고객',rows.filter(c=>c.kind==='business').length+'명'],['면허 확인 필요',rows.filter(c=>!c.license_checked).length+'명']]}/>}
       <div className="ro-filters">
-        {kind==='customers'&&<>{filter('고객 구분',type,setType,{all:'전체',...kinds})}
-          {filter('법인 거래처',account,setAccount,{all:'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
-          {filter('면허 확인',license,setLicense,{all:'전체',yes:'확인 완료',no:'미확인'})}</>}
+        {kind==='customers'&&<>{filter('고객 구분',type,setType,{all:mockup?'전체 고객':'전체',...kinds})}
+          {filter('법인 거래처',account,setAccount,{all:mockup?'전체 거래처':'전체','':'미연결',...Object.fromEntries(catalog.accounts.map(a=>[a.id,a.name]))})}
+          {filter('면허 확인',license,setLicense,{all:mockup?'전체 상태':'전체',yes:'확인 완료',no:'미확인'})}</>}
         {kind==='accounts'&&filter('정산 방식',type,setType,{all:'전체 방식',...billing})}
-        {(!foldUsage||mockup)&&usage}
-        <Search value={query} setValue={setQuery} label={kind==='accounts'?'거래처, 담당자, 등록번호 검색':kind==='templates'?'양식 이름, 내용 검색':titles[kind]+' 검색'}/>
+        {(!foldUsage||mockup)&&!hideUsage&&usage}
+        <Search value={query} setValue={setQuery} label={kind==='accounts'?'거래처, 담당자, 등록번호 검색':kind==='templates'?'양식 이름, 내용 검색':mockup&&kind==='customers'?'이름, 연락처, 거래처 검색':mockup&&kind==='rates'?'차종 이름 검색':titles[kind]+' 검색'}/>
         {directory ? <div className="rental-extra-actions">{foldUsage&&!mockup&&<BusinessButton aria-expanded={extraOpen} aria-controls="rental-directory-extra" onClick={()=>setExtraOpen(open=>!open)}>{kind==='customers'?'추가 조건·관리':'추가 조건'}{status==='all'?'':' (1)'}</BusinessButton>}<BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={clearFilters}>초기화</BusinessButton></div> :
-          (mockup||query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>초기화</button>}
+          !ratesDesk&&(mockup||query||status!=='all'||type!=='all'||account!=='all'||license!=='all')&&<button type="button" className="fleet-filter-reset-link" onClick={clearFilters}><Icon name="refresh" size={13}/>초기화</button>}
         {foldUsage&&<div className="rental-extra-filters" id="rental-directory-extra" hidden={!extraOpen}>{usage}
           {kind==='customers'&&<BusinessButton onClick={()=>setHistory(true)}>계약 이력·경고 관리</BusinessButton>}
         </div>}
       </div>
       {directory&&toolbar}
-      <section className="ro-panel">{!directory&&toolbar}
+      {ratesDesk&&<><p className="ro-desk-notice"><Icon name="info" size={15}/>요금표 수정은 신규 견적에 적용되며, 기존 계약의 약정 금액은 변경되지 않습니다.</p>
+        <div className="ro-desk-toolbar is-end"><div><BusinessButton primary icon="plus" onClick={()=>setEdit(null)}>요금표 등록</BusinessButton></div></div></>}
+      <section className="ro-panel">{!directory&&!ratesDesk&&toolbar}
         <Table columns={tableColumns} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
     </>}
     {selected&&kind==='rates'&&<RentalRecordDrawer title="요금표 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}

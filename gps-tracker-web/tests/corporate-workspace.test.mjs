@@ -92,6 +92,8 @@ test('design navigation exposes live, vehicle tools, and booking as a direct des
  assert.deepEqual(changes,['vehicles','maintenance','reservations','maintenance']);
 });
 
+const accountButton=root=>root.findByProps({className:'ws-avatar','aria-label':'회사 및 계정 메뉴'});
+
 test('corporate tab navigation resets the persistent mobile scroll without resetting ordinary workspace interactions',async t=>{
  const resets=[];
  const viewport={scrollTop:30,scrollTo:({top})=>{viewport.scrollTop=top;resets.push(top);}};
@@ -105,7 +107,7 @@ test('corporate tab navigation resets the persistent mobile scroll without reset
  assert.notEqual(classNode(r.root,'business-content'),previousContent,'the independent desktop content scroll region also starts with a new node');
  viewport.scrollTop=180;
  await act(async()=>findButton(primary(),'차량 관리').props.onClick());
- await act(async()=>findButton(classNode(r.root,'business-nav-tools'),'계정 메뉴').props.onClick());
+ await act(async()=>accountButton(r.root).props.onClick());
  await act(async()=>findButton(r.root.findByType('aside'),'닫기').props.onClick());
  assert.equal(viewport.scrollTop,180);assert.deepEqual(resets,[0,0]);
  await act(async()=>groupButton(primary(),'운행일지').props.onClick());
@@ -188,13 +190,13 @@ test('account drawer uses the same allowed destinations as the application rail'
  const {rail}=await modules();
  const permitted=rail.sideRailItems({isCorporate:true,isAdmin:true}).filter(item=>item.id!=='corporate');
  const {renderer:r,destinations}=await mount(t,{globalNavigation:permitted});
- await act(async()=>findButton(classNode(r.root,'business-nav-tools'),'계정 메뉴').props.onClick());
+ await act(async()=>accountButton(r.root).props.onClick());
  const drawer=r.root.findByType('aside');
  assert.deepEqual(buttons(drawer),['닫기','실시간 지도','단말기','내정보','관리자']);
  await act(async()=>findButton(drawer,'관리자').props.onClick());
  assert.deepEqual(destinations,['admin']);
  assert.equal(r.root.findAllByType('aside').length,0);
- assert.equal(findButton(classNode(r.root,'business-nav-tools'),'계정 메뉴').props['aria-expanded'],false);
+ assert.equal(accountButton(r.root).props['aria-expanded'],false);
  assert.deepEqual(Array.from(rail.sideRailItems({isCorporate:true}),item=>item.id),['home','devices','profile','corporate']);
  assert.deepEqual(Array.from(rail.sideRailItems({isRentcar:true,isDelivery:true}),item=>item.id),['home','devices','profile','rentcar','delivery']);
 });
@@ -203,22 +205,20 @@ test('corporate map shortcut uses only an allowed home destination without chang
  const allowed=[{id:'home',label:'홈',icon:'home'},{id:'profile',label:'내정보',icon:'user'}];
  const {renderer:r,destinations,changes}=await mount(t,{globalNavigation:allowed});
  const primary=r.root.findByProps({'aria-label':'법인차 운영 메뉴'});
- const map=findButton(primary,'실시간 지도');
- assert.ok(map.props.className.includes('business-map-shortcut'));
- await act(async()=>map.props.onClick());
- assert.deepEqual(destinations,['home']);assert.deepEqual(changes,[]);
+ assert.ok(!buttons(primary).includes('실시간 지도'),'the corporate design rail has no map shortcut; the account menu keeps it');
+ await act(async()=>accountButton(r.root).props.onClick());
+ await act(async()=>findButton(r.root.findByType('aside'),'실시간 지도').props.onClick());
+ assert.deepEqual(destinations,['home']);assert.deepEqual(changes,[]);assert.equal(r.root.findAllByType('aside').length,0);
  assert.equal(r.root.findByType('output').children[0],'overview');
  assert.equal(allowed[0].label,'홈');assert.equal(allowed[0].icon,'home');
- await act(async()=>findButton(classNode(r.root,'business-nav-tools'),'계정 메뉴').props.onClick());
- await act(async()=>findButton(r.root.findByType('aside'),'실시간 지도').props.onClick());
- assert.deepEqual(destinations,['home','home']);assert.equal(r.root.findAllByType('aside').length,0);
 
  const {renderer:restricted}=await mount(t,{globalNavigation:[allowed[1]]});
  assert.ok(!buttons(restricted.root.findByProps({'aria-label':'법인차 운영 메뉴'})).includes('실시간 지도'));
- await act(async()=>findButton(classNode(restricted.root,'business-nav-tools'),'계정 메뉴').props.onClick());
+ await act(async()=>accountButton(restricted.root).props.onClick());
  assert.deepEqual(buttons(restricted.root.findByType('aside')),['닫기','내정보']);
  const {renderer:standalone}=await mount(t,{globalNavigation:allowed,onNavigate:undefined});
  assert.ok(!buttons(standalone.root.findByProps({'aria-label':'법인차 운영 메뉴'})).includes('실시간 지도'));
+ assert.equal(standalone.root.findAllByProps({className:'ws-avatar'}).length,0,'without navigation there is no account menu');
 });
 
 test('mobile more keeps every corporate child and permitted account destination reachable',async t=>{

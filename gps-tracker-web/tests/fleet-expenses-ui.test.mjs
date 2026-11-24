@@ -25,13 +25,13 @@ test('approval inbox shows only reviewable requests and keeps the same scope on 
  const data=[...rows.map(r=>({...r,can_review:true})),{...rows[1],id:4,can_review:false}];
  const {r,close}=await mount(data,{approvalsOnly:true});
  try{
-  assert.equal(button(r,'승인대기 (1)').props['aria-pressed'],true);
+  assert.equal(button(r,'승인 대기1').props['aria-pressed'],true);
   assert.equal(button(r,'지출 등록'),undefined);
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,1);
   await act(async()=>button(r,'다운로드').props.onClick());
   assert.equal(r.root.findByType('export-preview').props.report.rows.length,1);
   assert.equal(r.root.findByType('export-preview').props.report.rows[0].amount,80000);
-  await act(async()=>button(r,'반려 (1)').props.onClick());
+  await act(async()=>button(r,'반려1').props.onClick());
   assert.equal(r.root.findByProps({label:'승인 관리 조회 요약'}).props.items.find(item=>item.name==='반려').value,1);
  }finally{await close();}
 });
@@ -92,7 +92,7 @@ test('analytics drilldown preserves the status, general expenses and historical 
  try {
    assert.deepEqual(requests[0],{from:'2026-11-01',to:'2026-11-30',category_id:'3'});
    assert.equal(r.root.findByProps({'aria-label':'조회 부서'}).props.value,'name:이전 부서');
-   assert.equal(button(r,'승인 (1)').props['aria-pressed'],true);
+   assert.equal(button(r,'승인 완료1').props['aria-pressed'],true);
    assert.equal(r.root.findByType('tbody').findAllByType('tr').length,1);
    await act(async()=>button(r,'다운로드').props.onClick());
    const report=r.root.findByType('export-preview').props.report;
@@ -106,19 +106,19 @@ test('expense status and search controls share the displayed rows with download 
  const {r,requests,close}=await mount();
  try{
   assert.equal(r.root.findAllByProps({'aria-label':'승인 비용 집계'}).length,0);
-  assert.equal(button(r,'전체 (3)').props['aria-pressed'],true);
-  assert.equal(button(r,'승인 (1)').props['aria-pressed'],false);
+  assert.equal(button(r,'전체 지출3').props['aria-pressed'],true);
+  assert.equal(button(r,'승인 완료1').props['aria-pressed'],false);
   assert.equal(requests.length,1);assert.equal(requests[0].status,undefined);
-  await act(async()=>button(r,'승인대기 (1)').props.onClick());
+  await act(async()=>button(r,'승인 대기1').props.onClick());
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,1);
-  assert.equal(r.root.findByProps({label:'조회된 지출 요약'}).props.items.find(item=>item.name==='승인 금액').value,0);
+  assert.equal(r.root.findByProps({label:'조회된 지출 요약'}).props.items.find(item=>item.name==='승인 완료').value,0);
   await act(async()=>button(r,'다운로드').props.onClick());
   assert.equal(r.root.findByType('export-preview').props.report.rows[0].status,'승인대기');
   await act(async()=>button(r,'지출 설정').props.onClick());
   await act(async()=>button(r,'비용 집계').props.onClick());
   assert.match(text(r.toJSON()),/승인된 지출이 없습니다/);
-  await act(async()=>r.root.findByProps({'aria-label':'차량, 지출 항목, 요청자 검색'}).props.onChange({target:{value:'관리 차량'}}));
-  assert.ok(button(r,'전체 (1)'));assert.ok(button(r,'승인대기 (0)'));assert.ok(button(r,'반려 (1)'));
+  await act(async()=>r.root.findByProps({'aria-label':'차량, 거래처, 요청자 검색'}).props.onChange({target:{value:'관리 차량'}}));
+  assert.ok(button(r,'전체 지출1'));assert.ok(button(r,'승인 대기0'));assert.ok(button(r,'반려1'));
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,0);
   assert.equal(r.root.findAllByType('export-preview').length,0);
   assert.equal(requests.length,1,'local search and status selection do not change the server scope');
@@ -138,12 +138,12 @@ test('advanced filters remain drafts until applied, cancelling and resetting pre
   await act(async()=>r.root.findByProps({'aria-label':'지출 차량 필터'}).props.onChange({target:{value:'100'}}));
   await act(async()=>{button(r,'적용').props.onClick();await settle();});await act(settle);
   assert.equal(requests.at(-1).vehicle_id,'100');assert.equal(requests.at(-1).status,undefined);
-  assert.ok(button(r,'필터1'));assert.ok(button(r,'전체 (1)'));
+  assert.ok(button(r,'필터1'));assert.ok(button(r,'전체 지출1'));
   await act(async()=>button(r,'필터1').props.onClick());
   await act(async()=>button(r,'초기화').props.onClick());
   assert.equal(requests.at(-1).vehicle_id,'100');
   await act(async()=>{button(r,'적용').props.onClick();await settle();});await act(settle);
-  assert.ok(button(r,'전체 (3)'));assert.ok(button(r,'필터'));
+  assert.ok(button(r,'전체 지출3'));assert.ok(button(r,'필터'));
   assert.equal(requests[0].from,requests[1].from);assert.equal(requests[0].to,requests[1].to);
  }finally{await close();}
 });
@@ -158,16 +158,16 @@ test('a failed refresh or invalid range hides cached rows, counts, totals and su
   await act(async()=>{await qc.invalidateQueries({queryKey:['fleet-expenses']});await settle();});
   assert.equal(r.root.findAllByType('table').length,0);
   assert.equal(r.root.findAllByProps({'aria-label':'승인 비용 집계'}).length,0);
-  assert.ok(button(r,'전체 (—)'));assert.equal(button(r,'다운로드').props.disabled,true);
+  assert.ok(button(r,'전체 지출—'));assert.equal(button(r,'다운로드').props.disabled,true);
   assert.match(text(r.toJSON()),/지출 조회 실패/);
   const calls=requests.length;
-  await act(async()=>button(r,'승인 (—)').props.onClick());
+  await act(async()=>button(r,'승인 완료—').props.onClick());
   assert.equal(requests.length,calls,'ordinary fetch errors do not trigger a fallback request');
   state.fail=false;
   await act(async()=>{await button(r,'다시 시도').props.onClick();await settle();});
   assert.equal(r.root.findAllByType('table').length,1);
   await act(async()=>r.root.findByProps({'aria-label':'지출 조회 시작일'}).props.onChange({target:{value:''}}));
-  assert.equal(r.root.findAllByType('table').length,0);assert.ok(button(r,'전체 (—)'));
+  assert.equal(r.root.findAllByType('table').length,0);assert.ok(button(r,'전체 지출—'));
   assert.equal(r.root.findAllByProps({'aria-label':'승인 비용 집계'}).length,0);
   assert.equal(button(r,'다운로드').props.disabled,true);assert.match(text(r.toJSON()),/조회 기간을 확인/);
  }finally{await close();}
@@ -177,23 +177,23 @@ test('over-limit results can still be narrowed by server status without fabricat
  const data=Array.from({length:1200},(_,i)=>({...rows[i<600?0:1],id:i+1}));
  const {r,requests,close}=await mount(data,{limit:true});
  try{
-  assert.ok(button(r,'전체 (—)'));assert.match(text(r.toJSON()),/1,000건/);
+  assert.ok(button(r,'전체 지출—'));assert.match(text(r.toJSON()),/1,000건/);
   assert.equal(button(r,'다운로드').props.disabled,true);
-  await act(async()=>{button(r,'승인 (—)').props.onClick();await settle();});await act(settle);
-  assert.equal(requests.at(-1).status,'approved');assert.ok(button(r,'승인 (600)'));
-  assert.ok(button(r,'전체 (—)'));assert.ok(button(r,'승인대기 (—)'));
+  await act(async()=>{button(r,'승인 완료—').props.onClick();await settle();});await act(settle);
+  assert.equal(requests.at(-1).status,'approved');assert.ok(button(r,'승인 완료600'));
+  assert.ok(button(r,'전체 지출—'));assert.ok(button(r,'승인 대기—'));
   assert.match(text(r.toJSON()),/다른 상태의 건수는 미집계/);
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,25);
   await act(async()=>button(r,'다운로드').props.onClick());
   assert.equal(r.root.findByType('export-preview').props.report.rows.length,600);
-  await act(async()=>{button(r,'승인대기 (—)').props.onClick();await settle();});await act(settle);
-  assert.equal(requests.at(-1).status,'pending');assert.ok(button(r,'승인대기 (600)'));assert.ok(button(r,'승인 (—)'));
-  assert.equal(r.root.findByProps({label:'조회된 지출 요약'}).props.items.find(item=>item.name==='승인 금액').value,0);
+  await act(async()=>{button(r,'승인 대기—').props.onClick();await settle();});await act(settle);
+  assert.equal(requests.at(-1).status,'pending');assert.ok(button(r,'승인 대기600'));assert.ok(button(r,'승인 완료—'));
+  assert.equal(r.root.findByProps({label:'조회된 지출 요약'}).props.items.find(item=>item.name==='승인 완료').value,0);
   await act(async()=>button(r,'필터').props.onClick());
   await act(async()=>r.root.findByProps({'aria-label':'지출 차량 필터'}).props.onChange({target:{value:'100'}}));
   await act(async()=>{button(r,'적용').props.onClick();await settle();});await act(settle);
   assert.equal(requests.at(-1).vehicle_id,'100');assert.equal(requests.at(-1).status,undefined);
-  assert.ok(button(r,'전체 (600)'));assert.ok(button(r,'승인 (600)'));assert.ok(button(r,'승인대기 (0)'));
+  assert.ok(button(r,'전체 지출600'));assert.ok(button(r,'승인 완료600'));assert.ok(button(r,'승인 대기0'));
   assert.doesNotMatch(text(r.toJSON()),/다른 상태의 건수는 미집계/);
  }finally{await close();}
 });
@@ -204,13 +204,13 @@ test('search and status changes reset pagination and exports include the full fi
  try{
   await act(async()=>r.root.findByProps({'aria-label':'다음 페이지'}).props.onClick());
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,5);
-  await act(async()=>button(r,'승인 (29)').props.onClick());
+  await act(async()=>button(r,'승인 완료29').props.onClick());
   assert.equal(r.root.findByProps({'aria-label':'이전 페이지'}).props.disabled,true);
   assert.equal(r.root.findByType('tbody').findAllByType('tr').length,25);
   await act(async()=>button(r,'다운로드').props.onClick());
   assert.equal(r.root.findByType('export-preview').props.report.rows.length,29);
   await act(async()=>r.root.findByProps({'aria-label':'다음 페이지'}).props.onClick());
-  await act(async()=>r.root.findByProps({'aria-label':'차량, 지출 항목, 요청자 검색'}).props.onChange({target:{value:'업무 차량'}}));
+  await act(async()=>r.root.findByProps({'aria-label':'차량, 거래처, 요청자 검색'}).props.onChange({target:{value:'업무 차량'}}));
   assert.equal(r.root.findByProps({'aria-label':'이전 페이지'}).props.disabled,true);
  }finally{await close();}
 });

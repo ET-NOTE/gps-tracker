@@ -29,6 +29,9 @@ const mockupHeadings = {
   settings:{title:'회사·서비스 정보', description:teamCaption.company}, company:{title:'회사·서비스 정보', description:teamCaption.company},
 };
 
+// Desktop design menu icons for rental and freight groups (same shapes as the corporate design).
+const mockupGroupIcons = {home:'gridRound', booking:'calendar', dispatch:'calendar', finance:'wallet', fleet:'truck', partners:'building'};
+
 function WorkspaceNav({page, group, onTab, menu, label, mockup=false}) {
   const [expanded, setExpanded] = useState(() => new Set([group.id]));
   useEffect(() => setExpanded(previous => new Set([...previous, group.id])), [group.id]);
@@ -51,7 +54,7 @@ function WorkspaceNav({page, group, onTab, menu, label, mockup=false}) {
         if (mockup && !open) { toggle(g.id); onTab(g.pages[0][0]); return; }
         toggle(g.id);
       }}>
-      <Icon name={g.icon}/><span>{g.label}</span>{branch && <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14}/>}
+      <Icon name={(mockup&&mockupGroupIcons[g.id])||g.icon}/><span>{g.label}</span>{branch && <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14}/>}
     </button>
       {branch && open && <div className="rnt-subnav">{g.pages.map(([id,label]) =>
         <button className="rnt-subitem" type="button" key={id} aria-current={id === page ? 'page' : undefined} onClick={() => onTab(id)}>{label}</button>)}</div>}
@@ -108,11 +111,15 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
     <aside className="rnt-sidebar no-print"><button className="rnt-brand" onClick={()=>choose(landing)}><i><Icon name="car"/></i><span>{heading}</span></button>
       <small className="rnt-service-name">시리얼링크 · 업무 공간</small>
       {nav}
-      {onNavigate&&<button className="rnt-account" onClick={()=>setDialog('account')}><Icon name="user"/>계정 메뉴<Icon name="chevron-right" size={15}/></button>}
+      {/* Desktop design: a service-settings link and the copyright, like the corporate menu; the account
+          menu opens from the profile button at the top right with the same destinations. */}
+      {mockup
+        ? <div className="rnt-nav-tools">{onNavigate&&<button className="rnt-service-link" type="button" onClick={()=>onNavigate('profile')}><Icon name="settings" size={14}/>이용 서비스 설정</button>}<small className="rnt-copyright">시리얼링크 © {new Date().getFullYear()}</small></div>
+        : onNavigate&&<button className="rnt-account" onClick={()=>setDialog('account')}><Icon name="user"/>계정 메뉴<Icon name="chevron-right" size={15}/></button>}
     </aside>
     <div className="rnt-main"><header className="rnt-top ws-member-top no-print">
       <button className="ws-icon ws-menu" type="button" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={dialog==='nav'} onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
-      <WorkspaceBreadcrumb service={heading} group={group.label} page={(mockup&&mockupHeadings[page]?.title)||pageLabel}/>
+      <WorkspaceBreadcrumb service={heading} group={group.label} page={mockup?((mockupHeadings[page]?.title)||title):pageLabel}/>
       <WorkspaceHeaderActions service={menu===rentalMenu?'rentcar':'cargo'} scope={<WorkspaceScope ownName={companyName}/>}
         widthControl={<WorkspaceWidthControl className="rnt-width" wide={wide} onChange={chooseWidth}/>}
         search={<button className="ws-wide-search" type="button" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>}

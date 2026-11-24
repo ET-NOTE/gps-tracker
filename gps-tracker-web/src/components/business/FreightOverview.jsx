@@ -47,7 +47,7 @@ export default function FreightOverview({data,devices,onPage,onMap,onRefresh,ref
     <div className="fr-toolbar"><span>{list.length}대 조회</span><div className="fr-actions">
       <FreightButton disabled={refreshing} onClick={onRefresh} icon="refresh">{refreshing?'조회 중…':'화면 새로고침'}</FreightButton>
       {!mockup&&<FreightButton onClick={()=>onMap(current?.device?.id)}>전체 지도 보기</FreightButton>}</div></div>
-    <FreightFilters query={filter.query} onQuery={q=>change('query',q)} placeholder="차량번호, 기사, 소속 검색">
+    <FreightFilters searchFirst={mockup} query={filter.query} onQuery={q=>change('query',q)} placeholder="차량번호, 기사, 소속 검색">
       <FreightField label={mockup?'지점':'운영 지점'}><select value={filter.branch} onChange={e=>change('branch',e.target.value)}><FreightOptions rows={data.branches} blank="전체 지점"/></select></FreightField>
       <FreightField label="차량 형태"><select value={filter.type} onChange={e=>change('type',e.target.value)}><option value="">전체</option>{data.codes.vehicleTypes.map(t=><option key={t}>{t}</option>)}</select></FreightField>
       <FreightField label="차량 상태"><select value={filter.state} onChange={e=>change('state',e.target.value)}><option value="">전체</option><option value="assigned">배차 있음</option><option value="driving">이동 중</option><option value="idle">정차</option><option value="hold">정비·운영 제외</option></select></FreightField>

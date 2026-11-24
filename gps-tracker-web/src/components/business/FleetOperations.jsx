@@ -14,6 +14,8 @@ import CarImage from '../CarImage';
 import sedan from '../entry/login-vehicle.png';
 import {CompletionEditor,MaintenanceHistory,maintenanceKinds} from './FleetMaintenanceHistory';
 import './fleet-operation-layout.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 
 const careHints={next_service_date:'엔진오일 및 소모품 점검',insurance_expiry:'보험 갱신 서류 확인',inspection_expiry:'자동차 정기 검사'};
 export default function FleetOperations({mode,assets,devices,departments,staff,canManage,canRegisterTerminal,openDetail,editSchedule,refreshAssets}){
@@ -49,7 +51,9 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
   const schedules=allSchedules.filter(r=>matchingAsset(r.asset)&&(!kind||r.key===kind)&&contains(r.asset.name,r.asset.license_plate,r.asset.car_model,r.asset.department,r.label)
       &&(status==='all'&&r.date||status==='overdue'&&r.date&&r.date<today||status==='missing'&&!r.date))
     .sort((a,b)=>a.date.localeCompare(b.date)||fleetAssetLabel(a.asset).localeCompare(fleetAssetLabel(b.asset),'ko',{numeric:true}));
-  const options=terminals?[['all','전체'],['receiving','정상 수신'],['check','수신 확인'],['unlinked','미연결'],['linked','차량 연결']]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
+  // Desktop design has no 차량 연결 tab; linked terminals stay in 전체 and connections are managed from each card.
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
+  const options=terminals?[['all','전체'],['receiving','정상 수신'],['check','수신 확인'],['unlinked','미연결'],...(desk?[]:[['linked','차량 연결']])]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
   const schedule=detail?.key && allSchedules.find(r=>r.asset.id===detail.assetId&&r.key===detail.key);
   const completed=detail?.history;
   const inspectedAsset=schedule?.asset || (completed && assets.find(a=>a.id===completed.vehicle_id));

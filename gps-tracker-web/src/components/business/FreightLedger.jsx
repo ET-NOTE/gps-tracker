@@ -77,8 +77,8 @@ export default function FreightLedger({kind,data,save,onOpenShipment}) {
   const eligible=rows.filter(item=>item.balance>0||item.net>0);
   const unknown=rows.filter(r=>r.total==null).length;
   return <section className="fr-section fr-ledger">
-    <FreightStats items={[[billing?'조회 청구 대상액':'조회 지급 대상액',sum('total'),unknown?'운임 미정 '+unknown+'건 별도':'합의 운임과 승인 비용 기준'],[netLabel,sum('net')],[balanceLabel,sum('balance')],[billing?'환불 확인':'환수 확인',sum('excess')]]}/>
-    <FreightFilters resetLabel={mockup?'초기화':undefined} query={query} onQuery={setQuery} placeholder="운송번호·거래처·차량 검색" onReset={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}><PeriodFilter label="운송 예정일" period={period} setPeriod={setPeriod}/>
+    <FreightStats items={[[billing?'조회 청구 대상액':'조회 지급 대상액',sum('total'),unknown?'운임 미정 '+unknown+'건 별도':'합의 운임과 승인 비용 기준','wallet'],[netLabel,sum('net')],[balanceLabel,sum('balance')],[billing?'환불 확인':'환수 확인',sum('excess')]]}/>
+    <FreightFilters resetLabel={mockup?'초기화':undefined} query={query} onQuery={setQuery} placeholder={mockup?'운송번호, 거래처, 차량 검색':'운송번호·거래처·차량 검색'} onReset={()=>{setPeriod(currentPeriod());setState('');setBranch('');setParty('');setQuery('');}}><PeriodFilter label="운송 예정일" period={period} setPeriod={setPeriod}/>
       <OfficeFilter label="지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
       <OfficeFilter label={partyLabel} options={billing?choicesFrom(data.shippers):{own:'자사 운송',...choicesFrom(data.carriers)}} value={party} onChange={setParty}/>
       <OfficeFilter label="정산 상태" options={states} value={state} onChange={setState}/>

@@ -34,7 +34,11 @@ async function chooseStatus(r,label){
  const value=statusOption(r,label).props.value;
  await act(async()=>statusSelect(r).props.onChange({target:{value}}));
 }
-const rowIds=r=>r.root.findByType('tbody').findAllByType('tr').map(row=>row.findByProps({className:'corporate-reservation-row-actions'}).findAllByType('button')[0].props['aria-label']);
+const rowIds=r=>r.root.findByType('tbody').findAllByType('tr').map(row=>row.findByProps({className:'booking-detail-link'}).props['aria-label']);
+const dialog=(r,label)=>r.root.findAll(n=>n.props.role==='dialog'&&n.props['aria-label']===label);
+const inDialog=(r,label,text)=>dialog(r,label)[0]?.findAll(n=>n.type==='button'&&textOf(n.children).trim()===text)[0];
+const textOf=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(textOf).join(''):textOf(node?.children||[]);
+async function openDetail(r,id){await act(async()=>r.root.findByProps({'aria-label':'예약 '+id+' 보기'}).props.onClick());}
 
 async function mount(t,{data=reservations,request}={}){
  const state={data,error:null,isLoading:false,confirm:true,cancelError:null};
@@ -82,20 +86,20 @@ async function mount(t,{data=reservations,request}={}){
 test('reservation search, status counts and table rows share the same query scope',async t=>{
  const {r,calls}=await mount(t);
  assert.equal(statusSelect(r).props.value,'all');
- assert.deepEqual(rowIds(r),reservations.map(row=>'예약 '+row.id+' 상세·수정'));
+ assert.deepEqual(rowIds(r),reservations.map(row=>'예약 '+row.id+' 보기'));
  await chooseStatus(r,'예정·진행 (2)');
- assert.deepEqual(rowIds(r),['예약 1 상세·수정','예약 2 상세·수정']);
+ assert.deepEqual(rowIds(r),['예약 1 보기','예약 2 보기']);
  assert.ok(statusOption(r,'전체 (5)'));assert.ok(statusOption(r,'예정·진행 (2)'));assert.ok(statusOption(r,'완료 (2)'));assert.ok(statusOption(r,'취소 (1)'));
  const scope=calls.query.at(-1);
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:' 김영업 '}}));
  assert.ok(statusOption(r,'전체 (3)'));assert.ok(statusOption(r,'예정·진행 (1)'));assert.ok(statusOption(r,'완료 (1)'));assert.ok(statusOption(r,'취소 (1)'));
- assert.deepEqual(rowIds(r),['예약 1 상세·수정']);
+ assert.deepEqual(rowIds(r),['예약 1 보기']);
  await chooseStatus(r,'완료 (1)');
- assert.deepEqual(rowIds(r),['예약 3 상세·수정']);
+ assert.deepEqual(rowIds(r),['예약 3 보기']);
  await chooseStatus(r,'전체 (3)');
  assert.equal(rowIds(r).length,3);
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:'987나'}}));
- assert.deepEqual(rowIds(r),['예약 2 상세·수정']);
+ assert.deepEqual(rowIds(r),['예약 2 보기']);
  assert.deepEqual(calls.query.at(-1),scope,'search and status do not change the date query');
  await act(async()=>r.root.findByProps({'aria-label':'예약 차량·사용자 검색'}).props.onChange({target:{value:'없는 차량'}}));
  assert.equal(rowIds(r).length,0);assert.match(text(r.toJSON()),/검색 결과가 없습니다/);assert.ok(statusOption(r,'전체 (0)'));
@@ -118,7 +122,7 @@ test('a reservation refresh error hides stale rows and counts in both list and c
  const {r,state,calls,rerender}=await mount(t);
  state.error=Error('조회 실패');await rerender();
  assert.equal(r.root.findAllByType('table').length,0);assert.ok(statusOption(r,'전체 (—)'));assert.ok(statusOption(r,'예정·진행 (—)'));
- assert.equal(r.root.findAll(n=>n.type==='button'&&n.props['aria-label']?.includes('상세·수정')).length,0);
+ assert.equal(r.root.findAll(n=>n.type==='button'&&/^예약 d+ 보기$/.test(n.props['aria-label']||'')).length,0);
  await act(async()=>button(r,'다시 시도').props.onClick());assert.equal(calls.retry,1);
  await act(async()=>button(r,'캘린더').props.onClick());
  assert.equal(r.root.findAllByProps({className:'corporate-calendar-event'}).length,0);
@@ -209,20 +213,26 @@ test('compact month opens the occupied day before editing or adding and keeps th
 
 test('reservation row details save the selected booking and cancellation remains confirmed',async t=>{
  const {r,state,calls}=await mount(t);
- await act(async()=>r.root.findByProps({'aria-label':'예약 1 상세·수정'}).props.onClick());
- assert.equal(r.root.findByProps({role:'dialog'}).props['aria-label'],'예약 편집');
+ await openDetail(r,1);
+ await act(async()=>inDialog(r,'예약 상세','예약 변경').props.onClick());
+ assert.equal(dialog(r,'예약 편집').length,1);
  assert.equal(r.root.findByProps({placeholder:'거래처 방문, 외근...'}).props.value,'방문 1');
  await act(async()=>r.root.findByProps({placeholder:'거래처 방문, 외근...'}).props.onChange({target:{value:' 수정한 방문 '}}));
  await act(async()=>button(r,'저장').props.onClick());
- assert.equal(r.root.findAllByProps({role:'dialog'}).length,0);
+ assert.equal(dialog(r,'예약 편집').length,0);
+ assert.equal(dialog(r,'예약 상세').length,0,'saving closes the detail as well');
  assert.equal(calls.update[0].id,1);assert.equal(calls.update[0].body.vehicle_id,100);assert.equal(calls.update[0].body.purpose,'수정한 방문');
  assert.equal(calls.update[0].body.starts_at,reservations[0].starts_at.replace('Z','.000Z'));
- state.confirm=false;await act(async()=>r.root.findByProps({'aria-label':'예약 1 취소'}).props.onClick());
- assert.equal(calls.cancel.length,0);
- state.confirm=true;await act(async()=>r.root.findByProps({'aria-label':'예약 1 취소'}).props.onClick());
- assert.deepEqual(calls.cancel,[1]);assert.equal(calls.confirm.at(-1).danger,true);
- state.cancelError=Error('이미 변경된 예약');await act(async()=>r.root.findByProps({'aria-label':'예약 2 취소'}).props.onClick());
+ await openDetail(r,1);
+ state.confirm=false;await act(async()=>inDialog(r,'예약 상세','예약 취소').props.onClick());
+ assert.equal(calls.cancel.length,0);assert.equal(dialog(r,'예약 상세').length,1,'a declined confirmation keeps the detail open');
+ state.confirm=true;await act(async()=>inDialog(r,'예약 상세','예약 취소').props.onClick());
+ assert.deepEqual(calls.cancel,[1]);assert.equal(calls.confirm.at(-1).danger,true);assert.equal(dialog(r,'예약 상세').length,0);
+ await openDetail(r,2);
+ state.cancelError=Error('이미 변경된 예약');await act(async()=>inDialog(r,'예약 상세','예약 취소').props.onClick());
  assert.equal(calls.alerts.at(-1).title,'예약 취소 실패');assert.equal(calls.alerts.at(-1).body,'이미 변경된 예약');
  await chooseStatus(r,'취소 (1)');
- assert.deepEqual(rowIds(r),['예약 4 상세·수정']);assert.equal(r.root.findAllByProps({'aria-label':'예약 4 취소'}).length,0);
+ assert.deepEqual(rowIds(r),['예약 4 보기']);
+ await act(async()=>inDialog(r,'예약 상세','닫기').props.onClick());
+ await openDetail(r,4);assert.equal(inDialog(r,'예약 상세','예약 취소'),undefined,'a cancelled booking cannot be cancelled again');
 });

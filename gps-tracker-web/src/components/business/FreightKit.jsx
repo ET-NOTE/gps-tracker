@@ -4,6 +4,11 @@ import Icon from '../Icon';
 import BusinessDrawer from './BusinessDrawer';
 import { shipStates } from '../../lib/freightWorkflow';
 import './freight.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
+
+// Desktop design: a trailing unit ('원', '건') is set small after the number; an optional icon leads the label.
+const statUnit=/^([-−]?[d,.]+)s*(원|명|건|대|곳|%|시간|km)$/;
 
 export function FreightButton({primary=false, children, icon, ...rest}) {
   return <button type="button" className={'fr-btn'+(primary?' is-primary':'')} {...rest}>{icon&&<Icon name={icon} size={15}/>} {children}</button>;
@@ -29,7 +34,9 @@ export function FreightForm({title,subtitle,onClose,onSubmit,submitLabel='저장
   </Modal>;
 }
 export function FreightStats({items,unit}){
-  return <dl className="fr-stats">{items.map(([label,value,note])=><div key={label}><dt>{label}</dt><dd>{value}{unit&&<small className="fr-stat-unit">{unit}</small>}{note&&<small className="fr-metric-note">{note}</small>}</dd></div>)}</dl>;
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
+  const show=value=>{const m=desk&&!unit&&typeof value==='string'&&value.match(statUnit);return m?<>{m[1]}<small className="fr-stat-unit">{m[2]}</small></>:value;};
+  return <dl className="fr-stats">{items.map(([label,value,note,icon])=><div key={label}><dt>{desk&&icon&&<Icon name={icon} size={15}/>}{label}</dt><dd>{show(value)}{unit&&<small className="fr-stat-unit">{unit}</small>}{note&&<small className="fr-metric-note">{note}</small>}</dd></div>)}</dl>;
 }
 export function FreightBadge({children,tone='neutral'}) {
   return <span className={'fr-badge is-'+tone}>{children}</span>;
@@ -67,13 +74,14 @@ export function FleetResourceFilters({query,onQuery,placeholder,children,onReset
     {extraFilter&&<div id={extraId} className="fr-resource-extra" hidden={!expanded}>{extraFilter}</div>}
   </div>;
 }
-export function FreightFilters({query,onQuery,placeholder,children,onReset,admin=false,resetLabel='조건 초기화'}){
+export function FreightFilters({query,onQuery,placeholder,children,onReset,admin=false,resetLabel='조건 초기화',searchFirst=false}){
   if(admin)return <div className="fr-filters"><div className="fr-admin-fields">
     {children}
     <FreightField label="검색" wide><span className="fr-resource-search"><Icon name="search" size={15}/><input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></span></FreightField>
   </div><FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>{resetLabel}</FreightButton></div>;
-  return <div className="fr-filters">{children}<FreightField label="검색" wide>
-    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>{onReset&&<FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>{resetLabel}</FreightButton>}</div>;
+  const search=<FreightField label="검색" wide>
+    <input type="search" value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></FreightField>;
+  return <div className="fr-filters" data-search-first={searchFirst||undefined}>{searchFirst&&search}{children}{!searchFirst&&search}{onReset&&<FreightButton className="fleet-filter-reset-link" icon="refresh" onClick={onReset}>{resetLabel}</FreightButton>}</div>;
 }
 export function FreightOptions({rows,blank,label='name'}){
   return <>{blank!==undefined&&<option value="">{blank}</option>}{rows.map(r=><option key={r.id} value={r.id}>{r[label]||r.id}</option>)}</>;

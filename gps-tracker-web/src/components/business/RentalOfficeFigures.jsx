@@ -76,8 +76,8 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
   const exportReport=usage?csv('차량 가동·운영비',period,usageColumns,usageRows.map(r=>[r.name,r.intervals.length,r.hours.toFixed(1),r.utilization.toFixed(1)+'%',
     workStatus||r.completedHours.toFixed(1),workStatus||r.scheduledHours.toFixed(1),r.cost,distanceStatus||distanceText(r),r.revenue])):
     csv('차종별 대여·매출',period,groupColumns,groups.map(g=>[g.id,g.contracts.length,g.amount,g.paid,g.cost]));
-  const stats=usage?[['차량 시간 가동률',decimal(usageRows.length?total(usageRows,r=>r.utilization)/usageRows.length:0)+'%'],['총 대여 시간',decimal(total(usageRows,r=>r.hours))+'시간'],['차량 운영비',won(total(usageRows,r=>r.cost))],['반납 기록 주행거리',distanceStatus||distanceText(mileage)]]:
-    [['기간 내 시작 계약',started.length+'건'],['대여료 순수납',won(pay)],['운영 지출',won(cost)],['수납 − 지출',won(pay-cost)]];
+  const stats=usage?[['차량 시간 가동률',decimal(usageRows.length?total(usageRows,r=>r.utilization)/usageRows.length:0)+'%','barAxis'],['총 대여 시간',decimal(total(usageRows,r=>r.hours))+'시간','clock'],['차량 운영비',won(total(usageRows,r=>r.cost)),'wallet'],['반납 기록 주행거리',distanceStatus||distanceText(mileage),'route']]:
+    [['기간 내 시작 계약',started.length+'건','file'],['대여료 순수납',won(pay),'wallet'],['운영 지출',won(cost),'wrenchSmall'],['수납 − 지출',won(pay-cost),'barAxis']];
   const selected=(usage?usageRows:groups).find(row=>row.id===detail);
   const asset=usage&&selected?vehicles.find(v=>v.id===selected.id):null;
   const linkedContracts=!selected?[]:!usage?[...selected.related]:contracts.filter(c=>

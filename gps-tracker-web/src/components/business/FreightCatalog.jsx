@@ -16,7 +16,7 @@ const fleetLists={
   services:['등록한 작업 시간은 배차 가능 시간 확인에 반영됩니다.','차량번호, 작업 내용 검색','일정 등록'],
 };
 // Desktop design: search wording per list, and lists that offer no CSV download.
-const mockupPlaceholders={vehicles:'차량번호, 기사, 소속 검색',drivers:'기사명, 연락처, 소속 검색',services:'차량번호, 메모 검색'};
+const mockupPlaceholders={shippers:'이름, 담당자, 연락처 검색',carriers:'이름, 담당자, 연락처 검색',locations:'장소, 주소, 담당자 검색',rates:'요율 이름, 구간 검색',vehicles:'차량번호, 기사, 소속 검색',drivers:'기사명, 연락처, 소속 검색',services:'차량번호, 메모 검색'};
 const mockupNoExport=['carriers','locations','services','rates','shippers'];
 
 function catalogRecords(data,kind,id) {
@@ -130,7 +130,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   const filterControl=f=><OfficeFilter key={f.field} {...f} value={filter[f.field]} onChange={v=>setFilter({...filter,[f.field]:v})}/>;
   const extraFilter=kind==='drivers'?filters.find(f=>f.field==='active'):null;
   return <section className={'fr-section fr-catalog '+(fleet?'fr-resource-list':'fr-admin-list')}>
-    {party&&<FreightStats unit="곳" items={[[kind==='shippers'?'조회 화주':'조회 협력 운송사',rows.length],['사용 중',rows.filter(r=>r.active!==false).length],['월합산 정산',rows.filter(r=>(r.billing||r.settlement)==='월합산').length]]}/>}
+    {party&&<FreightStats unit="곳" items={[[kind==='shippers'?'조회 화주':'조회 협력 운송사',rows.length,undefined,'building'],['사용 중',rows.filter(r=>r.active!==false).length],['월합산 정산',rows.filter(r=>(r.billing||r.settlement)==='월합산').length]]}/>}
     {fleet&&toolbar}
     <FilterBar admin={!fleet} resetLabel={mockup&&!fleet?'초기화':undefined} query={query} onQuery={setQuery} placeholder={(mockup&&mockupPlaceholders[kind])||fleet?.[1]||title+' 검색'} count={rows.length} total={data[kind].length}
       extraFilter={extraFilter&&filterControl(extraFilter)} extraLabel={extraFilter&&(extraFilter.options[filter.active]||extraFilter.label)} onReset={()=>{setFilter({});setQuery('');}}>

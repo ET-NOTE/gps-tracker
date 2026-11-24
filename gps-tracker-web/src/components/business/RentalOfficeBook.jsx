@@ -77,7 +77,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
   if (kind==='reports'||kind==='utilization') return <Figures book={book} devices={devices} period={period} dates={dates} onResetPeriod={onResetPeriod} pending={pending} usage={kind==='utilization'}/>;
   const isCost=kind==='costs',isPayments=kind==='payments',isRefunds=kind==='refunds';
   // Desktop refunds ledger: 수단 without the memo column; the memo stays in the entry drawer.
-  const refundDesk=isRefunds&&!useCorporatePhone()&&hideOutsideMockup;
+  const desk=!useCorporatePhone()&&hideOutsideMockup, refundDesk=isRefunds&&desk;
   const balance=c=>c.billed_krw-c.paid_krw;
   const accountNames=new Map(catalog.accounts.map(a=>[a.id,a.name]));
   const contracts=book.contracts.filter(c=>{
@@ -118,17 +118,17 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
     <div className="ro-filters ro-finance-filters">{dates}
       {isCost&&<Field label="차량"><select value={device} onChange={e=>setDevice(e.target.value)}><option value="all">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{vehicle(d)}</option>)}</select></Field>}
       {isCost&&<Field label="차량 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(devices.map(v=>v.branch).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
-      <Field label={isPayments?'수납 상태':isCost?'지출 항목':'기록 구분'}><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">전체</option>
+      <Field label={isPayments?'수납 상태':isCost?'지출 항목':'기록 구분'}><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">{desk?(isPayments?'전체 상태':isCost?'전체 항목':'전체 기록'):'전체'}</option>
         <Options items={isPayments?{pending:'미수금 있음',paid:'미수금 없음',excess:'초과 수납'}:isCost?costKinds:{refund:entryKinds.refund,deposit_in:entryKinds.deposit_in,deposit_out:entryKinds.deposit_out}}/></select></Field>
       {isRefunds&&<Field label="거래 수단"><select value={method} onChange={e=>setMethod(e.target.value)}><option value="all">전체 수단</option><Options items={methods}/></select></Field>}
       {isPayments&&<Field label="거래처"><select value={account} onChange={e=>setAccount(e.target.value)}><option value="all">전체 거래처</option><option value="">미연결</option>{catalog.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>}
       {isPayments&&<Field label="대여 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{[...new Set(book.contracts.map(c=>c.pickup_location).filter(Boolean))].sort().map(b=><option key={b}>{b}</option>)}</select></Field>}
-      <Search value={query} setValue={setQuery} label={isCost?'차량·거래처·메모 검색':isRefunds?'계약번호·고객·메모 검색':'계약번호·고객·차량 검색'}/>
+      <Search value={query} setValue={setQuery} label={desk?(isCost?'차량, 사용처, 메모 검색':isRefunds?'계약번호, 고객, 메모 검색':'계약번호, 고객, 차량 검색'):(isCost?'차량·거래처·메모 검색':isRefunds?'계약번호·고객·메모 검색':'계약번호·고객·차량 검색')}/>
       <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setQuery('');setFilter('all');setDevice('all');setAccount('all');setBranch('');setMethod('all');onResetPeriod();}}>초기화</BusinessButton>
     </div>
-    <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw))],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
-      isPayments?[['조회 청구액',won(sum(contracts,c=>c.billed_krw))],['이용료 순수납액',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보유 보증금',won(sum(contracts,c=>c.held_krw))]]:
-      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw))],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['현재 처리 대기',returns.length+'건']]}/>
+    <Metrics items={isCost?[['조회 운영비',won(sum(costs,c=>c.amount_krw)),'wallet'],['지출 기록',costs.length+'건'],['관련 차량',new Set(costs.map(c=>c.vehicle_id!=null?'vehicle:'+c.vehicle_id:c.device_id!=null?'device:'+c.device_id:c.vehicle_name).filter(Boolean)).size+'대']]:
+      isPayments?[['조회 청구액',won(sum(contracts,c=>c.billed_krw)),'wallet'],['이용료 순수납액',won(sum(contracts,c=>c.paid_krw))],['미수금',won(sum(contracts,c=>Math.max(0,balance(c))))],['보유 보증금',won(sum(contracts,c=>c.held_krw))]]:
+      [['기간 이용료 환불',won(sum(entries.filter(e=>e.kind==='refund'),e=>e.amount_krw)),'wallet'],['기간 보증금 수납',won(sum(entries.filter(e=>e.kind==='deposit_in'),e=>e.amount_krw))],['기간 보증금 반환',won(sum(entries.filter(e=>e.kind==='deposit_out'),e=>e.amount_krw))],['현재 처리 대기',returns.length+'건']]}/>
     {isRefunds&&<>
       <div className="ro-refund-actions"><span>보증금은 이용료 수납액과 매출에 포함되지 않습니다.</span><div>{actions}</div></div>
       <section className="ro-panel"><header className="ro-section-heading"><div><h2>현재 환불·반환 대기</h2><p>현재 잔액 기준 · 아래 거래 기록의 기간·구분 필터와 별도입니다.</p></div><span>{returns.length}건</span></header>
@@ -138,7 +138,9 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
           ['이용료 초과수납',r=>won(r.excess)],['반환 대상 보증금',r=>won(r.deposit)]
         ]} empty="환불·반환 대기 항목이 없습니다."/>
       </section></>}
-    <section className="ro-panel">{isRefunds?<header className="ro-section-heading"><h2>거래 기록</h2><span>{rows.length}건</span></header>:<Toolbar count={rows.length}>{actions}</Toolbar>}
+    {/* Desktop design: the count line and buttons sit above the table card, like the freight lists. */}
+    {desk&&!isRefunds&&<div className="ro-desk-toolbar"><span>{rows.length.toLocaleString('ko-KR')}건 조회{isPayments?' · 실제 결제 승인 없이 내역을 기록합니다.':''}</span><div>{actions}</div></div>}
+    <section className="ro-panel">{isRefunds?<header className="ro-section-heading"><h2>거래 기록</h2><span>{rows.length}건</span></header>:!desk&&<Toolbar count={rows.length}>{actions}</Toolbar>}
       <Table columns={cols} rows={rows} onRecord={isCost?openCost:isPayments?setDetail:setEntry} empty={isCost?'조회 기간에 등록된 운영비가 없습니다.':isPayments?'조회 기간에 해당하는 계약이 없습니다.':'조회 기간에 환불·보증금 기록이 없습니다.'}/></section>
     {costDetail&&<RentalRecordDrawer title="운영비 상세" subtitle={costKinds[costDetail.category]+' · '+won(costDetail.amount_krw)} onClose={()=>setCostId(null)}
       footer={<><RentalOfficeDelete kind="costs" row={costDetail} onDeleted={()=>setCostId(null)}/>

@@ -1,6 +1,10 @@
 import React, {useState} from 'react';
 import {Button, Modal} from '../ui';
 import Icon from '../Icon';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
+
+const useDesk=()=>!useCorporatePhone()&&hideOutsideMockup;
 
 export function Field({label,children,wide=false}) {
   const labelId=React.useId();
@@ -31,13 +35,22 @@ export function Search({value,setValue,label}) {
   </span></Field>;
 }
 export function PeriodFields({period,onChange,label}) {
+  const desk=useDesk();
+  // Desktop design: one label over a start ~ end pair, like the freight order period.
+  if(desk&&label)return <fieldset className="rental-stage-period ro-desk-period"><legend>{label}</legend><div>
+    <input type="date" aria-label="조회 시작일" max={period.to||undefined} value={period.from} onChange={e=>onChange({...period,from:e.target.value})}/><span>~</span>
+    <input type="date" aria-label="조회 종료일" min={period.from||undefined} value={period.to} onChange={e=>onChange({...period,to:e.target.value})}/></div></fieldset>;
   return <div className={'ro-period'+(label?' ro-reference-period':'')} role={label?'group':undefined} aria-label={label}>
     {label&&<span className="ro-period-title" aria-hidden="true">{label}</span>}
     {[['from','조회 시작일'],['to','조회 종료일']].map(([key,name])=><Field label={name} key={key}><input type="date" aria-label={name} value={period[key]} onChange={e=>onChange({...period,[key]:e.target.value})}/></Field>)}
   </div>;
 }
+// Desktop design: an optional icon before the label and the unit set small after the number.
+const unitPattern=/^([-−]?[d,.]+)s*(원|명|건|대|곳|%|시간|일|km)$/;
 export function Metrics({items}) {
-  return <dl className="ro-metrics">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
+  const desk=useDesk();
+  const show=value=>{const m=desk&&typeof value==='string'&&value.match(unitPattern);return m?<>{m[1]}<small>{m[2]}</small></>:value;};
+  return <dl className="ro-metrics" data-desk={desk||undefined}>{items.map(([label,value,icon])=><div key={label}><dt>{desk&&icon&&<Icon name={icon} size={15}/>}{label}</dt><dd>{show(value)}</dd></div>)}</dl>;
 }
 export function FormModal({title,onClose,save,children,canSave=true,size=720,submitLabel='저장'}) {
   const [busy,setBusy] = useState(false), [error,setError] = useState('');

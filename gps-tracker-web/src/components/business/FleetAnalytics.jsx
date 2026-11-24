@@ -10,6 +10,8 @@ import { fleetAssetLabel } from '../../lib/fleetAssets';
 import { BusinessButton, BusinessEmpty, BusinessError, BusinessSection } from './BusinessWorkspace';
 import FleetRecordMetrics from './FleetRecordMetrics';
 import './fleet-analytics.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 const number = (n, digits = 0) => n.toLocaleString('ko-KR',{maximumFractionDigits:digits});
 const distance = km => km > 0 && km < .01 ? '<0.01' : number(km, 2);
@@ -78,6 +80,7 @@ function RankingBars({groups,field,format,unit,height=230}) {
 }
 
 export default function FleetAnalytics({section='trips', devices=[], onReport, initialPeriod, initialView, onExpenses}) {
+  const desk = !useCorporatePhone() && hideOutsideMockup;
   const trips = section==='trips', today = businessDate();
   const [from,setFrom] = useState(initialView?.from||initialPeriod?.from||today.slice(0,7)+'-01'), [to,setTo] = useState(initialView?.to||initialPeriod?.to||today);
   const [vehicle,setVehicle] = useState(initialView?.vehicle||''), [status,setStatus] = useState(initialView?.status??'approved');
@@ -189,6 +192,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       </Filter>}</div>
       <BusinessButton icon="refresh" onClick={()=>{setFrom(initialPeriod?.from||today.slice(0,7)+'-01');setTo(initialPeriod?.to||today);setVehicle('');setStatus('approved');setDepartment('');setDimension('');setRecordState('all');}}>조건 초기화</BusinessButton>
     </section>
+    {desk&&<p className="fleet-analytics-caption">{trips?'완료된 운행 기준으로 집계합니다. 부서는 차량의 소속 부서입니다.':'지출일 기준으로 집계합니다. 부서는 차량의 소속 부서입니다.'}</p>}
     {periodError?<BusinessError>{periodError}</BusinessError>:result.error?<BusinessError onRetry={result.refetch}>{result.error.message||'통계를 불러오지 못했습니다.'}</BusinessError>:result.isPending?<p role="status" className="fleet-analytics-note">통계를 불러오는 중…</p>:<>
       {(result.data.failed>0)&&<BusinessError onRetry={result.refetch}>차량 {selected.length}대 중 {result.data.failed}대를 조회하지 못했습니다. 아래는 조회된 차량의 부분 합계입니다.</BusinessError>}
       {result.data.scoped&&<p className="fleet-analytics-note">{subjectScopeNote}</p>}

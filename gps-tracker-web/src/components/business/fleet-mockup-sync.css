@@ -848,3 +848,7 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   .business-workspace--corporate .fleet-org-directory .fleet-org-table :is(th,td):nth-child(4) {text-align:right}
   .business-workspace--corporate .fleet-org-directory .fleet-org-action-label {position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 }
+/* Round 17: analytics caption under the filters (PC) */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-analytics-caption {margin:8px 0 0; font-size:12px; color:#929ba7}
+}

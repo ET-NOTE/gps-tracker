@@ -284,3 +284,58 @@
   .rt-org .rt-table :is(th, td):nth-child(4) { text-align: right; }
   .rt-org .rt-table .rt-link { font-size: 12px; color: var(--primary); }
 }
+/* Round 17: rental and freight common UI (PC) */
+@media screen and (min-width: 768px) {
+  /* Sidebar bottom: service settings link and copyright, as on the corporate menu */
+  .rnt-shell .rnt-nav-tools { display: grid; gap: 10px; margin-top: auto; padding: 12px 4px 4px; }
+  .rnt-shell .rnt-service-link { display: flex; align-items: center; gap: 7px; width: auto; min-height: 0; padding: 4px 6px; border: 0; background: transparent; color: #7b8592; font: inherit; font-size: 11px; cursor: pointer; }
+  .rnt-shell .rnt-service-link:hover { color: var(--primary); }
+  .rnt-shell .rnt-copyright { padding: 0 6px; font-size: 10px; color: #a2a9b4; }
+  /* Rental selects like the freight order filters */
+  .rnt-shell .rnt-content :is(.ro-filters, .rt-toolbar, .rental-extra-filters) select {
+    appearance: none !important; box-sizing: border-box; height: 40px !important; min-height: 40px !important; padding: 8px 31px 8px 11px !important;
+    border: 1px solid var(--border) !important; border-radius: 8px !important; background-color: var(--surface) !important;
+    background-image: var(--fleet-select-chevron) !important; background-repeat: no-repeat !important; background-position: right 11px center !important; background-size: 12px 12px !important;
+    font: 400 13px/1.5 var(--fleet-font) !important; color: var(--fleet-caption, var(--text-2)) !important;
+  }
+  /* One period label over a start ~ end pair */
+  .rnt-shell .rnt-content .ro-desk-period { border: 0; padding: 0; margin: 0; min-width: 0; flex: 0 0 auto; }
+  .rnt-shell .rnt-content .ro-desk-period legend { padding: 0; margin: 0 0 6px; font: 400 11px/17px var(--fleet-font); color: var(--fleet-caption); }
+  .rnt-shell .rnt-content .ro-desk-period > div { display: grid; grid-template-columns: 145px auto 145px; align-items: center; gap: 6px; }
+  .rnt-shell .rnt-content .ro-desk-period input[type="date"] { box-sizing: border-box; width: 100%; height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: 400 13px/1.5 var(--fleet-font); color: var(--fleet-caption); }
+  .rnt-shell .rnt-content .ro-desk-period span { color: var(--fleet-caption); font-size: 12px; }
+  /* Summary cards: icon before the label, small unit after the number */
+  .rnt-shell .ro-metrics[data-desk] dt { display: flex; align-items: center; gap: 6px; }
+  .rnt-shell .ro-metrics[data-desk] dt svg, .rnt-shell .fr-stats dt svg { flex: none; color: var(--primary); }
+  .rnt-shell .fr-stats dt:has(svg) { display: flex; align-items: center; gap: 6px; }
+  .rnt-shell .ro-metrics[data-desk] dd small { margin-left: 3px; font-size: 12px !important; font-weight: 400 !important; letter-spacing: 0; color: #828c9a !important; }
+  /* Count line and buttons above the table card */
+  .rnt-shell .ro-desk-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; min-height: 36px; margin: 4px 0 10px; }
+  .rnt-shell .ro-desk-toolbar > span { font: 400 12px/1.55 var(--fleet-font); color: var(--fleet-caption, var(--text-2)); }
+  .rnt-shell .ro-desk-toolbar > div { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .rnt-shell .ro-desk-toolbar .business-button.is-primary { font-size: 12px; font-weight: 400; }
+  .rnt-shell .ro-desk-notice { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; padding: 11px 14px; border-radius: 8px; background: #eef4ff; color: #2f6fed; font-size: 12px; }
+  /* Toolbar caption on rental service and incidents */
+  .rnt-shell .rfl-toolbar-caption { font: 400 12px/1.55 var(--fleet-font); color: var(--fleet-caption, var(--text-2)); }
+  /* Users table head: title and caption on one line */
+  .rt-ledger-head > div { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .rt-ledger-head p { margin: 0 !important; }
+  /* Organization tabs: underline tabs, a thin line below, corporate spacing */
+  .rt-org > .rt-toolbar { align-items: flex-end; margin-bottom: 18px; border-bottom: 1px solid #e7eaf0; }
+  .rt-org .rt-tabs { display: flex !important; gap: 22px !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; }
+  .rt-org .rt-tabs button { min-height: 0 !important; padding: 0 0 11px !important; margin-bottom: -1px; border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; font-size: 13px !important; color: #8c94a0 !important; }
+  .rt-org .rt-tabs button[aria-pressed=true] { color: var(--primary) !important; border-bottom-color: var(--primary) !important; }
+  .rt-org > .rt-toolbar .rt-actions { padding-bottom: 8px; }
+  /* Freight */
+  .rnt-shell .fr-inline-sub { margin-left: 6px; font-size: 11px; color: #929ba7; white-space: nowrap; }
+  .rnt-shell[data-page="cargo-devices"] .fr-table td:first-child { white-space: nowrap; }
+  .pt-member-shell .rnt-shell .fr-ledger .fr-stats > div:nth-last-child(-n+2) dd { color: var(--text) !important; }
+  .rnt-shell:is([data-page="cargo-reports"], [data-page="cargo-profit"], [data-page="cargo-utilization"]) .ops-tools > p { font-size: 14px; }
+  .rnt-shell .fr-report-cost header strong { font-size: 25px; font-weight: 400; }
+  .rnt-shell .fr-report-cost .fr-btn { font-size: 11px; }
+  .rnt-shell[data-page="cargo-codes"] .fr-table td { padding-block: 12px; }
+  .rnt-shell[data-page="cargo-codes"] .fr-table td :is(.fr-record-link, .fr-badge) { min-height: 0; padding-block: 0; line-height: 1.5; }
+  /* Rental live: four equal filters */
+  .rnt-shell[data-page="live"] .rnt-content .rfl-filters { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .rnt-shell[data-page="live"] .rnt-content .rfl-filters > label { width: auto; min-width: 0; max-width: none; }
+}

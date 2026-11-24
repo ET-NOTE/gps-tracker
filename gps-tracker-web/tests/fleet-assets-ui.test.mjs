@@ -20,6 +20,9 @@ const groupButton=(r,label)=>r.root.find(n=>n.type==='button'&&n.props['aria-pre
 const groupCount=(r,label)=>Number(text(groupButton(r,label).findAllByType('span')[1].children));
 const rowNames=r=>r.root.findByType('tbody').findAllByType('tr').map(n=>text(n.findAllByType('td')[0].children));
 const detailDrawers=r=>r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']);
+const openDetail=r=>act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
+async function openEditor(r){await openDetail(r);await act(async()=>button(r,'정보 수정').props.onClick({currentTarget:{focus(){}}}));}
+const section=(r,label)=>r.root.find(n=>typeof n.type==='string'&&n.props['aria-label']===label);
 
 async function mount(t,{manage=true,phone=false,data=vehicles,devices=[],saveVehicle,onChanged=()=>{},initialMissingSchedules=false,mapReturn,mockupHidden=false}={}){
  const context=vm.createContext({console});
@@ -149,7 +152,7 @@ test('read-only operators can filter missing schedules without an edit action',a
 test('saving a vehicle keeps unset profile numbers blank and preserves actual zero readings',async t=>{
  const data=[{...vehicles[0],profile:{odometer_km:null,next_service_km:0,model_year:null}}];
  const {r,vehicleUpdates}=await mount(t,{data});
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 수정'}).props.onClick());
+ await openEditor(r);
  await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
  assert.equal(vehicleUpdates.length,1);
  const {profile}=vehicleUpdates[0].body;
@@ -187,7 +190,7 @@ test('a vehicle update that finishes after leaving the screen refreshes the list
  let resolve,refreshes=0;
  const pending=new Promise(done=>{resolve=done;});
  const {r,invalidations}=await mount(t,{saveVehicle:()=>pending,onChanged:()=>refreshes++});
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 수정'}).props.onClick());
+ await openEditor(r);
  let request;await act(async()=>{request=r.root.findByType('form').props.onSubmit({preventDefault(){}});});
  await act(async()=>r.unmount());
  await act(async()=>{resolve();await request;});
@@ -268,11 +271,11 @@ test('vehicle filter modal isolates drafts and validates before applying ranges'
 test('vehicle list keeps registration, editing and reporting permissions and callbacks',async t=>{
  const {r,reports}=await mount(t,{manage:false});
  assert.equal(r.root.findAll(n=>n.type==='button'&&['차량 등록','수정','단말기 일괄 연결'].includes(text(n.children))).length,0);
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
- assert.equal(r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']==='123가4567').length,1);
- assert.equal(r.root.findAll(n=>n.type==='button'&&text(n.children)==='단말기 연결').length,0);
- await act(async()=>button(r,'운행기록부 보기').props.onClick());
- assert.deepEqual(reports,[1]);assert.equal(r.root.findAll(n=>n.type==='aside'&&n.props['aria-label']==='123가4567').length,0);
+ await openDetail(r);
+ assert.equal(detailDrawers(r).length,1);assert.equal(detailDrawers(r)[0].props['aria-label'],'차량 상세');
+ assert.equal(r.root.findAll(n=>n.type==='button'&&['단말기 연결','정보 수정'].includes(text(n.children))).length,0,'viewers get neither the connection tab nor the editor');
+ await act(async()=>button(r,'운행기록부').props.onClick());
+ assert.deepEqual(reports,[1]);assert.equal(detailDrawers(r).length,0);
  const managed=await mount(t);
  assert.ok(button(managed.r,'단말기 일괄 연결'));
  await act(async()=>button(managed.r,'차량 등록').props.onClick());
@@ -287,20 +290,20 @@ test('vehicle rows open details by click, Enter and Space without hijacking nest
  await act(async()=>row().props.onClick({target:{closest:()=>({tagName:'BUTTON'})}}));
  assert.equal(detailDrawers(r).length,0);
  await act(async()=>row().props.onClick({target:{closest:()=>null}}));
- assert.equal(detailDrawers(r)[0].props['aria-label'],'123가4567');
+ assert.equal(detailDrawers(r)[0].props['aria-label'],'차량 상세');
  await close();
  const currentTarget={};let prevented=0;
  for(const key of ['Enter',' ']){
   await act(async()=>row().props.onKeyDown({key,target:{},currentTarget,preventDefault:()=>prevented++}));
   assert.equal(detailDrawers(r).length,0,'nested button keystrokes are left to that button');
   await act(async()=>row().props.onKeyDown({key,target:currentTarget,currentTarget,preventDefault:()=>prevented++}));
-  assert.equal(detailDrawers(r)[0].props['aria-label'],'123가4567');
+  assert.equal(detailDrawers(r)[0].props['aria-label'],'차량 상세');
   await close();
  }
  assert.equal(prevented,2);
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 수정'}).props.onClick());
+ await openEditor(r);
  assert.equal(r.root.findByProps({role:'dialog'}).props['aria-label'],'차량 정보 수정');
- assert.equal(detailDrawers(r).length,0);
+ assert.equal(detailDrawers(r).length,1,'the editor opens over the detail drawer');
 });
 
 test('connection shortcut opens the correct tab and keeps vehicle and terminal identifiers independent',async t=>{
@@ -308,7 +311,8 @@ test('connection shortcut opens the correct tab and keeps vehicle and terminal i
   {...vehicles[1],id:72,bindings:[{id:2,device_id:9002,is_primary:true,terminal_name:'다른 차량 단말'}]}];
  const devices=[{id:9001,display_name:'연결할 단말'},{id:9002,display_name:'다른 차량 단말'}];
  const {r,connections}=await mount(t,{data,devices});
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 단말 연결'}).props.onClick());
+ await openDetail(r);
+ await act(async()=>button(r,'단말기 연결').props.onClick());
  assert.equal(button(r,'단말기 연결').props['aria-pressed'],true);
  const checks=r.root.findAll(n=>n.type==='input'&&n.props.type==='checkbox');
  assert.equal(checks[0].props.disabled,false);assert.equal(checks[1].props.disabled,true);
@@ -318,7 +322,8 @@ test('connection shortcut opens the correct tab and keeps vehicle and terminal i
  assert.deepEqual(JSON.parse(JSON.stringify(connections[0][1])),{device_ids:[9001],primary_device_id:9001,updated_at:'vehicle-version'});
  assert.equal(detailDrawers(r).length,0);
  const viewer=await mount(t,{manage:false,data,devices});
- assert.equal(viewer.r.root.findAll(n=>n.type==='button'&&/단말 연결| 수정$/.test(n.props['aria-label']||'')).length,0);
+ await openDetail(viewer.r);
+ assert.equal(viewer.r.root.findAll(n=>n.type==='button'&&['단말기 연결','정보 수정'].includes(text(n.children))).length,0);
 });
 
 test('vehicle detail keeps operational state, communication, missing schedules and measured zero distinct',async t=>{
@@ -326,23 +331,23 @@ test('vehicle detail keeps operational state, communication, missing schedules a
   bindings:[{id:1,device_id:9001,is_primary:true,terminal_name:'대표 단말',started_at:'2026-11-01T00:00:00Z'}]};
  const {r,maps}=await mount(t,{data:[asset],devices:[{id:9001,display_name:'대표 단말'}]});
  assert.equal(r.root.findByProps({'data-photo-version':'photo-version'}).props['data-vehicle-id'],71);
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
- const info=r.root.findByProps({'aria-label':'차량 기본 정보'});
- const terminal=r.root.findByProps({'aria-label':'단말기 통신과 위치'});
- const maintenance=r.root.findByProps({'aria-label':'차량 점검 일정'});
- assert.match(text(info.children),/사용 가능/);assert.match(text(r.root.findByProps({className:'fleet-vehicle-hero'}).children),/계기판 누적거리0 km/);
+ await openDetail(r);
+ const info=section(r,'차량 기본 정보');
+ const terminal=section(r,'단말기와 위치');
+ const maintenance=section(r,'보험·정비 정보');
+ assert.match(text(r.root.findByProps({className:'fleet-vehicle-identity'}).children),/사용 가능/);assert.match(text(r.root.findByProps({className:'fleet-vehicle-hero'}).children),/누적거리0 km/);
  assert.match(text(info.children),/담당자김영업/);
- assert.match(text(terminal.children),/단말기 통신 상태오프라인/);
+ assert.match(text(terminal.children),/통신 상태오프라인/);
  assert.match(text(maintenance.children),/일정 미등록 2건/);
  assert.match(text(maintenance.children),/보험 만료일2026-12-31/);
  assert.match(text(maintenance.children),/다음 정비 주행거리0 km/);
  assert.doesNotMatch(text(maintenance.children),/예정 없음/);
- await act(async()=>button(r,'전체 지도 보기').props.onClick());
+ await act(async()=>button(r,'지도에서 보기').props.onClick());
  assert.equal(maps.length,1);
  const [{deviceId,origin}]=maps;
  assert.equal(deviceId,9001);assert.equal(origin.vehicleId,71);assert.equal(origin.detailTab,'status');
  const back=await mount(t,{data:[asset],devices:[{id:9001,display_name:'대표 단말'}],mapReturn:origin});
- assert.equal(detailDrawers(back.r)[0].props['aria-label'],'123가4567');
+ assert.equal(detailDrawers(back.r)[0].props['aria-label'],'차량 상세');
  const revoked=await mount(t,{data:[],mapReturn:origin});
  assert.equal(detailDrawers(revoked.r).length,0);
 });
@@ -352,10 +357,10 @@ test('an active terminal with unavailable telemetry stays connected, while an en
  for(const current of [true,false]){
   const asset={...vehicles[0],bindings:[{...binding,ended_at:current?null:'2026-11-01T00:00:00Z'}]};
   const {r}=await mount(t,{data:[asset],devices:[]});
-  await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
-  const facts=r.root.findByProps({'aria-label':'단말기 통신과 위치'}).findAllByType('dd').map(n=>text(n.children));
-  assert.deepEqual(facts,current?['검수 단말','연결됨 · 통신 정보 확인 불가','확인 불가','확인 불가']:['단말기 미연결','미연결','수신 이력 없음','수신 이력 없음']);
-  assert.equal(r.root.findAll(n=>n.type==='button'&&text(n.children)==='전체 지도 보기').length,0);
+   await openDetail(r);
+  const facts=section(r,'단말기와 위치').findAllByType('dd').map(n=>text(n.children));
+  assert.deepEqual(facts,current?['검수 단말','연결됨 · 통신 정보 확인 불가','확인 불가','확인 불가']:['미연결','미연결','수신 이력 없음','수신 이력 없음']);
+  assert.equal(r.root.findAll(n=>n.type==='button'&&text(n.children)==='지도에서 보기').length,0);
  }
 });
 
@@ -363,8 +368,8 @@ test('vehicle detail survives edit cancellation and saving, and uses the refresh
  const asset={...vehicles[0],updated_at:'first-version'};
  let changes=0;
  const {r,refresh,connections,vehicleUpdates}=await mount(t,{data:[asset],devices:[{id:901,display_name:'새 단말기'}],onChanged:()=>{changes++;}});
- await act(async()=>r.root.findByProps({'aria-label':'영업 1호 · 123가4567 상세'}).props.onClick());
- const open=()=>act(async()=>button(r,'차량·점검 정보 수정').props.onClick({currentTarget:{focus(){}}}));
+ await openDetail(r);
+ const open=()=>act(async()=>button(r,'정보 수정').props.onClick({currentTarget:{focus(){}}}));
  const drawer=detailDrawers(r)[0];
  await open();
  assert.equal(detailDrawers(r)[0],drawer);

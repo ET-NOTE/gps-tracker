@@ -30,8 +30,8 @@ export default function FreightCharges({data,save,onPage,onOpenFinance}) {
   const headings=['운송번호','비용 항목','발생 일시',...amounts.map(([,l])=>l),'상태'];
   const values=x=>[shipments.get(x.shipmentId)?.number||'—',x.kind,timeLabel(x.at),...amounts.map(([k])=>costLabel(x[k])),chargeStates[x.status]];
   return <section className="fr-section fr-admin-list fr-charge-list">
-    <FreightStats items={[['확인 대기',<>{state&&state!=='pending'?0:counts.pending}<small className="fr-stat-unit">건</small></>],['승인 화주 추가액',costLabel(totals.sellAmount)],['승인 운송비 추가액',costLabel(totals.buyAmount)],['승인 회사 부담액',costLabel(totals.companyCost)]]}/>
-    <FreightFilters admin resetLabel={mockup?'초기화':undefined} query={query} onQuery={setQuery} placeholder="운송번호·화주·비용 항목·사유 검색" onReset={reset}><PeriodFilter label="조회 기간" period={period} setPeriod={setPeriod}/>
+    <FreightStats items={[['확인 대기',<>{state&&state!=='pending'?0:counts.pending}<small className="fr-stat-unit">건</small></>,undefined,'clock'],['승인 화주 추가액',costLabel(totals.sellAmount)],['승인 운송비 추가액',costLabel(totals.buyAmount)],['승인 회사 부담액',costLabel(totals.companyCost)]]}/>
+    <FreightFilters admin resetLabel={mockup?'초기화':undefined} query={query} onQuery={setQuery} placeholder={mockup?'운송번호, 화주, 사유 검색':'운송번호·화주·비용 항목·사유 검색'} onReset={reset}><PeriodFilter label={mockup?'발생 기간':'조회 기간'} period={period} setPeriod={setPeriod}/>
       <OfficeFilter label="지점" value={branch} onChange={setBranch} options={choicesFrom(data.branches)}/>
       <OfficeFilter label="비용 항목" value={kind} onChange={setKind} options={choices(data.codes.chargeTypes)}/>
       <OfficeFilter label={mockup?'확인 상태':'상태'} value={state} onChange={setState} options={statusOptions}/>

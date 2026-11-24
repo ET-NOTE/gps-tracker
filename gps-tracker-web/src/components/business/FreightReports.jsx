@@ -9,10 +9,14 @@ import {FreightRecordActions} from './FreightWorkflow';
 import {FreightCatalogDialogs} from './FreightCatalog';
 import {Status} from './FreightDetail';
 import {ChartPanel,ReportBars} from './OperationsChart';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 
 const withUnit=(n,unit)=><>{n}<small className="fr-stat-unit">{unit}</small></>;
 
 function ReportsView({page,data,save,onPage,open}){
+  // Desktop design: the 주문·배차 실적 page has no per-shipper total table (CSV keeps it).
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const today=stamp().slice(0,10), defaults={start:today.slice(0,7)+'-01',end:today,branch:'',carrier:'*'};
   const [filters,set]=useState(defaults),[failure,fail]=useState('');
   const [vehicleView,setVehicleView]=useState(null);
@@ -82,9 +86,9 @@ function ReportsView({page,data,save,onPage,open}){
         const original=sourceShips.get(s.id);return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[facts(shipLink(s),s.shipper),facts(vehicleName(data,original.vehicleId),nameOf(data,'drivers',original.driverId)),
           facts(routeName(data,firstOrder(data,original)),timeLabel(original.start)),<Status value={s.status} labels={shipStates}/>]};
       })}/></section>}
-      <section className="ops-table-panel" aria-label={util?'차량별 운영 내역':profit?'운송별 운임 차익':'화주별 합계'}>
+      {!(report&&desk)&&<section className="ops-table-panel" aria-label={util?'차량별 운영 내역':profit?'운송별 운임 차익':'화주별 합계'}>
         {report&&<header className="ops-table-head"><h2>화주별 합계</h2></header>}
-        <FreightTable columns={displayColumns} rows={rows.map(reportRow)}/></section>
+        <FreightTable columns={displayColumns} rows={rows.map(reportRow)}/></section>}
       <p className="ops-note">{util?'배차일은 차량별로 운송 일정이 잡힌 날짜를 한 번씩 집계합니다.':'상차 예정일 기준으로 승인된 추가 비용을 포함합니다. 양쪽 운임이 확정된 '+r.totals.known+'건의 차익을 집계했습니다.'}</p>
       {profit&&<section className="ops-table-panel fr-report-cost"><header><div><h2>별도 차량 관리비</h2><p>선택 기간에 시작한 완료 정비·검사·보험 일정</p></div><strong>{costLabel(r.utilization.reduce((n,v)=>n+v.cost,0))}</strong></header>
         <p>운임 차익에는 회사 부담 추가비만 반영됩니다. 차량 관리비는 별도로 집계합니다.</p><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 내역</FreightButton></section>}
