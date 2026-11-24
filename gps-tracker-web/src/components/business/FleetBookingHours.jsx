@@ -47,11 +47,14 @@ export function hoursChanged(hours, draft) {
   return hours.week_mask!==next.week_mask || hours.open_minute!==next.open_minute || hours.close_minute!==next.close_minute;
 }
 
-/** Controlled weekday and time fields; saving belongs to the operating policy page. */
-export function BookingHoursFields({hours, draft, onChange, disabled}) {
+/**
+ * Controlled weekday and time fields; saving belongs to the operating policy page.
+ * `desk` (desktop design) drops the current-setting line and uses the design's time labels.
+ */
+export function BookingHoursFields({hours, draft, onChange, disabled, desk=false}) {
   const set=patch=>onChange({...draft,...patch});
   const invalid=hoursInvalid(draft);
-  return <div className="fleet-hours"><p role="status">현재 적용 중 · <strong>{summary(hours)}</strong></p>
+  return <div className="fleet-hours">{!desk&&<p role="status">현재 적용 중 · <strong>{summary(hours)}</strong></p>}
     <div className="fleet-hours-form">
       <fieldset disabled={disabled}><legend>예약 가능 요일</legend>
         <div className="fleet-hours-presets">{presets.map(([text,v])=><button key={v} type="button" aria-pressed={draft.mask===v} onClick={()=>set({mask:v})}>{text}</button>)}</div>
@@ -59,8 +62,8 @@ export function BookingHoursFields({hours, draft, onChange, disabled}) {
       </fieldset>
       <fieldset disabled={disabled}><legend>예약 가능 시간 · 한국시간</legend>
         <label><input type="checkbox" checked={draft.allDay} onChange={e=>set({allDay:e.target.checked})}/>하루 종일</label>
-        {!draft.allDay && <div className="fleet-hours-time"><label>시작 시간<input type="time" required value={draft.start} onChange={e=>set({start:e.target.value})}/></label>
-          <label>종료 시간<input type="time" required value={draft.end} onChange={e=>set({end:e.target.value})}/></label></div>}
+        {!draft.allDay && <div className="fleet-hours-time"><label>{desk?'예약 시작 가능 시간':'시작 시간'}<input type="time" required value={draft.start} onChange={e=>set({start:e.target.value})}/></label>
+          <label>{desk?'예약 종료 시간':'종료 시간'}<input type="time" required value={draft.end} onChange={e=>set({end:e.target.value})}/></label></div>}
       </fieldset>
       {invalid && <p role="alert">{invalid}</p>}
     </div>

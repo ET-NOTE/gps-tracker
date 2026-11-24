@@ -830,3 +830,21 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   .business-workspace--corporate .business-content .fleet-operations[data-mode="devices"] > .fleet-operations-query > .fleet-record-fields { grid-template-columns: minmax(0, 1.48fr) minmax(0, 1fr) minmax(0, 1fr); }
   .business-workspace--corporate .business-content .fleet-operations:is([data-mode="devices"], [data-mode="maintenance"]) > .fleet-operations-query > .fleet-record-fields > * { flex: none; width: auto; min-width: 0; }
 }
+/* Round 15: operating policy and organization table (PC) */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-toggles {padding:0 22px 18px!important}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-toggles {display:grid; gap:0!important}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-toggles>.fleet-policy-toggle {margin:0; padding:14px 17px; border:1px solid #e3e7ee; border-top-width:0}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-toggles>.fleet-policy-toggle:first-child {border-top-width:1px; border-radius:8px 8px 0 0; padding-top:14px}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-toggles>.fleet-policy-toggle:last-child {border-radius:0 0 8px 8px}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-toggle strong {font-size:13px!important}
+  .business-workspace--corporate .business-content .fleet-operating-policy .fleet-policy-toggle small {font-size:11px!important}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-minutes {width:calc((100% - 16px) / 2)}
+  .business-workspace--corporate .fleet-operating-policy .fleet-policy-minutes input {max-width:none}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-table {table-layout:fixed}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-table :is(th,td):nth-child(1) {width:36%}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-table :is(th,td):nth-child(2) {width:27%; text-align:left}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-table :is(th,td):nth-child(3) {width:22%; text-align:left}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-table :is(th,td):nth-child(4) {text-align:right}
+  .business-workspace--corporate .fleet-org-directory .fleet-org-action-label {position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+}

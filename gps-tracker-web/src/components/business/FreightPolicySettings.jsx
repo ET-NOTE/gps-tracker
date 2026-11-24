@@ -37,7 +37,7 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
   // Desktop 알림·연동: two-column checkboxes, the channel note and save button inside the panel, no page toolbar.
   const notice=desk&&!policy, leading=mockup||notice;
   const linked=(data.vehicles||[]).filter(v=>v.deviceId).length;
-  const badges={'차량 단말기':linked?'연결 '+linked+'대':'연결 없음','기사 앱':'직원 초대','전자 세금계산서':'발행 별도','외부 화물망':'CSV 등록'};
+  const badges={'차량 단말기':linked?'연결 '+linked+'대':'연결 없음'};
   async function submit(event) {
     event.preventDefault();
     if(lock.current)return;
@@ -67,7 +67,7 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
       {mockup&&toolbar}
     </form>
     {!policy&&<div className={'fr-setting-grid'+(notice?' fr-connection-grid':'')}>{connections.map(([title,text,page,label,icon])=><section className="fr-dashboard-card" key={title}>
-      {notice?<header className="fr-connection-head"><h2><span className="fr-connection-icon"><Icon name={icon} size={16}/></span>{title}</h2><FreightBadge tone={title==='차량 단말기'&&linked?'green':'neutral'}>{badges[title]}</FreightBadge></header>:<header><h2>{title}</h2></header>}<div className="fr-settings"><p className="fr-note">{text}</p><FreightButton onClick={()=>onPage(page)}>{label}</FreightButton></div>
+      {notice?<header className="fr-connection-head"><h2><span className="fr-connection-icon"><Icon name={icon} size={16}/></span>{title}</h2>{badges[title]&&<FreightBadge tone={linked?'green':'neutral'}>{badges[title]}</FreightBadge>}</header>:<header><h2>{title}</h2></header>}<div className="fr-settings"><p className="fr-note">{text}</p><FreightButton onClick={()=>onPage(page)}>{label}</FreightButton></div>
     </section>)}</div>}
   </div>;
 }

@@ -28,7 +28,7 @@ export function TeamBranchDirectory({branches, onAdd, onEdit, note='지점에 �
       <div className="rt-actions">{onAdd&&<button type="button" className="business-button is-primary" onClick={onAdd}><Icon name="plus" size={15}/>지점 추가</button>}</div></div>
     <section className="rt-card" aria-label="지점 관리"><header className="rt-card-head"><h3>지점 목록</h3><span>{note}</span></header>
       <div className="rt-table-wrap" tabIndex={0} role="region" aria-label="지점 표"><table className="rt-table">
-        <thead><tr><th scope="col">지점 이름</th><th scope="col">소속 사용자</th><th scope="col">사용 현황</th>{onEdit&&<th scope="col">관리</th>}</tr></thead>
+        <thead><tr><th scope="col">지점 이름</th><th scope="col">소속 사용자</th><th scope="col">사용 현황</th>{onEdit&&<th scope="col"><span className="rt-visually-hidden">관리</span></th>}</tr></thead>
         <tbody>{branches.length===0&&<tr className="rt-empty-row"><td colSpan={onEdit?4:3}><p>등록된 지점이 없습니다.</p></td></tr>}
           {branches.map(b=><tr key={b.id}><td><strong className="rt-name"><Icon name="mapPin" size={15}/>{b.name}</strong></td><td>{b.members}</td><td>{b.usage}</td>
             {onEdit&&<td><button type="button" className="rt-link" aria-label={b.name+' 지점 수정'} onClick={()=>onEdit(b)}>수정</button></td>}</tr>)}</tbody>

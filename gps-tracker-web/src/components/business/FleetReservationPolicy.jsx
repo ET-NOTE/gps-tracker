@@ -27,8 +27,11 @@ function offlineError(text){
   return /^\d+$/.test(String(text).trim()) && n>=1 && n<=240 ? '' : '수신 지연 판단 시간은 1분에서 240분 사이로 입력해 주세요.';
 }
 
-/** Operating policy page: one bar saves only the parts that changed, each to its own API. */
-export default function FleetOperatingPolicy(){
+/**
+ * Operating policy page: one bar saves only the parts that changed, each to its own API.
+ * `desk` is the desktop design: only 예약 허용일 keeps its subtitle and the approval note is hidden.
+ */
+export default function FleetOperatingPolicy({desk=false}={}){
   const access=useFleetAccess(),qc=useQueryClient(),owner=access.role==='owner';
   const reservation=useQuery({queryKey:reservationPolicyKey,queryFn:api.fleetReservationPolicy});
   const operating=useOperatingPolicy();
@@ -88,7 +91,7 @@ export default function FleetOperatingPolicy(){
       </div>:<small>회사 소유자만 변경할 수 있습니다.</small>}
     </div>
     {(message.text||(dirty&&invalid))&&<p className="fleet-policy-feedback" role={message.error||invalid?'alert':'status'}>{message.text||invalid}</p>}
-    <BusinessSection title="승인 방식" description="업무 요청을 확정하는 방식을 정합니다."><div className="fleet-policy-controls">
+    <BusinessSection title="승인 방식" description={desk?undefined:"업무 요청을 확정하는 방식을 정합니다."}><div className="fleet-policy-controls">
       <label className="fleet-policy-field">차량 예약
         <select aria-label="차량 예약 승인 방식" value={value.reservation_approval?'approval':'instant'} disabled={locked}
           onChange={e=>set({reservation_approval:e.target.value==='approval'})}>
@@ -99,17 +102,17 @@ export default function FleetOperatingPolicy(){
           onChange={e=>set({expense_approval_required:e.target.value==='approval'})}>
           <option value="approval">관리자 승인</option><option value="instant">즉시 승인</option>
         </select></label>
-      <p className="fleet-policy-hint">기존 예약과 지출은 신청 당시 정책을 따릅니다.</p>
+      {!desk&&<p className="fleet-policy-hint">기존 예약과 지출은 신청 당시 정책을 따릅니다.</p>}
     </div></BusinessSection>
-    <BusinessSection title="운행 기록 기준" description="운행일지 작성과 확정 기준을 정합니다."><div className="fleet-policy-controls fleet-policy-toggles">
+    <BusinessSection title="운행 기록 기준" description={desk?undefined:"운행일지 작성과 확정 기준을 정합니다."}><div className="fleet-policy-controls fleet-policy-toggles">
       <Toggle label="운행 목적 필수" hint="예약과 운행일지에 목적을 지정합니다." checked={value.trip_purpose_required} disabled={locked} onChange={v=>set({trip_purpose_required:v})}/>
       <Toggle label="개인 용도 이용 허용" hint="개인 용도의 예약을 허용합니다." checked={value.personal_use_allowed} disabled={locked} onChange={v=>set({personal_use_allowed:v})}/>
       <Toggle label="운행 종료 후 확인" hint="완료된 운행 내용을 검토하고 확정합니다." checked={value.review_after_trip} disabled={locked} onChange={v=>set({review_after_trip:v})}/>
     </div></BusinessSection>
     <BusinessSection className="fleet-policy-wide" title="예약 허용일" description="차량을 예약할 수 있는 요일과 시간을 설정합니다.">
-      <BookingHoursFields hours={hours.data} draft={value.hours} disabled={locked} onChange={draft=>set({hours:draft})}/>
+      <BookingHoursFields desk={desk} hours={hours.data} draft={value.hours} disabled={locked} onChange={draft=>set({hours:draft})}/>
     </BusinessSection>
-    <BusinessSection className="fleet-policy-wide" title="단말 수신 기준" description="단말 상태를 판단하는 기준을 정합니다."><div className="fleet-policy-controls">
+    <BusinessSection className="fleet-policy-wide" title="단말 수신 기준" description={desk?undefined:"단말 상태를 판단하는 기준을 정합니다."}><div className="fleet-policy-controls">
       <label className="fleet-policy-field fleet-policy-minutes">수신 지연 판단 시간 · 분
         <input type="number" inputMode="numeric" min={1} max={240} step={1} aria-label="수신 지연 판단 시간(분)" value={value.offline_minutes} disabled={locked}
           onChange={e=>set({offline_minutes:e.target.value})}/></label>

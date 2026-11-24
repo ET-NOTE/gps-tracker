@@ -25,7 +25,7 @@ export default function FleetOrganizationDirectory({items,roster,ready,onEdit,on
     </div>{onEdit&&kind!=='site'&&<button type="button" className="business-button is-primary" onClick={()=>onEdit({kind,name:'',active:true})}><Icon name="plus" size={15}/>{label} 추가</button>}</div>
     {kind==='site'?<div className="fleet-org-sites">{sites}</div>:<section className="fleet-org-section" aria-label={label+' 관리'}><header><h3>{label} 목록</h3><span>사용 중인 {label}{kind==='position'?'은':'는'} 연결 정보를 변경한 후 삭제할 수 있습니다.</span></header>
       <div className="fleet-org-scroll" role="region" tabIndex={0} aria-label={label+' 표 · 좌우 스크롤'}>
-        <table className="fleet-org-table" aria-label={label+' 목록'}><thead><tr><th scope="col">{label} 이름</th><th scope="col">소속 사용자</th><th scope="col">사용 현황</th>{onEdit&&<th scope="col">관리</th>}</tr></thead>
+        <table className="fleet-org-table" aria-label={label+' 목록'}><thead><tr><th scope="col">{label} 이름</th><th scope="col">소속 사용자</th><th scope="col">사용 현황</th>{onEdit&&<th scope="col"><span className="fleet-org-action-label">관리</span></th>}</tr></thead>
         <tbody>{visible.length===0&&<tr className="fleet-table-empty-row"><td colSpan={onEdit?4:3}><p className="fleet-team-empty">등록된 {label}{kind==='position'?'이':'가'} 없습니다.</p></td></tr>}{visible.map(item=><tr key={item.id} onClick={()=>setSelectedId(item.id)}>
           <td><button type="button" className="fleet-org-name" aria-label={item.name+' '+label+' 상세 보기'}><Icon name="users" size={16}/>{item.name}</button></td>
           <td>{count(item)}</td><td>{status(item)}</td>{onEdit&&<td><button type="button" className="fleet-org-edit" aria-label={item.name+' '+label+' 수정'} onClick={e=>{e.stopPropagation();onEdit(item);}}>수정</button></td>}
