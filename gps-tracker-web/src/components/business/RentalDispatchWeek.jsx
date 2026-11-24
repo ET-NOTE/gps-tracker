@@ -10,6 +10,8 @@ import { useRentalOperations } from './useBusinessData';
 import { fleetWorkKey } from './RentalFleetWork';
 import { policyKey } from './RentalPolicy';
 import { BusinessButton, BusinessError } from './BusinessWorkspace';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 import ExportButtons from './ExportButtons';
 import { StageBadge } from './RentalStageTable';
 
@@ -29,6 +31,7 @@ export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryErr
   const [week,setWeek]=useState(()=>mondayOf(today));
   const [branch,setBranch]=useState(''), [vehicleClass,setVehicleClass]=useState('');
   const [assignment,setAssignment]=useState(''), [query,setQuery]=useState('');
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const days=boardDays(week);
   const rentals=useRentalOperations(now,{from:week+'T00:00:00+09:00',to:addBusinessDays(week,7)+'T00:00:00+09:00'});
   const service=useQuery({queryKey:fleetWorkKey(),queryFn:api.rentalFleetWork,staleTime:15_000});
@@ -44,7 +47,7 @@ export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryErr
     (!branch||(c.pickup_location||v?.branch)===branch) &&
     (!vehicleClass||classOf(v)===vehicleClass||c.rental_terms?.requested_model===vehicleClass) &&
     (!assignment||isAssigned(c)===(assignment==='assigned')) &&
-    matchesText(['R-'+c.id,c.renter_name,c.rental_terms?.requested_model,v&&vehicleName(v)]) &&
+    matchesText(['R-'+c.id,c.renter_name,c.rental_terms?.driver_name,c.rental_terms?.requested_model,v&&vehicleName(v)]) &&
     days.some(d=>rentalOnDay(c,d,now))
   ).sort((a,b)=>Date.parse(a.c.starts_at)-Date.parse(b.c.starts_at));
   const work=(assignment?[]:(service.data||[])).map(w=>({w,v:byVehicle.find(v=>matchesVehicle(w,v))}))
@@ -65,7 +68,7 @@ export default function RentalDispatchWeek({vehicles,inventoryReady,inventoryErr
       <label>인수 지점<select aria-label="인수 지점" value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{branchNames.map(n=><option key={n}>{n}</option>)}</select></label>
       <label>차종<select aria-label="차종" value={vehicleClass} onChange={e=>setVehicleClass(e.target.value)}><option value="">전체 차종</option>{classNames.map(n=><option key={n}>{n}</option>)}</select></label>
       <label>배차 상태<select aria-label="배차 상태" value={assignment} onChange={e=>setAssignment(e.target.value)}><option value="">전체</option><option value="waiting">배차 대기</option><option value="assigned">배차 완료</option></select></label>
-      <label className="rental-stage-search">검색<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="고객, 차량, 예약번호"/></label>
+      <label className="rental-stage-search">검색<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={desk?'고객, 운전자, 차량, 예약번호':'고객, 차량, 예약번호'}/></label>
       <BusinessButton className="fleet-filter-reset-link" icon="refresh" onClick={()=>{setBranch('');setVehicleClass('');setAssignment('');setQuery('');}}>조건 초기화</BusinessButton>
     </div>
     {rentals.isError&&<BusinessError onRetry={rentals.refetch}>대여 일정을 불러오지 못했습니다.</BusinessError>}

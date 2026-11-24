@@ -16,10 +16,11 @@ export function freightTasks(data,ships,fleet,terminals,now) {
     ['connectionNotice','단말 수신 확인',terminals.filter(d=>!d.last_seen_at||now-Date.parse(d.last_seen_at)>data.policies.offlineMinutes*60000).length,'cargo-devices']
   ].filter(([pref])=>data.integrations[pref]);
 }
-export default function FreightAlerts({data,devices,onPage}){
+// `label` renders a small text button (desktop 알림·연동 panel) instead of the header bell.
+export default function FreightAlerts({data,devices,onPage,label}){
   const [open,setOpen]=useState(false),tasks=freightTasks(data,data.shipments,data.vehicles,devices,Date.now()).filter(([, ,n])=>n>0);
   const visit=p=>{setOpen(false);onPage(p);};
-  return <><button type="button" className="rnt-icon ws-icon" aria-label={'업무 알림 '+tasks.reduce((n,t)=>n+t[2],0)+'건'} onClick={()=>setOpen(true)}><Icon name="bell" size={17}/></button>
+  return <>{label?<button type="button" className="business-button rt-small-button" onClick={()=>setOpen(true)}>{label}</button>:<button type="button" className="rnt-icon ws-icon" aria-label={'업무 알림 '+tasks.reduce((n,t)=>n+t[2],0)+'건'} onClick={()=>setOpen(true)}><Icon name="bell" size={17}/></button>}
     {open&&<BusinessDrawer title="업무 알림" onClose={()=>setOpen(false)}><div className="fr-page">
       {tasks.map(([,label,count,to,hint])=><button type="button" className="fr-pick" key={label} onClick={()=>visit(to)}>{label} <strong>{count}건</strong>{hint&&<small>{hint}</small>}</button>)}
       {!tasks.length&&<p className="fr-empty">현재 확인할 알림이 없습니다.</p>}

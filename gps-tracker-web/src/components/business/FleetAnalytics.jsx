@@ -10,6 +10,7 @@ import { fleetAssetLabel } from '../../lib/fleetAssets';
 import { BusinessButton, BusinessEmpty, BusinessError, BusinessSection } from './BusinessWorkspace';
 import FleetRecordMetrics from './FleetRecordMetrics';
 import './fleet-analytics.css';
+import MockupLineChart from './MockupLineChart';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
 
@@ -51,7 +52,8 @@ async function loadTrips(devices, params, signal) {
   };
 }
 
-function Trend({series, unit, format}) {
+function Trend({series, unit, format, desk=false, label}) {
+  if (desk) return <MockupLineChart points={series.map(point=>({day:point.date,value:point.value}))} unit={unit} format={format} height={230} label={label}/>;
   const max = Math.max(1,...series.map(point=>point.value));
   const positions = series.map((point,i)=>({x:series.length===1?50:2+96*i/(series.length-1),y:95-86*point.value/max}));
   return <div className="fleet-analytics-trend">
@@ -199,7 +201,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       {result.data.excluded>0&&<p className="fleet-analytics-note">아직 끝나지 않았거나 시간이 확인되지 않은 운행 {number(result.data.excluded)}건은 합계에서 제외했습니다.</p>}
       <FleetRecordMetrics label={trips?'운행 통계 요약':'지출 통계 요약'} items={metrics.map(({label,...metric})=>({name:label,...metric}))}/>
       <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} description={trips?(metric==='count'?'날짜별 운행 건수':'날짜별 주행거리'):'날짜별 지출 금액'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
-        {series.length?<Trend series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}
+        {series.length?<Trend desk={desk} label={trips?'운행 추이':'지출 추이'} series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}
       </BusinessSection><BusinessSection title={trips?'운행목적별 비중':'항목별 지출'} description={trips?'운행 건수 기준':'지출 금액 기준'}>
         {categories.length?<RankingBars groups={categories} field={trips?'count':'amount'} format={number} unit={trips?'건':'원'}/>:<BusinessEmpty compact title="집계할 항목이 없습니다."/>}
       </BusinessSection></div>

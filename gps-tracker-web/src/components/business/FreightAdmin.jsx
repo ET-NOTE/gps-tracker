@@ -48,11 +48,11 @@ function Company({data={}}) {
     </FreightForm>}</section>;
 }
 
-export default function FreightAdmin({page,data,save,onPage}){
+export default function FreightAdmin({page,data,save,onPage,devices}){
   const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [editor,setEditor]=useState(null),[tab,setTab]=useState('vehicleTypes'),[query,search]=useState('');
   if(page==='company')return <Company data={data}/>;
-  if(page==='cargo-policies'||page==='cargo-integrations')return <FreightPolicySettings policy={page==='cargo-policies'} data={data} save={save} onPage={onPage}/>;
+  if(page==='cargo-policies'||page==='cargo-integrations')return <FreightPolicySettings policy={page==='cargo-policies'} data={data} save={save} onPage={onPage} devices={devices}/>;
   const branch=page==='organization',title=branch?'지점':'기준정보';
   const props={title:branch?(editor?.id?'지점 수정':'지점 등록'):((editor?.label||'')+' '+(editor?.remove?'삭제':editor?.original?'수정':'추가')),submitLabel:editor?.remove?'삭제':'저장',onClose:()=>setEditor(null),
     onSubmit:async form=>{

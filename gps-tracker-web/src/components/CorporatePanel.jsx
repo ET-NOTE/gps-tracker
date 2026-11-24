@@ -19,6 +19,7 @@ import {CompanySubjectMappings} from './SubjectProvision';
 import FleetSites from './business/FleetSites';
 import FleetExpenses from './business/FleetExpenses';
 import FleetAnalytics from './business/FleetAnalytics';
+import MockupLineChart from './business/MockupLineChart';
 import FleetLive from './business/FleetLive';
 import FleetOperatingPolicy, { useOperatingPolicy } from './business/FleetReservationPolicy';
 import FleetTripPurposes from './business/FleetTripPurposes';
@@ -266,6 +267,8 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
 }
 function FleetWeekChart({days,distances}){
   const values=days.map(day=>(distances[day]||0)/1000), max=Math.max(1,...values);
+  // Desktop design: the shared line chart with a y axis and point tooltips instead of per-point labels.
+  if(!useCorporatePhone()&&hideOutsideMockup)return <MockupLineChart points={days.map((day,i)=>({day,value:values[i]}))} unit="km" format={v=>v.toLocaleString('ko-KR',{maximumFractionDigits:1})} height={150} label="최근 7일 운행"/>;
   const points=values.map((km,i)=>[12+i*49,68-km/max*52]);
   const line=points.map(p=>p.join(',')).join(' ');
   return <div className="fleet-week-chart"><svg viewBox="0 0 318 80" preserveAspectRatio="none" aria-hidden="true">

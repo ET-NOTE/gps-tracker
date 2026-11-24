@@ -339,3 +339,16 @@
   .rnt-shell[data-page="live"] .rnt-content .rfl-filters { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
   .rnt-shell[data-page="live"] .rnt-content .rfl-filters > label { width: auto; min-width: 0; max-width: none; }
 }
+/* Round 18: icon download button on rental and freight user lists (PC) */
+@media screen and (min-width: 768px) {
+  .rt-toolbar .rt-icon-button { display: inline-grid; place-items: center; width: 37px; height: 37px; min-height: 37px; padding: 0; }
+  .rnt-shell .fr-section[data-notice] .fr-dashboard-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+}
+/* Round 18: cargo incidents toolbar (PC) */
+@media screen and (min-width: 768px) {
+  .rnt-shell .fr-incidents > .fr-toolbar { flex-wrap: nowrap; }
+  .rnt-shell .fr-incidents > .fr-toolbar > .fr-toolbar-caption { flex: 1 1 auto; font-size: 12px; }
+  .rnt-shell .fr-incidents > .fr-toolbar > .fr-btn.is-primary { margin-left: auto; font-size: 12px; }
+  .rnt-shell .fr-incidents > .fr-toolbar > .fr-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .rnt-shell .fr-incident-setup { margin: 10px 0 0; font-size: 12px; color: var(--fleet-caption, #7e8998); }
+}

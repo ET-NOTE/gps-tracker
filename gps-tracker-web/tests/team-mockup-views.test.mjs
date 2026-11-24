@@ -39,7 +39,7 @@ async function load(file, modules, context) {
 
 async function mountTeam(t,{cargo=false,page='staff',mockup=true}={}) {
   const context=vm.createContext({console,window:{location:{origin:'https://dev.example'}}});
-  const calls=[],invalidated=[];
+  const calls=[],invalidated=[],downloads=[];
   const data=teamData();
   const team=async(method,path,body)=>{calls.push([method,path,body===undefined?undefined:plain(body)]);if(path.endsWith('/invite')||path==='/staff')return {code:'CODE-1'};return {id:path==='/groups'?8:undefined};};
   const tag=type=>({children,...props})=>React.createElement(type,props,children);
@@ -58,6 +58,7 @@ async function mountTeam(t,{cargo=false,page='staff',mockup=true}={}) {
     './rental-team.css':{},
     '../../useCorporatePhone':{default:()=>false},
     '../../lib/mockupHidden':{hideOutsideMockup:mockup},
+    '../../lib/downloadReport':{downloadReport:async(report,format)=>{downloads.push([report,format]);}},
     './TeamMockupViews':()=>{const m=new vm.SyntheticModule(Object.keys(views.namespace),function(){for(const [k,v] of Object.entries(views.namespace))this.setExport(k,v);},{context});return m;},
     '@tanstack/react-query':{useQuery:()=>({isPending:false,error:null,data,refetch(){}}),useQueryClient:()=>({invalidateQueries:async options=>{invalidated.push(options.queryKey);}})},
   };
@@ -66,19 +67,22 @@ async function mountTeam(t,{cargo=false,page='staff',mockup=true}={}) {
   const tabs=[];
   await act(async()=>{renderer=create(React.createElement(mod.namespace.default,{page,cargo,onTab:id=>tabs.push(id)}));});
   t.after(()=>act(()=>renderer.unmount()));
-  return {renderer,calls,invalidated,tabs};
+  return {renderer,calls,invalidated,tabs,downloads};
 }
 const findButton=(r,label)=>r.root.findAll(n=>n.type==='button'&&text(n.children).trim()===label)[0];
 
 for (const cargo of [false,true]) {
   const service=cargo?'화물':'렌트카';
   test(service+' people ledger shows status badges, opens the invite dialog and reissues a pending code',async t=>{
-    const {renderer,calls}=await mountTeam(t,{cargo});
+    const {renderer,calls,downloads}=await mountTeam(t,{cargo});
     const rows=renderer.root.findAll(n=>n.type==='tr'&&n.parent?.type==='tbody');
     assert.equal(rows.length,3);
     const badges=renderer.root.findAll(n=>n.type==='span'&&String(n.props.className||'').startsWith('rt-badge')).map(n=>text(n.children));
     assert.deepEqual(badges,['사용 중','초대 대기','사용 중지']);
     assert.match(text(rows[1].children),/분당점.*배차 담당/);
+    await act(async()=>renderer.root.findByProps({'aria-label':'사용자 목록 다운로드'}).props.onClick());
+    assert.equal(downloads[0][1],'csv');
+    assert.deepEqual(plain(downloads[0][0].rows[1]),['이대기','lee@example.com','분당점','배차 담당','초대 대기']);
     await act(async()=>findButton(renderer,'사용자 추가').props.onClick());
     assert.ok(renderer.root.findByProps({role:'dialog','aria-label':'직원 초대'}));
     await act(async()=>findButton(renderer,'코드 재발급').props.onClick());

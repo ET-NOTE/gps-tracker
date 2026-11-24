@@ -26,6 +26,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
   const [department,setDepartment]=useState(''),[kind,setKind]=useState('');
   const [searchOpen,setSearchOpen]=useState(false),[terminalId,setTerminalId]=useState(null);
   const [detail,setDetail]=useState(null);
+  const deskOps=!useCorporatePhone()&&hideOutsideMockup;
   const [picker,setPicker]=useState(null),[chosen,setChosen]=useState('');
   const current=useMemo(()=>{
     const map=new Map();
@@ -49,16 +50,18 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
     &&(status==='all'||(status==='linked'&&r.asset)||(status==='receiving'&&r.device.last_seen_at && !r.device.unavailable && now-Date.parse(r.device.last_seen_at)<=300000)||(status==='unlinked'&&!r.asset)||(status==='check'&&r.offline)));
   const allSchedules=assets.flatMap(asset=>maintenanceScheduleFields.map(([key,label])=>({asset,key,label,date:asset.profile?.[key]||''})));
   const schedules=allSchedules.filter(r=>matchingAsset(r.asset)&&(!kind||r.key===kind)&&contains(r.asset.name,r.asset.license_plate,r.asset.car_model,r.asset.department,r.label)
-      &&(status==='all'&&r.date||status==='overdue'&&r.date&&r.date<today||status==='missing'&&!r.date))
+      &&((status==='all'||status==='everything')&&r.date||status==='overdue'&&r.date&&r.date<today||status==='missing'&&!r.date))
     .sort((a,b)=>a.date.localeCompare(b.date)||fleetAssetLabel(a.asset).localeCompare(fleetAssetLabel(b.asset),'ko',{numeric:true}));
   // Desktop design has no 차량 연결 tab; linked terminals stay in 전체 and connections are managed from each card.
-  const desk=!useCorporatePhone()&&hideOutsideMockup;
-  const options=terminals?[['all','전체'],['receiving','정상 수신'],['check','수신 확인'],['unlinked','미연결'],...(desk?[]:[['linked','차량 연결']])]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
+  const desk=deskOps;
+  // Desktop design maintenance tabs: 예정 일정 (dated, overdue shown by its badge), 완료 내역 and 전체 (both).
+  // Vehicles without schedules stay reachable from the overview task '점검 일정 미등록' and the vehicle list.
+  const options=terminals?[['all','전체'],['receiving','정상 수신'],['check','수신 확인'],['unlinked','미연결'],...(desk?[]:[['linked','차량 연결']])]:desk?[['all','예정 일정'],['completed','완료 내역'],['everything','전체']]:[['all','등록 일정'],['overdue','기한 경과'],['missing','미등록'],['completed','완료 이력']];
   const schedule=detail?.key && allSchedules.find(r=>r.asset.id===detail.assetId&&r.key===detail.key);
   const completed=detail?.history;
   const inspectedAsset=schedule?.asset || (completed && assets.find(a=>a.id===completed.vehicle_id));
   const careLabel=schedule?.label || (completed && (maintenanceKinds[completed.kind]||completed.kind));
-  const showHistory=!terminals&&status==='completed';
+  const showHistory=!terminals&&status==='completed', withHistory=!terminals&&status==='everything';
   const selectedTerminal=terminalRows.find(r=>r.id===terminalId);
   const total=terminals?terminalRows.length:allSchedules.filter(r=>status==='missing'?!r.date:r.date).length;
   const count=terminals?visibleTerminals.length:schedules.length,unit=terminals?'대':'건';
@@ -88,8 +91,9 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
     {terminals&&<div className="fleet-maintenance-actions">{canManage&&assets.length>0&&<button className="business-button" type="button" onClick={()=>chooseVehicle('history')}><Icon name="clock" size={16}/>연결 이력</button>}
       {canRegisterTerminal&&<a className="business-button is-primary" href={(import.meta.env.BASE_URL||'/')+'devices/pair'}><Icon name="plus" size={16}/>단말기 등록</a>}</div>}
     {!terminals&&canManage&&assets.length>0&&<div className="fleet-maintenance-actions">
-      <button type="button" className={showHistory?'business-button':'business-button is-primary'} onClick={()=>chooseVehicle('schedule')}><Icon name="plus" size={16}/>일정 등록</button>
-      <button type="button" className={showHistory?'business-button is-primary':'business-button'} onClick={()=>setCompletion({})}>완료 이력 등록</button>
+      {/* Desktop: one button; free-form completion records keep their button on the 완료 내역 tab. */}
+      {!(desk&&showHistory)&&<button type="button" className={showHistory?'business-button':'business-button is-primary'} onClick={()=>chooseVehicle('schedule')}><Icon name="plus" size={16}/>일정 등록</button>}
+      {(!desk||showHistory)&&<button type="button" className={showHistory?'business-button is-primary':'business-button'} onClick={()=>setCompletion({})}>완료 이력 등록</button>}
     </div>}</div>
     {showHistory?<MaintenanceHistory key={historyRevision} assets={assets} vehicle={vehicle} setVehicle={setVehicle} onDetail={history=>setDetail({history})}/>:<>
     <section className="fleet-record-filterbox fleet-operations-query" aria-label="조회 조건">
@@ -99,7 +103,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
         {!terminals&&searchOpen&&searchField}
       </div>
       <div className="fleet-record-filterfoot"><span aria-live="polite">전체 {total}{unit} 중 <b>{count}{unit}</b> 조회</span><div>
-        {!terminals&&<button type="button" className="business-button" aria-expanded={searchOpen} onClick={()=>{setSearchOpen(!searchOpen);if(searchOpen)setQuery('');}}><Icon name="search" size={13}/>검색</button>}
+        {!terminals&&!desk&&<button type="button" className="business-button" aria-expanded={searchOpen} onClick={()=>{setSearchOpen(!searchOpen);if(searchOpen)setQuery('');}}><Icon name="search" size={13}/>검색</button>}
         <button type="button" className="fleet-filter-reset-link" onClick={reset}><Icon name="refresh" size={13}/>필터 초기화</button>
       </div></div>
     </section>
@@ -123,6 +127,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
         {date&&canManage&&<button type="button" className="business-button is-primary" onClick={()=>setCompletion({schedule:{asset,key,label,date}})}><Icon name="check" size={13}/>완료 처리</button>}</footer>
     </article>)}</div>}
     {!(terminals?visibleTerminals:schedules).length&&<div className="business-empty"><strong>{terminals?'표시할 단말기가 없습니다.':'해당하는 일정이 없습니다.'}</strong></div>}
+    {withHistory&&<section className="fleet-care-history" aria-label="완료 내역"><h3>완료 내역</h3><MaintenanceHistory key={historyRevision} assets={assets} vehicle={vehicle} setVehicle={setVehicle} onDetail={history=>setDetail({history})}/></section>}
     </>}
     {selectedTerminal&&<TerminalDetail row={selectedTerminal} staff={staff} onClose={()=>setTerminalId(null)}
       openVehicle={tab=>{setTerminalId(null);openDetail(selectedTerminal.asset.id,tab);}}

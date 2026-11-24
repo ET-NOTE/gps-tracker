@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { FreightField, FreightButton, FreightBadge } from './FreightKit';
 import Icon from '../Icon';
+import FreightAlerts from './FreightAlerts';
 import { record } from '../../lib/freightWorkflow';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
@@ -28,7 +29,7 @@ const connections=[
   ['외부 화물망','운송 주문 목록에서 CSV 파일로 주문을 일괄 등록할 수 있습니다.','cargo-orders','운송 주문','truck'],
 ];
 
-export default function FreightPolicySettings({policy,data,save,onPage}) {
+export default function FreightPolicySettings({policy,data,save,onPage,devices}) {
   const area=policy?'policies':'integrations', groups=policy?policyGroups:noticeGroups;
   const [busy,setBusy]=useState(false), [message,setMessage]=useState(''),[error,setError]=useState(false);
   const lock=useRef(false);
@@ -58,7 +59,7 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
     <form className="fr-section" data-mockup={leading||undefined} data-notice={notice||undefined} onSubmit={submit}>
       {!leading&&toolbar}
       <div className="fr-setting-grid">{groups.map(group=><section className="fr-dashboard-card" key={group.title}>
-        <header><div><h2>{group.title}</h2>{group.description&&<p className="fr-setting-description">{group.description}</p>}</div></header><div className="fr-settings">{group.fields.map(([key,label,min,max])=>min==null?
+        <header><div><h2>{group.title}</h2>{group.description&&<p className="fr-setting-description">{group.description}</p>}</div>{notice&&devices&&<FreightAlerts label="알림 보기" data={data} devices={devices} onPage={onPage}/>}</header><div className="fr-settings">{group.fields.map(([key,label,min,max])=>min==null?
           <label key={key} className={'fr-setting-row'+(leading?' is-leading':'')}>{leading&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}<span>{label}</span>{!leading&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}</label>:
           <FreightField key={key} label={label+' (분)'}><input name={key} type="number" required min={min} max={max} defaultValue={data[area][key]}/></FreightField>)}{group.note&&!notice&&<p className="fr-note">{group.note}</p>}</div>
         {notice&&<footer className="fr-notice-foot"><p className="fr-note">{group.note}</p><button className="fr-btn is-primary" type="submit" disabled={busy}>{busy?'저장 중…':'알림 설정 저장'}</button></footer>}

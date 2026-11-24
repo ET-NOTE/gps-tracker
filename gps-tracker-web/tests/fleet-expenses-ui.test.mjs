@@ -36,7 +36,7 @@ test('approval inbox shows only reviewable requests and keeps the same scope on 
  }finally{await close();}
 });
 
-async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=false,approvalsOnly=false,initialScope,assetQuery,detail={},api:apiOverrides={}}={}){
+async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=false,approvalsOnly=false,initialScope,assetQuery,detail={},api:apiOverrides={},mockup=false}={}){
  const requests=[],state={fail:false,limit};
  const qc=new query.QueryClient({defaultOptions:{queries:{retry:false,staleTime:Infinity,gcTime:Infinity}}});
  const api={expenseCategories:async()=>[{id:1,kind:'group',name:'차량유지비'},{id:2,kind:'fuel',parent_id:1,name:'유류비'},{id:3,kind:'expense',parent_id:1,name:'숙박비'}],listExpenses:async filters=>{
@@ -62,7 +62,7 @@ async function mount(data=rows,{limit=false,onOpenCategories,categoriesOnly=fals
   Modal:({children,footer,title})=>React.createElement('section',{role:'dialog','aria-label':title},children,footer),
   FormField:body,Input:tag('input'),Select:tag('select'),Textarea:tag('textarea'),Button:tag('button')};
  const real={'react':React,'react/jsx-runtime':jsx,'@tanstack/react-query':query,'../../lib/business':business,'../../lib/businessExport':businessExport,'../../lib/fleetExpenses':expenses,'../../lib/fleetSites':sites};
- real['../../lib/mockupHidden']={hideOutsideMockup:false};
+ real['../../lib/mockupHidden']={hideOutsideMockup:mockup};
  real['./ExpenseCategorySettings']={default:({categories,onEdit,canManage})=>React.createElement('category-settings',{categories,onEdit,canManage})};
  await mod.link(name=>moduleOf(real[name]||(name==='./ExportButtons'?{default:props=>React.createElement('export-preview',props)}:name==='./BusinessDrawer'?{default:({children,title,onClose})=>React.createElement('section',{role:'dialog','aria-label':title,'data-view':'drawer',onClose},children)}:common)));
  await mod.evaluate();
@@ -312,4 +312,17 @@ test('drawer review retains required reasons and blocks duplicate mutations unti
   await act(async()=>button(r,'승인').props.onClick());
   assert.equal(button(r,'승인 처리').props.disabled,false,'approval keeps its optional reason');
  }finally{release();await close();}
+});
+
+test('desktop expense tabs follow the design order and the approved card sums approved amounts',async()=>{
+ const {r,close}=await mount(rows,{mockup:true});
+ try{
+  const tabs=r.root.findByProps({'aria-label':'지출 상태 필터'}).findAllByType('button').map(n=>text(n.children).trim());
+  assert.deepEqual(tabs,['전체 지출','승인 대기','승인 완료','반려']);
+  const items=r.root.findByProps({label:'조회된 지출 요약'}).props.items;
+  assert.deepEqual([...items.map(item=>item.name)],['조회 지출 합계','승인 완료','승인 대기','반려']);
+  const approved=items.find(item=>item.name==='승인 완료');
+  assert.equal(approved.value,50000);assert.equal(approved.unit,'원');
+  assert.equal(items.find(item=>item.name==='승인 대기').value,1);
+ }finally{await close();}
 });

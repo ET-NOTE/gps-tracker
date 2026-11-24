@@ -34,7 +34,9 @@ export default function FreightIncidents({data,save,onPage}) {
     (!type||i.type===type)&&(!status||i.status===status)&&[vehicleName(data,i.vehicleId),getRow(data,'shipments',i.shipmentId)?.number,i.type,i.note,i.resolution].join(' ').toLowerCase().includes(query));
   return <div className="fr-page fr-incidents">
     <div className="fr-toolbar"><span className="fr-toolbar-caption">차량 제한과 운송·정산 상태를 별도로 관리합니다.</span>
-      {data.vehicles.length?<FreightButton primary icon="plus" onClick={()=>{setVehicle(data.vehicles[0].id);setEditor({});}}>발생 내역 등록</FreightButton>:<FreightButton onClick={()=>onPage('cargo-vehicles')}>차량 등록하기</FreightButton>}</div>
+      {/* Desktop design: the register button always stays; without vehicles it is disabled and a note below the table links to the vehicle list. */}
+      {mockup?<FreightButton primary icon="plus" disabled={!data.vehicles.length} title={data.vehicles.length?undefined:'차량을 먼저 등록해 주세요'} onClick={()=>{setVehicle(data.vehicles[0].id);setEditor({});}}>발생 내역 등록</FreightButton>
+        :data.vehicles.length?<FreightButton primary icon="plus" onClick={()=>{setVehicle(data.vehicles[0].id);setEditor({});}}>발생 내역 등록</FreightButton>:<FreightButton onClick={()=>onPage('cargo-vehicles')}>차량 등록하기</FreightButton>}</div>
     <FleetResourceFilters query={q} onQuery={search} placeholder="차량번호, 운송번호, 내용 검색" total={data.incidents.length} count={list.length}
       onReset={()=>{setBranch('');setType('');filter('');search('');}}>
         <OfficeFilter label="지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
@@ -47,6 +49,7 @@ export default function FreightIncidents({data,save,onPage}) {
       const statusCell=i.status==='open'?<FreightButton onClick={()=>setEditor(i)}>처리 결과 등록</FreightButton>:<FreightBadge tone="green">처리 완료</FreightBadge>;
       return {id:i.id,cells:mockup?[timeLabel(i.at),vehicleCell,typeCell,<>{i.note}{i.resolution&&<small>처리 결과 {i.resolution}</small>}</>,statusCell]:[vehicleCell,typeCell,timeLabel(i.at),i.note,i.resolution||'—',statusCell]};
     })}/>
+    {mockup&&!data.vehicles.length&&<p className="fr-incident-setup">차량을 먼저 등록해 주세요 · <button type="button" className="fr-link" onClick={()=>onPage('cargo-vehicles')}>차량 목록</button></p>}
     {editor&&<FreightForm size={editor.id?530:720} title={editor.id?'처리 결과 등록':'지연·사고 등록'} onClose={()=>setEditor(null)} onSubmit={submit}>
       {editor.id?<><FreightField label="조치 내용" wide><textarea required name="resolution" maxLength={1500}/></FreightField>{editor.vehicleBlocked&&<label className="fr-checks"><input type="checkbox" required name="checked"/>차량 상태와 남은 제한 사유를 확인했습니다.</label>}</>:<>
         <FreightField label="차량"><select required value={vehicle} onChange={e=>setVehicle(e.target.value)}><FreightOptions rows={data.vehicles} label="plate"/></select></FreightField>

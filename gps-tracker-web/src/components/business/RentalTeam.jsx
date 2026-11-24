@@ -8,6 +8,8 @@ import './rental-team.css';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
 import { TeamBranchDirectory, TeamPeopleLedger, TeamRoleWorkspace } from './TeamMockupViews';
+import Icon from '../Icon';
+import { downloadReport } from '../../lib/downloadReport';
 
 const permissions = {dispatch_read:'배차 조회',service_read:'정비·세차 조회',handover_note:'인수인계 메모 작성'};
 const cargoPermissions = {dispatch_read:"지점 배차 조회",fleet_read:"지점 차량 조회",handover_note:"인수인계 메모 작성"};
@@ -58,6 +60,11 @@ function InviteCode({code,cargo,onClose}) {
       <label>직원 접속 주소<input readOnly value={window.location.origin+(cargo?'/cargo':'/rentcar')+'?page=staff-desk'}/></label><label>초대 코드<input readOnly value={code} onFocus={e=>e.target.select()}/></label>
       <BusinessButton onClick={onClose}>확인</BusinessButton></div></Modal>;
 }
+// Desktop design: the user list downloads the rows shown (name, email, branch, group, state) as CSV.
+function downloadUsers(rows) {
+  const labels=['이름','이메일','지점','권한 그룹','계정 상태'];
+  return downloadReport({title:'사용자 목록',filename:'사용자_목록',columns:labels.map((label,key)=>({key,label})),rows:rows.map(r=>[r.name,r.email,r.branch,r.group,r.state])},'csv');
+}
 export default function RentalTeam({page,onTab,cargo=false}) {
   const team=cargo?api.cargoTeam:api.rentalTeam, key=[cargo?'cargo-team':'rental-team',authScope()];
   const config=useQuery({queryKey:key,queryFn:()=>team('GET','/config')}), qc=useQueryClient();
@@ -87,7 +94,8 @@ export default function RentalTeam({page,onTab,cargo=false}) {
       {select('권한 그룹',groupFilter,setGroupFilter,'전체 권한 그룹',data.groups.map(g=>[String(g.id),g.name]))}</>;
     const caption=(branchFilter?data.branches.find(b=>String(b.id)===branchFilter)?.name||'선택 지점':'전체 지점')+' · 전체 '+data.staff.length+'명';
     return <div className="rnt-team rt-mockup"><TeamPeopleLedger rows={rows} total={data.staff.length} query={query} onQuery={setQuery} filters={filters} caption={caption}
-      action={<BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>사용자 추가</BusinessButton>}
+      action={<><button type="button" className="business-button rt-icon-button" aria-label="사용자 목록 다운로드" title="사용자 목록 다운로드 · CSV" disabled={!rows.length} onClick={()=>downloadUsers(rows).catch(e=>setError(e.message||'다운로드하지 못했습니다.'))}><Icon name="download" size={15}/></button>
+        <BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>사용자 추가</BusinessButton></>}
       extra={<>{!ready&&<div className="rnt-prerequisites"><p>직원을 초대하려면 소속 지점과 권한 그룹을 먼저 등록해 주세요.</p>{!data.branches.length&&<BusinessButton onClick={()=>onTab('branches')}>지점 등록하기</BusinessButton>} {!data.groups.length&&<BusinessButton onClick={()=>onTab('groups')}>권한 그룹 등록하기</BusinessButton>}</div>}
         {data.notes.length>0&&<section className="rt-card"><header className="rt-card-head"><h3>최근 인수인계 메모</h3></header><ul className="rt-notes">{data.notes.map(n=><li key={n.id}><strong>{n.body}</strong><small>{n.branch} · {n.staff} · {cargo?"운송":"계약"} #{cargo?n.shipment_id:n.contract_id}</small></li>)}</ul></section>}</>}/>{dialogs}</div>;
   }
