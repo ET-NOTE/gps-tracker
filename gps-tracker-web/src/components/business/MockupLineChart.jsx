@@ -1,4 +1,5 @@
 import { axisLabelIndexes, niceTicks, shortDay } from '../../lib/lineChart';
+import './mockup-line-chart.css';
 
 /**
  * Desktop design line chart: unit at the top right, a 0-based y axis with rounded ticks,

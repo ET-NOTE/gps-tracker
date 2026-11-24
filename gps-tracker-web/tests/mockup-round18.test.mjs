@@ -43,7 +43,7 @@ test('line chart axis: ticks start at 0 with rounded steps and x labels every ce
 });
 
 test('desktop line chart draws points with tooltips, edge-aligned date labels and a readable table',async()=>{
-  const {default:Chart}=await load('MockupLineChart.jsx',{react:React,'react/jsx-runtime':jsx,'../../lib/lineChart':{axisLabelIndexes,niceTicks,shortDay}});
+  const {default:Chart}=await load('MockupLineChart.jsx',{react:React,'react/jsx-runtime':jsx,'../../lib/lineChart':{axisLabelIndexes,niceTicks,shortDay},'./mockup-line-chart.css':{}});
   const points=Array.from({length:7},(_,i)=>({day:'2026-11-1'+i,value:i===4?277.5:0}));
   let r;await act(async()=>{r=create(React.createElement(Chart,{points,unit:'km',height:150,label:'최근 7일 운행'}));});
   assert.equal(r.root.findAllByProps({className:'mlc-point'}).length,7);
@@ -56,7 +56,7 @@ test('desktop line chart draws points with tooltips, edge-aligned date labels an
   // The dashboard styles every <i> as a 27px tile; the chart must not use <i> so its grid stays 1px lines.
   assert.equal(r.root.findAllByType('i').length,0);
   assert.ok(r.root.findAllByProps({className:'mlc-grid'}).every(n=>n.type==='div'));
-  const css=await readFile(new URL('../src/components/business/fleet-mockup-sync.css',import.meta.url),'utf8');
+  const css=await readFile(new URL('../src/components/business/mockup-line-chart.css',import.meta.url),'utf8');
   assert.match(css,/.mlc .mlc-grid {[^}]*height:1px[^}]*border-radius:0/);
 });
 
