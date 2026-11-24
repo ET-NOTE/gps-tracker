@@ -358,3 +358,20 @@
   .rt-toolbar .rt-icon-button { width: 32px; height: 32px; min-height: 32px; border: 0 !important; border-radius: 8px; background: transparent !important; box-shadow: none !important; color: #818a98; }
   .rt-toolbar .rt-icon-button:hover:not(:disabled) { background: #edf1f7 !important; color: #45536a; }
 }
+/* Round 19: user selection column and bulk dialogs (PC) */
+@media screen and (min-width: 768px) {
+  .rt-table .rt-check-col { width: 42px; padding-right: 0 !important; }
+  .rt-table .rt-check-col input { width: 15px; height: 15px; margin: 0; accent-color: var(--primary); }
+  .rt-ledger-head .rt-soft-button { margin-left: auto; }
+  .rt-import { display: grid; gap: 12px; font-size: 12px; }
+  .rt-import-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .rt-import-head p, .rt-import-note { margin: 0; font-size: 12px; color: #7e8998; }
+  .rt-import-file { display: grid; gap: 6px; font-size: 12px; color: #596375; }
+  .rt-import-file :is(input, select) { box-sizing: border-box; min-height: 40px; padding: 8px 11px; border: 1px solid #e1e5ec; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; }
+  .rt-import-preview { min-height: 64px; padding: 12px 14px; border: 1px solid #e3e7ee; border-radius: 8px; background: #fafbfd; color: #596375; }
+  .rt-import-preview p { margin: 0 0 6px; }
+  .rt-import-preview ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+  .rt-import-warn { color: #b26a00; }
+  .rt-import-ok { color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .rt-import-actions { display: flex; justify-content: flex-end; gap: 8px; }
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
 import { authScope } from '../../authSession';
@@ -10,6 +10,7 @@ import { hideOutsideMockup } from '../../lib/mockupHidden';
 import { TeamBranchDirectory, TeamPeopleLedger, TeamRoleWorkspace } from './TeamMockupViews';
 import Icon from '../Icon';
 import { downloadReport } from '../../lib/downloadReport';
+import { TeamBulkImport, TeamRoleApply } from './TeamBulkDialogs';
 
 const permissions = {dispatch_read:'배차 조회',service_read:'정비·세차 조회',handover_note:'인수인계 메모 작성'};
 const cargoPermissions = {dispatch_read:"지점 배차 조회",fleet_read:"지점 차량 조회",handover_note:"인수인계 메모 작성"};
@@ -65,13 +66,17 @@ function downloadUsers(rows) {
   const labels=['이름','이메일','지점','권한 그룹','계정 상태'];
   return downloadReport({title:'사용자 목록',filename:'사용자_목록',columns:labels.map((label,key)=>({key,label})),rows:rows.map(r=>[r.name,r.email,r.branch,r.group,r.state])},'csv');
 }
-export default function RentalTeam({page,onTab,cargo=false}) {
+export default function RentalTeam({page,onTab,cargo=false,canManage=true}) {
   const team=cargo?api.cargoTeam:api.rentalTeam, key=[cargo?'cargo-team':'rental-team',authScope()];
   const config=useQuery({queryKey:key,queryFn:()=>team('GET','/config')}), qc=useQueryClient();
   const [editor,setEditor]=useState(null),[code,setCode]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [query,setQuery]=useState('');
   const [branchFilter,setBranchFilter]=useState(''),[stateFilter,setStateFilter]=useState(''),[groupFilter,setGroupFilter]=useState('');
+  const [selected,setSelected]=useState(()=>new Set()),[bulk,setBulk]=useState(null);
+  // People filtered or searched out of the list are removed from the selection.
+  const visibleRef=useRef(null);
+  useEffect(()=>{const v=visibleRef.current;if(v&&[...selected].some(id=>!v.has(id)))setSelected(new Set([...selected].filter(id=>v.has(id))));});
   if(config.isPending)return <p role="status">사용자 정보를 불러오는 중…</p>;
   if(config.error)return <BusinessError onRetry={config.refetch}>사용자 정보를 불러오지 못했습니다.</BusinessError>;
   const data=config.data, ready=page!=='staff'||(data.branches.length>0&&data.groups.length>0);
@@ -92,12 +97,25 @@ export default function RentalTeam({page,onTab,cargo=false}) {
     const filters=<>{select('지점',branchFilter,setBranchFilter,'전체 지점',data.branches.map(b=>[String(b.id),b.name]))}
       {select('계정 상태',stateFilter,setStateFilter,'전체 상태',[['active','사용 중'],['pending','초대 대기'],['stopped','사용 중지']])}
       {select('권한 그룹',groupFilter,setGroupFilter,'전체 권한 그룹',data.groups.map(g=>[String(g.id),g.name]))}</>;
+    // Selection follows the visible list: people filtered or searched out are dropped from it.
+    const visible=new Set(rows.map(r=>r.id)), picked=[...selected].filter(id=>visible.has(id));
+    visibleRef.current=visible;
+    const chosen=data.staff.filter(r=>picked.includes(r.id));
+    const selection=canManage?{selected:new Set(picked),onToggle:id=>setSelected(s=>{const n=new Set([...s].filter(x=>visible.has(x)));n.has(id)?n.delete(id):n.add(id);return n;}),
+      onToggleAll:()=>setSelected(rows.length&&rows.every(r=>picked.includes(r.id))?new Set():new Set(rows.map(r=>r.id)))}:undefined;
+    const refresh=()=>{qc.invalidateQueries({queryKey:key});};
+    const updateGroup=(person,groupId)=>team('PUT','/staff/'+person.id,{name:person.name,email:person.email,branch_id:cargo?String(person.branch_id):Number(person.branch_id),group_id:groupId,active:person.active,revision:person.revision});
+    const headAction=canManage&&<button type="button" className="business-button rt-soft-button" disabled={!picked.length} onClick={()=>setBulk('roles')}><Icon name="shield" size={13}/>{picked.length?'권한 그룹 적용 · '+picked.length+'명':'권한 그룹 적용'}</button>;
+    const bulkDialogs=<>{bulk==='import'&&<TeamBulkImport data={data} invite={body=>team('POST','/staff',{...body,branch_id:cargo?String(body.branch_id):Number(body.branch_id)})} onClose={()=>setBulk(null)}
+        onDone={()=>{refresh();setQuery('');setBranchFilter('');setStateFilter('');setGroupFilter('');}}/>}
+      {bulk==='roles'&&<TeamRoleApply people={chosen} groups={data.groups} update={updateGroup} onClose={()=>setBulk(null)} onDone={()=>{refresh();setSelected(new Set());}}/>}</>;
     const caption=(branchFilter?data.branches.find(b=>String(b.id)===branchFilter)?.name||'선택 지점':'전체 지점')+' · 전체 '+data.staff.length+'명';
-    return <div className="rnt-team rt-mockup"><TeamPeopleLedger rows={rows} total={data.staff.length} query={query} onQuery={setQuery} filters={filters} caption={caption}
+    return <div className="rnt-team rt-mockup"><TeamPeopleLedger rows={rows} total={data.staff.length} query={query} onQuery={setQuery} filters={filters} caption={caption} selection={selection} headAction={headAction}
       action={<><button type="button" className="business-button rt-icon-button" aria-label="사용자 목록 다운로드" title="사용자 목록 다운로드 · CSV" disabled={!rows.length} onClick={()=>downloadUsers(rows).catch(e=>setError(e.message||'다운로드하지 못했습니다.'))}><Icon name="download" size={15}/></button>
-        <BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>사용자 추가</BusinessButton></>}
+        {canManage&&<button type="button" className="business-button" disabled={!ready} onClick={()=>setBulk('import')}>일괄 등록</button>}
+        {canManage&&<BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>사용자 추가</BusinessButton>}</>}
       extra={<>{!ready&&<div className="rnt-prerequisites"><p>직원을 초대하려면 소속 지점과 권한 그룹을 먼저 등록해 주세요.</p>{!data.branches.length&&<BusinessButton onClick={()=>onTab('branches')}>지점 등록하기</BusinessButton>} {!data.groups.length&&<BusinessButton onClick={()=>onTab('groups')}>권한 그룹 등록하기</BusinessButton>}</div>}
-        {data.notes.length>0&&<section className="rt-card"><header className="rt-card-head"><h3>최근 인수인계 메모</h3></header><ul className="rt-notes">{data.notes.map(n=><li key={n.id}><strong>{n.body}</strong><small>{n.branch} · {n.staff} · {cargo?"운송":"계약"} #{cargo?n.shipment_id:n.contract_id}</small></li>)}</ul></section>}</>}/>{dialogs}</div>;
+        {data.notes.length>0&&<section className="rt-card"><header className="rt-card-head"><h3>최근 인수인계 메모</h3></header><ul className="rt-notes">{data.notes.map(n=><li key={n.id}><strong>{n.body}</strong><small>{n.branch} · {n.staff} · {cargo?"운송":"계약"} #{cargo?n.shipment_id:n.contract_id}</small></li>)}</ul></section>}</>}/>{dialogs}{bulkDialogs}</div>;
   }
   if(mockup&&page==='branches'){
     const rows=data.branches.map(b=>{const n=data.staff.filter(x=>x.branch_id===b.id).length;return {id:b.id,name:b.name,members:n+'명',usage:<span className={'rt-badge '+(n?'good':'')}>{n?'사용 중':'소속 없음'}</span>};});

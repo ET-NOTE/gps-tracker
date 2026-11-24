@@ -7,14 +7,17 @@ import './workspace-mockup-sync.css';
 // people, organization, permission group and company screens, fed by each service's own data.
 
 /** 사용자 목록: toolbar with search and action, then a ledger table. */
-export function TeamPeopleLedger({rows, total, query, onQuery, action, extra, filters, caption}) {
+// `selection` (desktop, managers only): {selected: Set of ids, onToggle(id), onToggleAll()} adds the checkbox
+// column; `headAction` sits at the right of the '사용자 N명' head.
+export function TeamPeopleLedger({rows, total, query, onQuery, action, extra, filters, caption, selection, headAction}) {
+  const allOn=selection&&rows.length>0&&rows.every(r=>selection.selected.has(r.id));
   return <div className="rt-people">
     <div className="rt-toolbar"><label className="rt-search"><Icon name="search" size={15}/><input type="search" aria-label="사용자 검색" placeholder="이름, 이메일 검색" value={query} onChange={e=>onQuery(e.target.value)}/></label>
       {filters}{!filters&&<span className="rt-count">전체 {total}명 중 {rows.length}명</span>}<div className="rt-actions">{action}</div></div>
-    <section className="rt-card" aria-label="사용자 목록">{filters&&<header className="rt-card-head rt-ledger-head"><div><h3>사용자 {rows.length}명</h3><p>{caption||'전체 · 전체 '+total+'명'}</p></div></header>}<div className="rt-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="rt-table">
-      <thead><tr>{['사용자','지점','권한 그룹','계정 상태','수정'].map(label=><th key={label} scope="col">{label}</th>)}</tr></thead>
-      <tbody>{rows.length===0&&<tr className="rt-empty-row"><td colSpan={5}><p>조회된 사용자가 없습니다.</p></td></tr>}
-        {rows.map(r=><tr key={r.id}><td><strong>{r.name}</strong><small>{r.email}</small></td><td>{r.branch}</td><td>{r.group}</td>
+    <section className="rt-card" aria-label="사용자 목록">{filters&&<header className="rt-card-head rt-ledger-head"><div><h3>사용자 {rows.length}명</h3><p>{caption||'전체 · 전체 '+total+'명'}</p></div>{headAction}</header>}<div className="rt-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="rt-table">
+      <thead><tr>{selection&&<th scope="col" className="rt-check-col"><input type="checkbox" aria-label="현재 목록 전체 선택" checked={allOn} onChange={selection.onToggleAll}/></th>}{['사용자','지점','권한 그룹','계정 상태','수정'].map(label=><th key={label} scope="col">{label}</th>)}</tr></thead>
+      <tbody>{rows.length===0&&<tr className="rt-empty-row"><td colSpan={selection?6:5}><p>조회된 사용자가 없습니다.</p></td></tr>}
+        {rows.map(r=><tr key={r.id}>{selection&&<td className="rt-check-col"><input type="checkbox" aria-label={r.name+' 선택'} checked={selection.selected.has(r.id)} onChange={()=>selection.onToggle(r.id)}/></td>}<td><strong>{r.name}</strong><small>{r.email}</small></td><td>{r.branch}</td><td>{r.group}</td>
           <td><span className={'rt-badge '+r.tone}>{r.state}</span></td><td><div className="rt-row-actions">{r.actions}</div></td></tr>)}</tbody>
     </table></div></section>
     {extra}

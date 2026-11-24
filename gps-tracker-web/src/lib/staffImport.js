@@ -2,8 +2,8 @@ export const staffCsvHeaders = ['이름','연락처','부서','직책','담당 �
 export const staffCsvTemplate = '\uFEFF'+staffCsvHeaders.join(',')+'\r\n';
 
 // RFC-style quoted fields; never evaluate spreadsheet formulas or infer types.
-export function parseStaffCsv(source) {
-  if (new TextEncoder().encode(source).length > 1024*1024) throw Error('1MB 이하의 CSV 파일을 선택하세요.');
+// Returns the non-empty records with trimmed cells (BOM, CRLF and doubled quotes handled).
+export function csvRecords(source) {
   const text=source.replace(/^\uFEFF/,'');
   const records=[];let row=[],cell='',quoted=false,closed=false;
   const pushCell=()=>{row.push(cell.trim());cell='';closed=false;};
@@ -19,6 +19,11 @@ export function parseStaffCsv(source) {
   }
   if(quoted)throw Error('닫히지 않은 따옴표가 있습니다.');
   if(cell||row.length||closed)pushRow();
+  return records;
+}
+export function parseStaffCsv(source) {
+  if (new TextEncoder().encode(source).length > 1024*1024) throw Error('1MB 이하의 CSV 파일을 선택하세요.');
+  const records=csvRecords(source);
   const header=records.shift();
   if(!header||header.length!==5||staffCsvHeaders.some((v,i)=>v!==header[i]))throw Error('양식의 열 순서를 유지하세요: '+staffCsvHeaders.join(', '));
   if(!records.length||records.length>500)throw Error('한 번에 1~500명을 등록할 수 있습니다.');
