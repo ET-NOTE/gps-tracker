@@ -62,13 +62,15 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   // Filters not shown on the desktop design never filter: only the shown fields are applied.
   const filters=catalogFilters(kind,data,mockup),title=catalogNames[kind];
   const party=kind==='shippers'||kind==='carriers';
-  const columns=catalogTable(kind,data,v=>{
+  const terminalLabel=v=>{
     if(!v.deviceId)return '미연결';
     const dev=devices.find(x=>String(x.id)===String(v.deviceId));
     return dev?terminalState(dev,data.policies).label:'단말 정보 확인 필요';
-  },mockup);
+  };
+  // Desktop cells may hold pictures; exports use the plain text columns.
+  const columns=catalogTable(kind,data,terminalLabel,mockup), plainColumns=catalogTable(kind,data,terminalLabel,false);
   const rows=data[kind].filter(row=>filters.every(f=>!filter[f.field]||f.value(row)===filter[f.field]) &&
-    [...columns.map(([,cell])=>cell(row)),row.businessNumber,row.note,row.phone,row.email,row.instructions].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
+    [...columns.map(([,cell])=>cell(row)),row.plate,row.businessNumber,row.note,row.phone,row.email,row.instructions].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
   const headings=columns.map(([h])=>h);
   const driverWork=useMemo(()=>{
     if(kind!=='drivers')return null;
@@ -106,7 +108,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   const missing=!readyBranch?'운영 지점을 먼저 등록해 주세요.':!readyVehicle?'화물차량을 먼저 등록해 주세요.':'';
   const toDetail=id=>setView({action:'detail',id});
   function download() {
-    if(!party)return downloadRows(title,headings,rows.map(row=>columns.map(([,cell])=>cell(row))));
+    if(!party)return downloadRows(title,plainColumns.map(([h])=>h),rows.map(row=>plainColumns.map(([,cell])=>cell(row))));
     const [name,contact,phone,terms,linked,status]=columns;
     const shipper=kind==='shippers';
     const csvColumns=[[shipper?'화주':'운송사',name[1]],contact,phone,['사업자등록번호',r=>r.businessNumber||'—'],

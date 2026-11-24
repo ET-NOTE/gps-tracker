@@ -202,9 +202,9 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       {result.data.excluded>0&&<p className="fleet-analytics-note">아직 끝나지 않았거나 시간이 확인되지 않은 운행 {number(result.data.excluded)}건은 합계에서 제외했습니다.</p>}
       <FleetRecordMetrics label={trips?'운행 통계 요약':'지출 통계 요약'} items={metrics.map(({label,...metric})=>({name:label,...metric}))}/>
       <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} description={trips?(metric==='count'?'날짜별 운행 건수':'날짜별 주행거리'):desk?'선택한 기간과 상태 기준':'날짜별 지출 금액'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
-        {series.length?<Trend desk={desk} label={trips?'운행 추이':'지출 추이'} series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}
+        {series.length?<Trend desk={desk} label={trips?'운행 추이':'지출 추이'} series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:desk?<BusinessEmpty mockup title={trips?'기간 내 완료된 운행이 없습니다':'기간 내 지출이 없습니다'}>검색 조건을 변경해 보세요.</BusinessEmpty>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}
       </BusinessSection><BusinessSection title={trips?'운행목적별 비중':'항목별 지출'} description={desk?(trips?'운행 건수 기준 · 목적 미입력은 미분류에 포함':'선택한 기간과 상태 기준'):trips?'운행 건수 기준':'지출 금액 기준'}>
-        {categories.length?<RankingBars groups={categories} field={trips?'count':'amount'} format={number} unit={trips?'건':'원'}/>:<BusinessEmpty compact title="집계할 항목이 없습니다."/>}
+        {categories.length?<RankingBars groups={categories} field={trips?'count':'amount'} format={number} unit={trips?'건':'원'}/>:desk?<BusinessEmpty mockup title={trips?'집계할 운행목적이 없습니다':'집계할 지출이 없습니다'}>검색 조건을 변경해 보세요.</BusinessEmpty>:<BusinessEmpty compact title="집계할 항목이 없습니다."/>}
       </BusinessSection></div>
       <BusinessSection title={`${groupName}별 ${trips?'운행':'지출'} 현황`} description={desk?(trips?'주행거리순 정렬':'지출 금액순 정렬'):undefined}>
         <div className="fleet-analytics-table" role="region" aria-label="통계 집계표" tabIndex={0}><table><thead><tr>{trips&&<th scope="col">순위</th>}{columns.map(c=><th key={c.key} scope="col">{c.label}</th>)}</tr></thead>
@@ -212,7 +212,8 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
           {trips&&<td>{index+1}</td>}<th scope="row">{interactiveGroups?<button type="button" onClick={e=>{e.stopPropagation();openGroup(g);}}>{g.label}</button>:g.label}</th>
           <td>{number(g.count)}건</td><td>{amount(g.amount)}{desk&&!trips?'':' '}{unit}</td>{trips&&<td>{duration(g.minutes)}</td>}<td>{amount(g.amount/g.count)}{desk&&!trips?'':' '}{unit}</td>
           <td><span className="fleet-analytics-share">{!trips&&<i aria-hidden="true"><b style={{width:(sum?100*g.amount/sum:0)+'%'}}/></i>}{sum?(desk?(100*g.amount/sum).toFixed(1):number(100*g.amount/sum,1))+'%':'—'}</span></td></tr>)}
-          {!groups.length&&<tr><td colSpan={columns.length+Number(trips)}><BusinessEmpty compact title="표시할 집계 결과가 없습니다."/></td></tr>}</tbody></table></div>
+          {!groups.length&&!desk&&<tr><td colSpan={columns.length+Number(trips)}><BusinessEmpty compact title="표시할 집계 결과가 없습니다."/></td></tr>}</tbody></table></div>
+        {!groups.length&&desk&&<BusinessEmpty mockup title="조회된 내역이 없습니다">기간이나 검색 조건을 변경해 보세요.</BusinessEmpty>}
       </BusinessSection>
       {driverLeaders.length>0&&<BusinessSection title="사용자별 주행거리" description="상위 5명"><RankingBars groups={driverLeaders} field="amount" format={distance} unit="km" height={190}/></BusinessSection>}
     </>}

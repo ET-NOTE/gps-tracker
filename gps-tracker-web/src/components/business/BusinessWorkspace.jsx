@@ -211,7 +211,9 @@ export function BusinessButton({ children, icon, primary = false, ...props }) {
 export function BusinessError({ children = '정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', onRetry }) {
   return <div className="business-error" role="alert"><Icon name="warn" size={18} /><span>{children}</span>{onRetry && <BusinessButton onClick={onRetry} icon="refresh">다시 시도</BusinessButton>}</div>;
 }
-export function BusinessEmpty({ title = '표시할 항목이 없습니다.', children, compact = false }) {
+// `mockup`: the desktop design empty block (search icon, title, description).
+export function BusinessEmpty({ title = '표시할 항목이 없습니다.', children, compact = false, mockup = false }) {
+  if (mockup) return <div className="mockup-empty" role="status"><Icon name="search" size={31} /><strong>{title}</strong>{children && <small>{children}</small>}</div>;
   return <div className={`business-empty${compact ? ' is-compact' : ''}`}><strong>{title}</strong>{children && <p>{children}</p>}</div>;
 }
 export function BusinessSection({ title, description, action, children, className }) {

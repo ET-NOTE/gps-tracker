@@ -575,3 +575,21 @@
 .pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header h2 { grid-column: 1; grid-row: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header p { grid-column: 1 / -1; grid-row: 2; margin: 4px 0 0; font-size: 11px; }
 .pt-member-shell .rnt-shell .rnt-content .fr-dispatch-requests > header > .fr-link { grid-column: 2; grid-row: 1; white-space: nowrap; }
+/* Round 25: freight follow-up */
+.rnt-shell .cargo-truck { display: block; flex: none; overflow: visible; }
+.rnt-shell .cargo-truck.small { width: 80px; height: 38px; }
+.rnt-shell .cf-live-row .cargo-truck.small { width: 60px; height: 35px; }
+.rnt-shell .cell-car { display: inline-flex; align-items: center; gap: 7px; }
+.rnt-shell .fr-activity + .fr-empty, .rnt-shell .fr-empty.caption { margin: 0; padding: 0 18px 15px; text-align: left; font-size: 11px; color: #8d98a6; }
+@media screen and (min-width: 768px) {
+  /* 2-1 Freight live filters: five fields on one row, meta line below */
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .rnt-content .fr-resource-filters { display: block !important; }
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .rnt-content .fr-resource-filters > .fr-resource-fields { display: flex !important; flex-wrap: nowrap !important; gap: 12px; align-items: flex-end; grid-template-columns: none !important; }
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .rnt-content .fr-resource-filters > .fr-resource-fields > * { flex: 1 1 150px !important; min-width: 140px !important; width: auto !important; max-width: none !important; }
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .rnt-content .fr-resource-filters > .fr-resource-filter-meta { display: flex !important; width: 100%; margin-top: 11px; justify-content: space-between; }
+  /* 2-2 Freight live map 470px, list up to 490px */
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .fr-live-grid { align-items: stretch; }
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .fr-live-map { height: 470px !important; min-height: 470px !important; }
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .fr-live-map > * { height: 100% !important; min-height: 0 !important; }
+  .pt-member-shell .rnt-shell[data-page="cargo-live"] .cf-live-list { max-height: 490px; }
+}

@@ -986,3 +986,23 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   .business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles button>.fleet-dashboard-vehicle-name {flex:1 1 auto!important; min-width:0!important}
   .business-workspace--corporate .fleet-dashboard .fleet-dashboard-vehicles button>span:not(.fleet-dashboard-vehicle-name) {flex:none!important; margin-left:0}
 }
+/* Round 25: corporate follow-up */
+.business-workspace--corporate .mockup-empty {display:grid; justify-items:center; padding:55px 25px; text-align:center}
+.business-workspace--corporate .mockup-empty svg {width:31px; height:31px; margin-bottom:13px; color:#b0bed2}
+.business-workspace--corporate .mockup-empty strong {margin-bottom:5px; font-size:14px; font-weight:400; color:#7b899b}
+.business-workspace--corporate .mockup-empty small {font-size:12px; color:#a4adba}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-dashboard-km {white-space:nowrap}
+  /* Empty lists: no header row */
+  .business-workspace--corporate .business-content :is(.fleet-asset-table-wrap, .corporate-reservation-scroll, .fleet-analytics-table):has(tbody:not(:has(tr))) {display:none}
+  /* Attention panel: title and icons start 16px inside */
+  .business-workspace--corporate .fleet-dashboard-tasks .business-section-title {padding:14px 16px 11px!important}
+  .business-workspace--corporate .fleet-dashboard-tasks .attention-list {padding:0 16px 6px!important; margin:0!important}
+  .business-workspace--corporate .fleet-dashboard-tasks .business-section {padding:0!important}
+  /* Expense requester on one line */
+  .business-workspace--corporate .expense-table td[data-label="사용자 · 부서"] small {display:none!important}
+  .business-workspace--corporate .expense-table td[data-label="사용자 · 부서"] {font-size:12px!important; font-weight:400!important}
+  .business-workspace--corporate .expense-table td[data-label="사용자 · 부서"] * {font-weight:400!important; font-size:12px!important}
+  /* Count line under reservations (paging controls are separate and stay) */
+  .business-workspace--corporate .corporate-reservation-footer {display:none}
+}

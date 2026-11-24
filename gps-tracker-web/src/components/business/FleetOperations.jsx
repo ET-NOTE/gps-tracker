@@ -127,7 +127,7 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
       <footer><button type="button" className="business-button" onClick={()=>canManage?editSchedule(asset,key):openDetail(asset.id)}>{canManage?(date?'수정':'일정 등록'):'차량 상세'}</button>
         {date&&canManage&&<button type="button" className="business-button is-primary" onClick={()=>setCompletion({schedule:{asset,key,label,date}})}><Icon name="check" size={13}/>완료 처리</button>}</footer>
     </article>)}</div>}
-    {!(terminals?visibleTerminals:schedules).length&&<div className="business-empty"><strong>{terminals?'표시할 단말기가 없습니다.':'해당하는 일정이 없습니다.'}</strong></div>}
+    {!(terminals?visibleTerminals:schedules).length&&(deskOps&&terminals?<div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>단말기가 없습니다.</strong><small>조건을 바꾸거나 새 단말기를 등록하세요.</small></div>:<div className="business-empty"><strong>{terminals?'표시할 단말기가 없습니다.':'해당하는 일정이 없습니다.'}</strong></div>)}
     {withHistory&&<section className="fleet-care-history" aria-label="완료 내역"><h3>완료 내역</h3><MaintenanceHistory key={historyRevision} assets={assets} vehicle={vehicle} setVehicle={setVehicle} onDetail={history=>setDetail({history})}/></section>}
     </>}
     {selectedTerminal&&<TerminalDetail row={selectedTerminal} staff={staff} onClose={()=>setTerminalId(null)}

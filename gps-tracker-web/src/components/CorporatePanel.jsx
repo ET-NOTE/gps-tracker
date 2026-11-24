@@ -242,9 +242,9 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
       {deskOverview?<div className="fleet-dashboard-tasks" tabIndex={-1} ref={tasksRef}><BusinessSection title="확인할 일" action={<div className="row">{deskAttention!=null&&<span className="business-badge warning">{deskAttention}건</span>}<button type="button" className="fleet-dashboard-link" onClick={onWeeklyReport||onLive}>더보기 <Icon name="chevron-right" size={14}/></button></div>}>
         <div hidden><FleetIncompleteTrips devices={devices} onReport={onReport} now={now} onSummary={setWeekly}/></div>
         <div className="attention-list">
-          <button type="button" className="attention-item" onClick={onWeeklyReport||onLive}><span className="attention-icon"><Icon name="route" size={18}/></span><span><div className="attention-item-title">운행 기록 확인</div><div className="attention-item-desc">운전자·운행 목적을 확인해 주세요.</div></span><span className={'business-badge '+(summary?.missing?'warning':'')}>{summary?.complete?summary.missing:'—'}건</span></button>
-          {onExpenses&&<button type="button" className="attention-item" onClick={onExpenses}><span className="attention-icon is-blue"><Icon name="wallet" size={18}/></span><span><div className="attention-item-title">지출 승인 요청</div><div className="attention-item-desc">증빙을 확인하고 요청을 처리하세요.</div></span><span className={'business-badge '+(pending?'info':'')}>{pending==null?'—':pending}건</span></button>}
-          <button type="button" className="attention-item" onClick={onLive}><span className="attention-icon"><Icon name="wifi" size={18}/></span><span><div className="attention-item-title">단말기 수신 확인</div><div className="attention-item-desc">마지막 수신 시각과 연결을 확인하세요.</div></span><span className={'business-badge '+(signalCount?'warning':'')}>{signalCount}대</span></button>
+          <button type="button" className="attention-item" onClick={onWeeklyReport||onLive}><span className="attention-icon"><Icon name="route" size={18}/></span><span><div className="attention-item-title">운행 기록 확인</div><div className="attention-item-desc">운전자·운행 목적을 확인해 주세요.</div></span><span className="business-badge warning">{summary?.complete?summary.missing:'—'}건</span></button>
+          {onExpenses&&<button type="button" className="attention-item" onClick={onExpenses}><span className="attention-icon is-blue"><Icon name="wallet" size={18}/></span><span><div className="attention-item-title">지출 승인 요청</div><div className="attention-item-desc">증빙을 확인하고 요청을 처리하세요.</div></span><span className="business-badge info">{pending==null?'—':pending}건</span></button>}
+          <button type="button" className="attention-item" onClick={onLive}><span className="attention-icon"><Icon name="wifi" size={18}/></span><span><div className="attention-item-title">단말기 수신 확인</div><div className="attention-item-desc">마지막 수신 시각과 연결을 확인하세요.</div></span><span className="business-badge warning">{signalCount}대</span></button>
         </div>
         {expenses.error&&<BusinessError onRetry={expenses.refetch}>승인 대기 건수를 불러오지 못했습니다.</BusinessError>}
       </BusinessSection></div>
@@ -1073,7 +1073,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
           <table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">운행목적 / 메모</th><th scope="col">상태</th></tr></thead>
             <tbody>{list.map(r=><ReservationRow key={r.id} r={r} onOpen={()=>setOpened(r)}/>)}</tbody>
           </table>
-          {!list.length&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
+          {!list.length&&mockupDesk&&<BusinessEmpty mockup title="조회된 내역이 없습니다">기간이나 검색 조건을 변경해 보세요.</BusinessEmpty>}{!list.length&&!mockupDesk&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
         </div>
         <footer className="corporate-reservation-footer">{list.length}건</footer>
       </section>}

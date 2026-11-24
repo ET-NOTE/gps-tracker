@@ -52,9 +52,10 @@ export function FreightDrawer({title,subtitle,onClose,footer,children}) {
     <div className="fr-drawer-inner"><div>{children}</div><footer>{footer}</footer></div>
   </BusinessDrawer>;
 }
-export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.',deskEmpty='조회된 내역이 없습니다.'}){
+// `inPanel`: the table already sits in a card, so the desktop empty block keeps the given title without its own frame.
+export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.',deskEmpty='조회된 내역이 없습니다.',inPanel=false}){
   const desk=!useCorporatePhone()&&hideOutsideMockup;
-  if(desk&&!rows.length)return <div className="mockup-empty is-panel" role="status"><Icon name="search" size={31}/><strong>{deskEmpty}</strong><small>조회 조건을 바꾸거나 새 항목을 등록해 주세요.</small></div>;
+  if(desk&&!rows.length)return <div className={'mockup-empty'+(inPanel?'':' is-panel')} role="status"><Icon name="search" size={31}/><strong>{inPanel?empty:deskEmpty}</strong><small>조회 조건을 바꾸거나 새 항목을 등록해 주세요.</small></div>;
   return <div className="fr-list" role="region" aria-label={columns[0]+'별 목록'} tabIndex={0}><table className="fr-table"><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead>
     <tbody>{rows.map(({id,cells,onOpen})=><tr key={id} className={onOpen?'fr-open-row':undefined} onClick={onOpen?event=>{
       if(!event.target.closest('button,a,input,select,textarea,label')&&!window.getSelection()?.toString())onOpen();

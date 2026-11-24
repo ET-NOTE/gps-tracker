@@ -6,7 +6,7 @@ import { terminalName } from '../../lib/corporateOverview';
 import { terminalState } from './FreightDevices';
 import { firstOrder, nameOf, routeName, shipStates, timeLabel, vehicleName } from '../../lib/freightWorkflow';
 import { FreightBadge, FreightButton, FreightField, FreightFilters, FreightOptions, FreightTable, FleetResourceFilters } from './FreightKit';
-import Icon from '../Icon';
+import truckArt from './freight-truck.svg';
 import { dotDateTime } from '../../lib/mockupFormat';
 import { FreightCatalogDialogs } from './FreightCatalog';
 
@@ -70,7 +70,7 @@ export default function FreightOverview({data,devices,onPage,onMap,onRefresh,ref
           {current.device&&validPosition(current.device)&&<FreightButton onClick={()=>onMap(current.device.id)}>지도에서 보기</FreightButton>}</div>}</section>
       <section className="fr-dashboard-card"><header><h2>조회 차량</h2>{!mockup&&<span>{list.length}대</span>}</header>{mockup?<div className="cf-live-list">
         {list.map(item=><button type="button" className="cf-live-row" key={item.id} aria-pressed={current?.id===item.id} onClick={()=>openUnit(item)}>
-          <div className="cell-car"><span className="cf-truck" aria-hidden="true"><Icon name="truck" size={22}/></span><div><div className="cell-primary">{item.label}</div><div className="cell-secondary">{item.v?[nameOf(data,'drivers',item.v.driverId)||'기사 미지정',item.v.type].filter(Boolean).join(' · '):'차량 연결 대기 단말'}</div></div></div>
+          <div className="cell-car"><img className="cargo-truck small" src={truckArt} alt="" aria-hidden="true"/><div><div className="cell-primary">{item.label}</div><div className="cell-secondary">{item.v?[nameOf(data,'drivers',item.v.driverId)||'기사 미지정',item.v.type].filter(Boolean).join(' · '):'차량 연결 대기 단말'}</div></div></div>
           <div className="cf-live-tags">{item.v&&<FreightBadge tone={stateBadge(item)[1]}>{stateBadge(item)[0]}</FreightBadge>}{item.v&&<FreightBadge tone={moveBadge(item)[1]}>{moveBadge(item)[0]}</FreightBadge>}<FreightBadge tone={receptionBadge(item)[1]}>{receptionBadge(item)[0]}</FreightBadge></div>
           <small className="caption">{item.device?.last_seen_at?'마지막 수신 '+dotDateTime(item.device.last_seen_at):'마지막 수신 이력 없음'}</small>
         </button>)}{!list.length&&<p className="fr-empty">조건에 해당하는 차량이 없습니다.</p>}</div>:<div className="fr-unit-list">

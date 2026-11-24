@@ -118,7 +118,7 @@ export function FleetAssets({assets,devices,onChanged,onMap,meta={},onReport,onR
   const saved=()=>{closeEdit();onChanged();};
   const countLabel=`${filters.missingSchedulesOnly?'점검 일정 미등록 ':'총 '}${rows.length}대${filtered?` · 전체 등록 ${assets.length}대`:''}`;
   const sortOptions=<><option value="name">차량 이름순</option><option value="created">최근 등록순</option><option value="distanceAsc">계기판 거리 낮은순</option><option value="distanceDesc">계기판 거리 높은순</option></>;
-  const empty=!rows.length&&<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>;
+  const empty=!rows.length&&(mockup?<div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>결과가 없습니다</strong><small>검색 조건을 변경해 보세요.</small></div>:<div className="business-empty"><strong>{assets.length?'조건에 맞는 차량이 없습니다.':'차량을 먼저 등록해 주세요.'}</strong><p>{assets.length?'검색어나 필터를 변경해 주세요.':'단말기는 나중에 연결할 수 있습니다.'}</p></div>);
   return <div className="fleet-assets-list">
     {mode!=='vehicles'?<FleetOperations mode={mode} canRegisterTerminal={canRegisterTerminal} assets={assets} departments={departments} staff={staff} devices={devices} canManage={access.manage_vehicles} openDetail={openDetail} editSchedule={editSchedule} refreshAssets={onChanged}/>:<>
     <div className="fleet-record-toolbar" aria-label="차량 목록 조회">

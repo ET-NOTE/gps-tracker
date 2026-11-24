@@ -1,4 +1,5 @@
 import { availabilityLabels, readinessLabels, regions, serviceStates } from '../../lib/freightCatalog';
+import truckArt from './freight-truck.svg';
 import { costLabel, nameOf, stamp, timeLabel, vehicleName } from '../../lib/freightWorkflow';
 import { choices, choicesFrom } from './FreightOfficeFields';
 
@@ -36,7 +37,7 @@ export function catalogTable(key,d,terminalLabel,mockup=false) {
   const branch=r=>nameOf(d,'branches',r.branchId),carrier=r=>r.carrierId?nameOf(d,'carriers',r.carrierId):'자사 운영';
   const plate=r=>vehicleName(d,r.vehicleId),amount=x=>Number(x||0).toLocaleString('ko-KR'),active=r=>r.active!==false?'사용 중':'사용 중지';
   switch(key){
-    case 'vehicles': return [['차량번호',r=>r.plate],['차량명',r=>r.model],['형태 · 적재능력',r=>r.type+' · '+amount(r.capacityKg)+'kg'],['기사 · 소속',r=>(r.driverId?nameOf(d,'drivers',r.driverId):'미지정')+' · '+carrier(r)],['운영 지점',branch],['준비 상태',r=>readinessLabels[r.readiness]],['단말 수신',terminalLabel]];
+    case 'vehicles': return [['차량번호',r=>mockup?<span className="cell-car"><img className="cargo-truck small" src={truckArt} alt="" aria-hidden="true"/>{r.plate}</span>:r.plate],['차량명',r=>r.model],['형태 · 적재능력',r=>r.type+' · '+amount(r.capacityKg)+'kg'],['기사 · 소속',r=>(r.driverId?nameOf(d,'drivers',r.driverId):'미지정')+' · '+carrier(r)],['운영 지점',branch],['준비 상태',r=>readinessLabels[r.readiness]],['단말 수신',terminalLabel]];
     case 'drivers': return [['기사',r=>r.name],['연락처',r=>r.phone],['지점 · 소속',r=>branch(r)+' · '+carrier(r)],['면허',r=>r.licenseChecked?'확인 완료':'미확인'],['운영 상태',r=>r.active===false?'사용 중지':availabilityLabels[r.availability]]];
     case 'services': return [['차량',plate],['구분',r=>r.type],['시작 일시',r=>timeLabel(r.start)],['종료 예정',r=>timeLabel(r.end)],['비용',r=>costLabel(r.cost)],['상태',r=>serviceStates[r.status]]];
     case 'locations': return mockup

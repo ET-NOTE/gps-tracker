@@ -172,7 +172,7 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
   <td data-label="메모" className="expense-memo-cell">{r.note?.trim()?<button type="button" className="expense-memo-button" title="메모 보기" aria-label={`지출 ${r.id} 메모 보기`} onClick={()=>setMemo(r)}><Icon name="message" size={16}/></button>:<span className="expense-muted" aria-label="메모 없음">—</span>}</td>
   <td data-label="첨부파일" className="expense-attachment-cell">{r.receipt_count>0?<ExpenseReceiptThumbnail expenseId={r.id} count={r.receipt_count} onOpen={()=>setDetail(r.id)}/>:<span className="expense-muted" aria-label="첨부파일 없음">—</span>}</td></>}
  </tr>)}</tbody></table></div>
- {!rows.length&&<BusinessEmpty title={approvalsOnly?'조회된 승인 내역이 없습니다.':'조회된 지출이 없습니다.'}>{approvalsOnly?'조회 상태나 기간을 변경하세요.':'새 지출을 등록하거나 조회 조건을 변경하세요.'}</BusinessEmpty>}
+ {!rows.length&&<BusinessEmpty mockup={mockup} title={mockup?'조회된 내역이 없습니다':approvalsOnly?'조회된 승인 내역이 없습니다.':'조회된 지출이 없습니다.'}>{mockup?'기간이나 검색 조건을 변경해 보세요.':null}{mockup?null:approvalsOnly?'조회 상태나 기간을 변경하세요.':'새 지출을 등록하거나 조회 조건을 변경하세요.'}</BusinessEmpty>}
  {(!mockup||rows.length>25)&&<div className="expense-pagination"><span>{rows.length}건</span><div className="expense-actions"><BusinessButton aria-label="이전 페이지" disabled={!page} onClick={()=>setPage(p=>p-1)}><Icon name="chevron-left" size={16}/></BusinessButton><span className="expense-page-number">{page+1} / {Math.max(1,Math.ceil(rows.length/25))}</span><BusinessButton aria-label="다음 페이지" disabled={(page+1)*25>=rows.length} onClick={()=>setPage(p=>p+1)}><Icon name="chevron-right" size={16}/></BusinessButton><span className="expense-page-size">25개씩 보기</span></div></div>}
  </>}
  </section>

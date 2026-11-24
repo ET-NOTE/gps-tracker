@@ -11,7 +11,7 @@ import { hideOutsideMockup } from '../../lib/mockupHidden';
 function OverviewTable({kind, rows, data, open}) {
   const orders = kind === 'orders';
   const columns = orders ? ['주문 / 화주','경로 / 일정','화물 조건','상태'] : ['운송 / 화주','차량 / 기사','경로 / 일정','상태'];
-  return <FreightTable columns={columns} empty={orders ? '배차 대기 주문이 없습니다.' : '해당 운송 일정이 없습니다.'} rows={rows.map(row => {
+  return <FreightTable inPanel columns={columns} empty={orders ? '배차 대기 주문이 없습니다.' : '오늘 운송 일정이 없습니다.'} rows={rows.map(row => {
     const order = orders ? row : firstOrder(data,row);
     const route = <>{routeName(data,order)}<small>{timeLabel(row.start)}</small></>;
     return {id:row.id, onOpen:()=>open(kind,row.id), cells:[
@@ -25,7 +25,7 @@ function OverviewTable({kind, rows, data, open}) {
 
 function ActivityList({items}) {
   return items.length ? <ul className="fr-activity">{items.map((item,index)=><li key={index}><span>{item.text}</span><time>{timeLabel(item.at)}</time></li>)}</ul>
-    : <p className="fr-empty">처리 이력이 없습니다.</p>;
+    : <p className="fr-empty caption">처리 이력이 없습니다.</p>;
 }
 
 function DashboardCard({title,description,onMore,children}) {
