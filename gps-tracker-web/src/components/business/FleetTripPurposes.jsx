@@ -21,6 +21,7 @@ function PurposeSwitch({checked, onChange, label, disabled}) {
 }
 
 export default function FleetTripPurposes() {
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const access = useFleetAccess();
   const request = usePurposes(), client = useQueryClient();
   const [search, setSearch] = useState(''), [selectedId, setSelectedId] = useState(null);
@@ -77,6 +78,7 @@ export default function FleetTripPurposes() {
     <BusinessSection title={'운행 목적 '+shown.length+'개'} action={<small>사용 중 {items.filter(p=>p.active).length}개</small>}>
       {request.error?<BusinessError onRetry={request.refetch}>운행 목적을 불러오지 못했습니다.</BusinessError>:
         request.isPending?<p className="fleet-purpose-info" role="status">운행 목적 조회 중…</p>:
+        desk&&!shown.length?<div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>운행 목적이 없습니다.</strong><small>{search.trim()?'검색어를 변경해 주세요.':'새 운행 목적을 추가해 주세요.'}</small></div>:
         <div className="fleet-purpose-scroll" role="region" aria-label="운행 목적 목록" tabIndex={0}><table className="fleet-purpose-table">
           <thead><tr><th scope="col">운행 목적</th><th scope="col">참조 기록</th><th scope="col">사용 여부</th>{canEdit&&<th scope="col" aria-label="관리"/>}</tr></thead>
           <tbody>{shown.length===0&&<tr className="fleet-table-empty-row"><td colSpan={canEdit?4:3}><BusinessEmpty compact title={items.length?'검색 결과가 없습니다.':'등록된 운행 목적이 없습니다.'}/></td></tr>}{shown.map(p=><tr key={p.id} tabIndex={0} aria-label={p.name+' 운행 목적 상세 보기'}
@@ -126,3 +128,5 @@ export default function FleetTripPurposes() {
     </Modal>}
   </div>;
 }
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';

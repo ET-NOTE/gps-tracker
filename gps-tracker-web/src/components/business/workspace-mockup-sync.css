@@ -593,3 +593,5 @@
   .pt-member-shell .rnt-shell[data-page="cargo-live"] .fr-live-map > * { height: 100% !important; min-height: 0 !important; }
   .pt-member-shell .rnt-shell[data-page="cargo-live"] .cf-live-list { max-height: 490px; }
 }
+/* Round 26 */
+.rnt-shell .pill { display: inline-flex; padding: 4px 9px; background: #f0f3f8; border-radius: 20px; font-size: 11px; color: #7c899a; }

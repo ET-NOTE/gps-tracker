@@ -1006,3 +1006,14 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
   /* Count line under reservations (paging controls are separate and stay) */
   .business-workspace--corporate .corporate-reservation-footer {display:none}
 }
+/* Round 26: corporate follow-up */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-dashboard .fleet-dashboard-km {display:inline-flex!important; align-items:baseline; gap:3px; white-space:nowrap}
+  .business-workspace--corporate .fleet-dashboard .fleet-dashboard-km .caption {display:inline!important}
+  .business-workspace--corporate .fleet-dashboard-tasks .attention-list {width:100%!important; max-width:none!important; box-sizing:border-box}
+  .business-workspace--corporate .fleet-dashboard-tasks :is(.business-section, .business-section>*) {max-width:none!important}
+  .business-workspace--corporate .fleet-approval-table.is-empty {background:#fff; border:1px solid #e7eaf0; border-radius:12px}
+}
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .fleet-dashboard-tasks .business-section>.attention-list {margin-inline:0!important; width:100%!important; padding:0 16px 6px!important}
+}

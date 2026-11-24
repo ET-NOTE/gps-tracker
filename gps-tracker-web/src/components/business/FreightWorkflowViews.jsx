@@ -39,7 +39,7 @@ export function DispatchView({data,orders:shown,requests,form,open,orderId,setOr
   const candidates=order?data.vehicles.map(v=>candidate(data,order,v)).filter(c=>(!owner||(owner==='own')===!c.vehicle.carrierId)&&(!possible||!c.reason)).sort((a,b)=>Number(!!a.reason)-Number(!!b.reason)):[];
   return <>
     <div className="fr-split fr-dispatch">
-      <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>미배차 주문</h3><p>주문을 선택하면 차량 후보를 확인합니다.</p></div><FreightBadge>{shown.length}건</FreightBadge></header>
+      <section className="fr-card"><header className="fr-dispatch-heading"><div><h3>미배차 주문</h3><p>주문을 선택하면 차량 후보를 확인합니다.</p></div>{desk?<span className="pill">{shown.length}건</span>:<FreightBadge>{shown.length}건</FreightBadge>}</header>
         <div className="fr-order-picks">{shown.map(o=><button type="button" className="fr-pick" key={o.id} aria-pressed={order?.id===o.id} onClick={()=>setOrderId(o.id)}>
           <span>{nameOf(data,'shippers',o.shipperId)}<small title={timeLabel(o.start)}>{timeLabel(o.start).replace(/^\d{4}-(\d{2})-/, '$1.')}</small></span><strong>{routeName(data,o)}</strong>
           <span>{o.vehicleType} · {num(o.weightKg)} kg<small>{costLabel(o.sellAmount)}</small></span>

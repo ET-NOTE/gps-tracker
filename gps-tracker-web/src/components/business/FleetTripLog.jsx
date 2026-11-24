@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api';
 import { useStaff } from '../../state';
@@ -43,6 +45,7 @@ function duration(t) {
 }
 
 export default function FleetTripLog({ devices, onOpenVehicle }) {
+  const desk = !useCorporatePhone() && hideOutsideMockup;
   const today = businessDate();
   const initial = { from: `${today.slice(0, 7)}-01`, to: today, vehicle: '', driver: '', department: '', purpose: '', query: '' };
   const [filters, setFilters] = useState(initial);
@@ -94,6 +97,8 @@ export default function FleetTripLog({ devices, onOpenVehicle }) {
     })),
   };
   const count = state => known ? scoped.filter(t => tripState(t) === state).length : null;
+  // Desktop design: no header row when the list is empty.
+  const deskEmpty = desk && !rows.length;
   return <div className="corporate-reservations fleet-trip-log">
     <FleetRecordMetrics label="조회된 운행 요약" items={[
       { name: '조회된 운행', value: known ? scoped.length : null, unit: '건', icon: 'route' },
@@ -126,7 +131,7 @@ export default function FleetTripLog({ devices, onOpenVehicle }) {
     {q.isError && <BusinessError onRetry={q.refetch}>운행기록을 불러오지 못했습니다.</BusinessError>}
     {!invalid && q.isPending && devices.length > 0 && <SkeletonList count={3} itemHeight={64}/>}
     {(known || !devices.length) && <section className="corporate-reservation-ledger fleet-trip-log-ledger">
-      <div className="corporate-reservation-scroll" role="region" aria-label="운행 목록 · 좌우 스크롤" tabIndex={0}>
+      {deskEmpty?<div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>조회된 내역이 없습니다</strong><small>기간이나 검색 조건을 변경해 보세요.</small></div>:<div className="corporate-reservation-scroll" role="region" aria-label="운행 목록 · 좌우 스크롤" tabIndex={0}>
         <table className="corporate-reservation-table fleet-trip-log-table"><thead><tr><th scope="col">차량 / 운행일</th><th scope="col">운전자</th><th scope="col">운행목적 / 도착지</th><th scope="col">운행 시간</th><th scope="col">주행거리</th><th scope="col">기록 상태</th></tr></thead>
           <tbody>{rows.map(t => {
             const [label, tone] = stateLabels[tripState(t)];
@@ -143,7 +148,7 @@ export default function FleetTripLog({ devices, onOpenVehicle }) {
           })}</tbody>
         </table>
         {!rows.length && <BusinessEmpty title={devices.length ? '조회된 운행이 없습니다.' : '등록된 차량이 없습니다.'}>{devices.length ? '운행 기간이나 조건을 변경해 주세요.' : '차량을 등록하면 운행 기록이 쌓입니다.'}</BusinessEmpty>}
-      </div>
+      </div>}
       <footer className="corporate-reservation-footer">{rows.length}건</footer>
     </section>}
   </div>;
