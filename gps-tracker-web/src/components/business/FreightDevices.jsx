@@ -9,6 +9,7 @@ import { FleetResourceFilters, FreightBadge, FreightButton, FreightFacts, Freigh
 import { choicesFrom, OfficeFilter } from './FreightOfficeFields';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
+import { dotDateTime } from '../../lib/mockupFormat';
 
 export function terminalState(device,policies) {
   const seen=Date.parse(device?.last_seen_at);
@@ -42,7 +43,7 @@ export default function FreightDevices({data,save,devices=[],onMap,onRegisterDev
       const vehicle=vehicleFor(item.id);
       const reception=terminalState(item,data.policies),level=deviceBattery(item).percent;
       return {id:item.id,onOpen:()=>setView({action:'detail',id:item.id}),cells:[<><button className="fr-link" onClick={()=>setView({id:item.id,action:'detail'})}>{terminalName(item)}</button>{item.device_uid!==terminalName(item)&&(mockup?<span className="fr-inline-sub" title={item.device_uid}>{item.device_uid}</span>:<small>{item.device_uid}</small>)}</>,
-        vehicle?.plate||'차량 미연결',nameOf(data,'branches',vehicle?.branchId),timeLabel(item.last_seen_at),<FreightBadge tone={reception.state==='online'?'green':'neutral'}>{reception.label}</FreightBadge>,level==null?'미수신':level+'%']};
+        vehicle?.plate||(mockup?'미연결':'차량 미연결'),nameOf(data,'branches',vehicle?.branchId),mockup?(dotDateTime(item.last_seen_at)||'수신 전'):timeLabel(item.last_seen_at),(mockup?<FreightBadge tone={reception.state==='online'?'green':!vehicle?'neutral':'amber'}>{reception.state==='online'?'정상 수신':!vehicle?'미연결':'수신 확인'}</FreightBadge>:<FreightBadge tone={reception.state==='online'?'green':'neutral'}>{reception.label}</FreightBadge>),level==null?'미수신':level+'%']};
     })} empty={devices.length?'조회 조건에 맞는 단말기가 없습니다.':'계정에 등록된 단말기가 없습니다.'}/>
     {dev&&view.action==='detail'&&<FreightDrawer title="화물 단말기 상세" subtitle={terminalName(dev)} onClose={close} footer={<div className="fr-actions">
       <FreightButton onClick={close}>닫기</FreightButton>{onMap&&validPosition(dev)&&<FreightButton onClick={()=>onMap(dev.id)}>지도 보기</FreightButton>}

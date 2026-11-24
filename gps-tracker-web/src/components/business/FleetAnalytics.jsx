@@ -119,8 +119,8 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const unit = trips?'km':'원', amount = trips?distance:number;
   const columns = [
     {key:'label',label:groupName},{key:'count',label:trips?'운행 건수':'지출 건수'},
-    {key:'amount',label:trips?'주행거리 (km)':'지출액 (원)'},
-    ...(trips?[{key:'time',label:'운행시간'}]:[]),{key:'average',label:trips?'평균 거리 (km)':'평균 지출 (원)'},{key:'share',label:'비중 (%)'},
+    {key:'amount',label:desk?(trips?'주행거리':'총 지출'):trips?'주행거리 (km)':'지출액 (원)'},
+    ...(trips?[{key:'time',label:'운행시간'}]:[]),{key:'average',label:desk?(trips?'평균 운행거리':'평균 지출'):trips?'평균 거리 (km)':'평균 지출 (원)'},{key:'share',label:desk?(trips?'거리 비중':'비중'):'비중 (%)'},
   ];
   async function exportCsv() {
     if (exportRequest.current) return;
@@ -151,12 +151,13 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
   const series = !periodError && rows.length ? trendSeries(rows,from,to,trips&&metric==='count') : [];
   const metrics = trips ? [
     {label:recordState==='confirmed'?'확정 운행':recordState==='review'?'확인 필요 운행':'완료 운행',value:number(rows.length),unit:'건',icon:'route'},
-    {label:'총 주행거리',value:rows.length?distance(sum):null,unit:'km'},{label:'총 운행시간',value:rows.length?duration(rows.reduce((s,r)=>s+r.minutes,0)):null,icon:'clock'},
-    {label:'운행 차량',value:number(vehicles),unit:'대',icon:'list'},
+    {label:'총 주행거리',value:rows.length?distance(sum):null,unit:'km'},{label:'총 운행시간',value:rows.length?duration(rows.reduce((s,r)=>s+r.minutes,0)):null,icon:desk?undefined:'clock'},
+    {label:'운행 차량',value:number(vehicles),unit:'대',icon:desk?undefined:'list'},
   ] : [
-    {label:(expenseStatus[status]||'조회')+' 지출 합계',value:number(sum),unit:'원',icon:'coin'},
-    {label:'지출 건수',value:number(rows.length),unit:'건',icon:'list'},{label:'대상 차량',value:number(vehicles),unit:'대'},
-    {label:'건당 평균',value:rows.length?number(sum/rows.length):null,unit:'원'},
+    // Desktop design: amounts keep '원' attached; only the first card has an icon.
+    {label:desk?'조회 지출 합계':(expenseStatus[status]||'조회')+' 지출 합계',value:desk?number(sum)+'원':number(sum),unit:desk?undefined:'원',icon:'coin'},
+    {label:'지출 건수',value:number(rows.length),unit:'건',icon:desk?undefined:'list'},{label:'대상 차량',value:number(vehicles),unit:'대'},
+    {label:desk?'평균 건당 지출':'건당 평균',value:rows.length?number(sum/rows.length)+(desk?'원':''):null,unit:desk?undefined:'원'},
   ];
   function openGroup(g) {
     if (trips) { const device=devices.find(d=>String(d.id)===g.id); if(device)onReport(device,{from,to,driver:dimension,confirmed:recordState==='confirmed'}); return; }
@@ -190,7 +191,7 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
         <option value="all">완료 운행 전체</option><option value="confirmed">기록 확정</option><option value="review">확인 필요</option>
       </Filter>}
       {!trips&&<Filter label="지출 상태" value={status} onChange={e=>{setStatus(e.target.value);setDepartment('');setDimension('');}}>
-        <option value="">전체 상태</option>{Object.entries(expenseStatus).map(([id,label])=><option key={id} value={id}>{label}</option>)}
+        <option value="">전체 상태</option>{Object.entries(expenseStatus).map(([id,label])=><option key={id} value={id}>{desk&&id==='approved'?'승인 완료 지출':label}</option>)}
       </Filter>}</div>
       <BusinessButton icon="refresh" onClick={()=>{setFrom(initialPeriod?.from||today.slice(0,7)+'-01');setTo(initialPeriod?.to||today);setVehicle('');setStatus('approved');setDepartment('');setDimension('');setRecordState('all');}}>조건 초기화</BusinessButton>
     </section>
@@ -200,16 +201,16 @@ export default function FleetAnalytics({section='trips', devices=[], onReport, i
       {result.data.scoped&&<p className="fleet-analytics-note">{subjectScopeNote}</p>}
       {result.data.excluded>0&&<p className="fleet-analytics-note">아직 끝나지 않았거나 시간이 확인되지 않은 운행 {number(result.data.excluded)}건은 합계에서 제외했습니다.</p>}
       <FleetRecordMetrics label={trips?'운행 통계 요약':'지출 통계 요약'} items={metrics.map(({label,...metric})=>({name:label,...metric}))}/>
-      <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} description={trips?(metric==='count'?'날짜별 운행 건수':'날짜별 주행거리'):'날짜별 지출 금액'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
+      <div className="fleet-analytics-charts"><BusinessSection title={trips?'운행 추이':'지출 추이'} description={trips?(metric==='count'?'날짜별 운행 건수':'날짜별 주행거리'):desk?'선택한 기간과 상태 기준':'날짜별 지출 금액'} action={trips&&<div className="fleet-analytics-tabs" role="group" aria-label="추이 단위">{[['amount','주행거리'],['count','운행 건수']].map(([id,label])=><button key={id} type="button" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}>
         {series.length?<Trend desk={desk} label={trips?'운행 추이':'지출 추이'} series={series} unit={trips&&metric==='count'?'건':unit} format={trips&&metric==='amount'?distance:number}/>:<BusinessEmpty compact title="조회 기간에 집계할 기록이 없습니다."/>}
-      </BusinessSection><BusinessSection title={trips?'운행목적별 비중':'항목별 지출'} description={trips?'운행 건수 기준':'지출 금액 기준'}>
+      </BusinessSection><BusinessSection title={trips?'운행목적별 비중':'항목별 지출'} description={desk?(trips?'운행 건수 기준 · 목적 미입력은 미분류에 포함':'선택한 기간과 상태 기준'):trips?'운행 건수 기준':'지출 금액 기준'}>
         {categories.length?<RankingBars groups={categories} field={trips?'count':'amount'} format={number} unit={trips?'건':'원'}/>:<BusinessEmpty compact title="집계할 항목이 없습니다."/>}
       </BusinessSection></div>
-      <BusinessSection title={`${groupName}별 ${trips?'운행':'지출'} 현황`}>
+      <BusinessSection title={`${groupName}별 ${trips?'운행':'지출'} 현황`} description={desk?(trips?'주행거리순 정렬':'지출 금액순 정렬'):undefined}>
         <div className="fleet-analytics-table" role="region" aria-label="통계 집계표" tabIndex={0}><table><thead><tr>{trips&&<th scope="col">순위</th>}{columns.map(c=><th key={c.key} scope="col">{c.label}</th>)}</tr></thead>
         <tbody>{groups.map((g,index)=><tr key={g.id} className={interactiveGroups?'has-detail':undefined} onClick={interactiveGroups?()=>openGroup(g):undefined}>
           {trips&&<td>{index+1}</td>}<th scope="row">{interactiveGroups?<button type="button" onClick={e=>{e.stopPropagation();openGroup(g);}}>{g.label}</button>:g.label}</th>
-          <td>{number(g.count)}건</td><td>{amount(g.amount)} {unit}</td>{trips&&<td>{duration(g.minutes)}</td>}<td>{amount(g.amount/g.count)} {unit}</td>
+          <td>{number(g.count)}건</td><td>{amount(g.amount)}{desk&&!trips?'':' '}{unit}</td>{trips&&<td>{duration(g.minutes)}</td>}<td>{amount(g.amount/g.count)}{desk&&!trips?'':' '}{unit}</td>
           <td><span className="fleet-analytics-share">{!trips&&<i aria-hidden="true"><b style={{width:(sum?100*g.amount/sum:0)+'%'}}/></i>}{sum?number(100*g.amount/sum,1)+'%':'—'}</span></td></tr>)}
           {!groups.length&&<tr><td colSpan={columns.length+Number(trips)}><BusinessEmpty compact title="표시할 집계 결과가 없습니다."/></td></tr>}</tbody></table></div>
       </BusinessSection>

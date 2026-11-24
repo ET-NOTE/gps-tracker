@@ -12,6 +12,8 @@ import FleetRecordMetrics from './FleetRecordMetrics';
 import Icon from '../Icon';
 import ExpenseBatchReview from './ExpenseBatchReview';
 import './combined-approvals.css';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 function initialFilters(){
   const today=businessDate();
@@ -23,6 +25,7 @@ function options(rows,key,field,placeholder){
 }
 
 export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const [filters,setFilters]=useState(initialFilters),[selection,setSelection]=useState(new Map());
   const [batch,setBatch]=useState(null),[result,setResult]=useState(null);
   const qc=useQueryClient(),access=useFleetAccess(),staff=useStaff();
@@ -72,7 +75,7 @@ export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
       ...(canReservations?[{name:'예약 승인 대기',value:ready?waiting.length-waitingExpenses.length:null,unit:'건'}]:[]),
       ...(canExpenses?[
         {name:'지출 승인 대기',value:ready?waitingExpenses.length:null,unit:'건'},
-        {name:'대기 지출 금액',value:ready?waitingExpenses.reduce((sum,row)=>sum+Number(row.raw.amount_krw),0):null,unit:'원'},
+        {name:'대기 지출 금액',value:ready?(total=>desk?total.toLocaleString('ko-KR')+'원':total)(waitingExpenses.reduce((sum,row)=>sum+Number(row.raw.amount_krw),0)):null,unit:desk?undefined:'원'},
       ]:[]),
     ]}/></div>
     <div className="fleet-approval-actions"><ExportButtons csvOnly disabled={!ready||!rows.length} report={approvalReport(rows,filters)} prepareExport={freshReport}/></div>

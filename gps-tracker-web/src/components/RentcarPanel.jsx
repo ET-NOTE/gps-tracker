@@ -54,7 +54,7 @@ function RentalCompanySettings({subscription,onSubscription,team,vehicles=[],veh
   } else if(team.isSuccess&&ownsProfile) {
     const branches=team.data.branches||[];
     profile=mockup
-      ? <BusinessCompanyInfo compactEdit caption="렌트카 업무 공간" extraFacts={[['운영 지점',branches.map(b=>b.name).join(', ')]]}/>
+      ? <BusinessCompanyInfo compactEdit caption="렌트카 업무 공간" extraFacts={[['운영 지점',branches.length+'개']]}/>
       : <BusinessCompanyInfo/>;
   }
   const subscriptionPanel=subscription.error

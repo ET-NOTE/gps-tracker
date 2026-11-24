@@ -33,7 +33,7 @@ export default function FreightIncidents({data,save,onPage}) {
   const list=data.incidents.filter(i=>(!branch||getRow(data,'vehicles',i.vehicleId)?.branchId===branch)&&
     (!type||i.type===type)&&(!status||i.status===status)&&[vehicleName(data,i.vehicleId),getRow(data,'shipments',i.shipmentId)?.number,i.type,i.note,i.resolution].join(' ').toLowerCase().includes(query));
   return <div className="fr-page fr-incidents">
-    <div className="fr-toolbar"><span className="fr-toolbar-caption">차량 제한과 운송·정산 상태를 별도로 관리합니다.</span>
+    <div className="fr-toolbar"><span className="fr-toolbar-caption">{mockup?'차량 제한과 운송·정산 상태는 각각 유지됩니다.':'차량 제한과 운송·정산 상태를 별도로 관리합니다.'}</span>
       {/* Desktop design: the register button always stays; without vehicles it is disabled and a note below the table links to the vehicle list. */}
       {mockup?<FreightButton primary icon="plus" disabled={!data.vehicles.length} title={data.vehicles.length?undefined:'차량을 먼저 등록해 주세요'} onClick={()=>{setVehicle(data.vehicles[0].id);setEditor({});}}>발생 내역 등록</FreightButton>
         :data.vehicles.length?<FreightButton primary icon="plus" onClick={()=>{setVehicle(data.vehicles[0].id);setEditor({});}}>발생 내역 등록</FreightButton>:<FreightButton onClick={()=>onPage('cargo-vehicles')}>차량 등록하기</FreightButton>}</div>

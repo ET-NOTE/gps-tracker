@@ -83,7 +83,7 @@ export default function FreightLedger({kind,data,save,onOpenShipment}) {
       <OfficeFilter label={partyLabel} options={billing?choicesFrom(data.shippers):{own:'자사 운송',...choicesFrom(data.carriers)}} value={party} onChange={setParty}/>
       <OfficeFilter label="정산 상태" options={states} value={state} onChange={setState}/>
     </FreightFilters>
-    <div className="fr-toolbar"><span className="fr-toolbar-caption">조회 {rows.length}건 · 운임 합계는 미정 금액을 제외합니다. 수납·지급 내역을 기록합니다.</span><div className="fr-actions">
+    <div className="fr-toolbar"><span className="fr-toolbar-caption">{mockup?'운임 합계는 미정 금액을 제외합니다. 실제 송금·발행은 실행되지 않습니다.':'조회 '+rows.length+'건 · 운임 합계는 미정 금액을 제외합니다. 수납·지급 내역을 기록합니다.'}</span><div className="fr-actions">
       <FreightButton icon="download" disabled={!rows.length} onClick={()=>downloadRows(billing?'화주 청구수납':'운송비 정산지급',headings,rows.map(values))}>CSV 다운로드</FreightButton>
       <FreightButton primary icon="plus" disabled={!eligible.length} onClick={()=>setView({id:eligible[0].id,action:'payment',fromList:true})}>{billing?'수납 기록':'지급 기록'}</FreightButton></div></div>
     <FreightTable columns={['운송 / '+partyLabel,'운송 예정 / 지점',...headings.slice(3)]} rows={rows.map(r=>{

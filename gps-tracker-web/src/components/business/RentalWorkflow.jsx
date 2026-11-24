@@ -142,7 +142,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
     reservations:[['조회 예약',shown.length],['미배정 예약',count(c=>!isAssigned(c) && c.status==='draft')],['출고 준비',assigned],['예약 대여료',shown.filter(c=>c.status!=='cancelled').reduce((sum,c)=>sum+agreementTotal(c),0),'원']],
     contracts:[['조회 계약',shown.length],['계약 확인 전',count(c=>c.status==='draft' && !c.rental_terms?.confirmed_at)],['대여 중',count(c=>['active','overdue'].includes(c.status))],['대여료 미수',unpaid(shown),'원']],
     checkout:[['출고 예정',shown.length],['오늘 인수 예정',count(c=>businessDate(c.starts_at)===day)],['출고 요건 완료',ready],['확인 필요',ready==null?null:shown.length-ready]],
-    active:[['대여 중',shown.length],['오늘 반납 예정',count(c=>businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['추가 대여료 미수',unpaid(shown),'원']],
+    active:[['대여 중',shown.length,mockup?'대':undefined],['오늘 반납 예정',count(c=>businessDate(c.ends_at)===day)],['반납 지연',count(c=>workflowStatus(c,now)==='반납 지연')],['추가 대여료 미수',unpaid(shown),'원']],
     returns:[['조회 반납 대상',shown.length],['반납 대기',count(c=>c.status!=='returned')],['반납 완료',count(c=>c.status==='returned')],['반납 후 대여료 미수',unpaid(shown.filter(c=>c.status==='returned')),'원']],
     dispatch:[['조회 대여 일정',shown.length],['배차 대기',count(c=>!isAssigned(c))],['배차 완료',count(isAssigned)]],
   }[stage];
@@ -159,12 +159,12 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
   const foldPeriod=!mockup && (stage==='active' || stage==='checkout');
   const compactFilters=!mockup && (foldPeriod || stage==='returns');
   const extraCount=[foldPeriod && (filters.from || filters.to),filters.model,filters.status].filter(Boolean).length;
-  const periodField=<fieldset className="rental-stage-period"><legend>이용 기간</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>;
+  const periodField=<fieldset className="rental-stage-period"><legend>{mockup&&stage==="returns"?"예정·실제 반납 기간":"이용 기간"}</legend><div><input type="date" aria-label="조회 시작일" value={filters.from} onChange={e=>change("from",e.target.value)}/><span>–</span><input type="date" aria-label="조회 종료일" value={filters.to} onChange={e=>change("to",e.target.value)}/></div></fieldset>;
   const modelField=<label>차종<select value={filters.model} onChange={e=>change("model",e.target.value)}><option value="">전체 차종</option>{[...new Set(stageRows.map(c=>c.rental_terms?.requested_model).filter(Boolean))].sort().map(x=><option key={x}>{x}</option>)}</select></label>;
   const statusField=<label>진행 상태<select aria-label="진행 상태" value={filters.status} onChange={e=>change("status",e.target.value)}><option value="">전체 상태</option>{[...new Set([...states,...(filters.status?[filters.status]:[])])].map(x=><option key={x}>{x}</option>)}</select></label>;
   const modelAndStatus=<>{!hiddenKeys.includes('model')&&modelField}{!hiddenKeys.includes('status')&&statusField}</>;
   return <div className="rental-workflow">
-    <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
+    <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : mockup&&unit==="원" ? value.toLocaleString("ko-KR")+"원" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
     <div className="rental-workflow-toolbar">
       {stageTabs[stage] ? <div className="rental-stage-tabs" aria-label="업무 범위">{stageTabs[stage].map(([key,label])=><button type="button" key={key} aria-pressed={filters.subset===key} onClick={()=>change("subset",key)}>{label}</button>)}</div> : mockup&&stageCaptions[stage] ? <span className="rental-toolbar-caption">{stageCaptions[stage]}</span> : <span>{shown.length.toLocaleString()}건 조회</span>}
       <div><ExportButtons grouped={!mockup} csvOnly={mockup} report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>

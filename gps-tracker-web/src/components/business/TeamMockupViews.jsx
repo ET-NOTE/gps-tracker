@@ -96,7 +96,7 @@ export function TeamRoleWorkspace({groups, memberCount, menus, implied={}, save,
 
 /** 회사 정보: the corporate company card. `caption` is the line under the company name. */
 export function TeamCompanyCard({name, caption, facts, onEdit}) {
-  return <section className="rt-card rt-company" aria-label="회사 정보"><header className="rt-card-head"><h3>회사 정보</h3>{onEdit&&<button type="button" className="business-button rt-small-button" aria-label="회사 정보 수정" onClick={onEdit}>수정</button>}</header>
+  return <section className="rt-card rt-company" aria-label="회사 정보"><header className="rt-card-head"><h3>회사 정보</h3>{onEdit&&<button type="button" className="business-button rt-small-button" aria-label="회사 정보 수정" onClick={onEdit}><Icon name="pencil" size={12}/>수정</button>}</header>
     <div className="rt-company-line"><span><Icon name="office" size={25}/></span><div><strong>{name||'회사명 미등록'}</strong>{caption&&<small>{caption}</small>}</div></div>
     <dl className="rt-facts">{facts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'미등록'}</dd></div>)}</dl>
   </section>;

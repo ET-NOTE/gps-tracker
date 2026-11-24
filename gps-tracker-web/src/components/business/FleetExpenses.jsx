@@ -44,6 +44,7 @@ export default function FleetExpenses(props){
 function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCategories,initialDetail=null,initialScope}){
  // Desktop follows the design mockup; phones keep every control.
  const mockup=!useCorporatePhone()&&hideOutsideMockup;
+ const money=value=>mockup?value.toLocaleString('ko-KR')+'원':value;
  const access=useFleetAccess(),qc=useQueryClient(),cats=useQuery({queryKey:['expense-categories'],queryFn:()=>api.expenseCategories()}),assets=useFleetAssets(),staff=useStaff(),org=useFleetOrganization();
  const today=businessDate(),[filters,setFilters]=useState(()=>initialScope?.filters||{from:`${today.slice(0,7)}-01`,to:today}),[page,setPage]=useState(0),[groupBy,setGroupBy]=useState('month'),[edit,setEdit]=useState(null),[detail,setDetail]=useState(initialDetail),[category,setCategory]=useState(null);
  const [query,setQuery]=useState(''),[status,setStatus]=useState(approvalsOnly?'pending':initialScope?.status||''),[filtersOpen,setFiltersOpen]=useState(false),[draftFilters,setDraftFilters]=useState({}),[summaryOpen,setSummaryOpen]=useState(false),[downloadsOpen,setDownloadsOpen]=useState(false);
@@ -117,8 +118,9 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
    cats.data.find(c=>String(c.id)===filters.category_id)?.name,expenseStatus[status],query.trim()&&`검색어 ${query.trim()}`].filter(Boolean).join(' · ')||'전체 조회';
  return <div className="fleet-expenses">
  <FleetRecordMetrics label={approvalsOnly?'승인 관리 조회 요약':'조회된 지출 요약'} items={[
-  {name:'조회 지출 합계',value:ready?rows.reduce((sum,row)=>sum+row.amount_krw,0):null,unit:'원',icon:'bar'},
-  {name:'승인 완료',value:ready?total.amount:null,unit:'원',tone:'green'},
+  // Desktop design: amounts keep '원' attached at full size; counts use the small unit.
+  {name:'조회 지출 합계',value:ready?money(rows.reduce((sum,row)=>sum+row.amount_krw,0)):null,unit:mockup?undefined:'원',icon:'bar'},
+  {name:'승인 완료',value:ready?money(total.amount):null,unit:mockup?undefined:'원',tone:'green'},
   {name:'승인 대기',value:ready?total.pending:null,unit:'건',tone:'amber'},
   {name:'반려',value:ready?total.rejected:null,unit:'건'},
  ]}/>
@@ -160,12 +162,12 @@ function ExpenseWorkspace({categoriesOnly=false,approvalsOnly=false,onOpenCatego
  {!valid?<p role="alert" className="expense-note">조회 기간을 확인해 주세요.</p>:entries.error?<BusinessError onRetry={entries.refetch}>{entries.error.message||'지출을 불러오지 못했습니다.'}</BusinessError>:entries.isPending||entries.isFetching||allEntries.isFetching?<p className="expense-note">지출 내역 불러오는 중…</p>:<>
  <div className="fleet-asset-table-wrap" role="region" aria-label="지출 목록 · 좌우 스크롤" tabIndex={0}><table className="fleet-asset-table expense-table"><thead><tr>{approvalsOnly&&status==='pending'&&<th scope="col">선택</th>}{['지출일','차량','지출 항목','금액','요청자','상태',...(mockup?[]:['결제수단','메모','첨부파일'])].map(h=><th key={h} scope="col" className={h==='금액'?'number':''}>{h}</th>)}</tr></thead><tbody>{pageRows.map(r=><tr key={r.id} tabIndex={0} aria-label={`지출 ${r.id} 상세 열기`} onClick={e=>{if(!e.target.closest('button,input,a,label'))setDetail(r.id);}} onKeyDown={e=>{if(e.target===e.currentTarget && ['Enter',' '].includes(e.key)){e.preventDefault();setDetail(r.id);}}}>
   {approvalsOnly&&status==='pending'&&<td data-label="선택">{picker(r)}</td>}
-  <td data-label="지출일"><button type="button" className="expense-detail-link" title="지출 상세 보기" aria-label={`지출 ${r.id} 상세${r.receipt_count?` · 첨부 ${r.receipt_count}개`:''}`} onClick={()=>setDetail(r.id)}>{r.spent_on}</button></td>
+  <td data-label="지출일"><button type="button" className="expense-detail-link" title="지출 상세 보기" aria-label={`지출 ${r.id} 상세${r.receipt_count?` · 첨부 ${r.receipt_count}개`:''}`} onClick={()=>setDetail(r.id)}>{mockup?r.spent_on.replaceAll('-','.'):r.spent_on}</button></td>
 <td data-label="차량">{r.vehicle_name}</td>
   <td data-label="지출 항목">{r.category_name}<small>{r.group_name}{r.trip_started_at?' · 운행 연결':''}</small></td>
   <td data-label="금액" className="number">{expenseMoney(r.amount_krw)}원</td>
   <td data-label="사용자 · 부서"><strong>{r.staff_name||'미지정'}</strong><small>{r.department_name||'부서 미지정'}</small></td>
-  <td data-label="상태"><span className={`business-badge expense-status-${r.status}`}>{expenseStatus[r.status]}</span></td>
+  <td data-label="상태"><span className={`business-badge expense-status-${r.status}`}>{mockup&&r.status==='approved'?'승인 완료':expenseStatus[r.status]}</span></td>
   {!mockup&&<><td data-label="결제수단">{paymentMethods[r.payment_method]}</td>
   <td data-label="메모" className="expense-memo-cell">{r.note?.trim()?<button type="button" className="expense-memo-button" title="메모 보기" aria-label={`지출 ${r.id} 메모 보기`} onClick={()=>setMemo(r)}><Icon name="message" size={16}/></button>:<span className="expense-muted" aria-label="메모 없음">—</span>}</td>
   <td data-label="첨부파일" className="expense-attachment-cell">{r.receipt_count>0?<ExpenseReceiptThumbnail expenseId={r.id} count={r.receipt_count} onOpen={()=>setDetail(r.id)}/>:<span className="expense-muted" aria-label="첨부파일 없음">—</span>}</td></>}

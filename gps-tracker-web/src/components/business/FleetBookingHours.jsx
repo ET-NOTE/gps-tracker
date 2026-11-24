@@ -57,13 +57,14 @@ export function BookingHoursFields({hours, draft, onChange, disabled, desk=false
   return <div className="fleet-hours">{!desk&&<p role="status">현재 적용 중 · <strong>{summary(hours)}</strong></p>}
     <div className="fleet-hours-form">
       <fieldset disabled={disabled}><legend>예약 가능 요일</legend>
-        <div className="fleet-hours-presets">{presets.map(([text,v])=><button key={v} type="button" aria-pressed={draft.mask===v} onClick={()=>set({mask:v})}>{text}</button>)}</div>
+        <div className="fleet-hours-presets">{presets.map(([text,v])=><button key={v} type="button" aria-pressed={draft.mask===v} onClick={()=>set({mask:v})}>{desk&&v===127?'전체요일':text}</button>)}</div>
         <div className="fleet-hours-days">{days.map((day,i)=><label key={day}><input type="checkbox" aria-label={day+'요일'} checked={Boolean(draft.mask & (1<<i))} onChange={()=>set({mask:draft.mask^(1<<i)})}/><span>{day}<span className="fleet-weekday-suffix">요일</span></span></label>)}</div>
       </fieldset>
       <fieldset disabled={disabled}><legend>예약 가능 시간 · 한국시간</legend>
         <label><input type="checkbox" checked={draft.allDay} onChange={e=>set({allDay:e.target.checked})}/>하루 종일</label>
         {!draft.allDay && <div className="fleet-hours-time"><label>{desk?'예약 시작 가능 시간':'시작 시간'}<input type="time" required value={draft.start} onChange={e=>set({start:e.target.value})}/></label>
           <label>{desk?'예약 종료 시간':'종료 시간'}<input type="time" required value={draft.end} onChange={e=>set({end:e.target.value})}/></label></div>}
+        {desk&&!draft.allDay&&<p className="fleet-hours-hint">공휴일 예외를 확인하려면 예약 승인 방식을 관리자 승인으로 설정하세요.</p>}
       </fieldset>
       {invalid && <p role="alert">{invalid}</p>}
     </div>

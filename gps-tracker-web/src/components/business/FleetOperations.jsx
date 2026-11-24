@@ -16,6 +16,7 @@ import {CompletionEditor,MaintenanceHistory,maintenanceKinds} from './FleetMaint
 import './fleet-operation-layout.css';
 import useCorporatePhone from '../../useCorporatePhone';
 import {hideOutsideMockup} from '../../lib/mockupHidden';
+import {dotDateTime,dotDay} from '../../lib/mockupFormat';
 
 const careHints={next_service_date:'엔진오일 및 소모품 점검',insurance_expiry:'보험 갱신 서류 확인',inspection_expiry:'자동차 정기 검사'};
 export default function FleetOperations({mode,assets,devices,departments,staff,canManage,canRegisterTerminal,openDetail,editSchedule,refreshAssets}){
@@ -114,12 +115,12 @@ export default function FleetOperations({mode,assets,devices,departments,staff,c
         <button type="button" className="fleet-terminal-open" aria-label={r.name+' 단말기 상세 열기'} onClick={()=>setTerminalId(r.id)}/>
         <header><i><Icon name="antenna" size={21}/></i><span className={'business-badge '+(r.offline?'warning':'good')}>{r.device.unavailable?'통신 정보 확인 불가':r.reading.label}</span></header>
         <h3>{r.name}</h3><p>{r.asset?(r.asset.license_plate||r.asset.name||'차량 정보 미등록')+(r.primary?' · 대표':' · 보조'):'연결된 차량 없음'}</p>
-        <dl><div><dt>마지막 수신</dt><dd>{kstDateTime(r.device.last_seen_at)||'—'}</dd></div><div><dt>단말기 배터리</dt><dd>{battery.percent!=null?'약 '+battery.percent+'%':'—'}</dd></div></dl>
-        <footer><small>{battery.voltage}</small>{canManage&&(r.asset?<button type="button" className="business-button" onClick={()=>openDetail(r.asset.id,'connections')}><Icon name="link" size={13}/>연결 관리</button>:assets.length>0&&<button type="button" className="business-button" onClick={()=>chooseVehicle(r)}><Icon name="link" size={13}/>차량 연결</button>)}</footer>
+        <dl><div><dt>마지막 수신</dt><dd>{(deskOps?dotDateTime:kstDateTime)(r.device.last_seen_at)||'—'}</dd></div><div><dt>단말기 배터리</dt><dd>{battery.percent!=null?(deskOps?'':'약 ')+battery.percent+'%':'—'}</dd></div></dl>
+        <footer><small>{battery.voltage}</small>{canManage&&(r.asset?<button type="button" className="business-button" onClick={()=>openDetail(r.asset.id,'connections')}><Icon name="link" size={13}/>{deskOps?'차량 연결':'연결 관리'}</button>:assets.length>0&&<button type="button" className="business-button" onClick={()=>chooseVehicle(r)}><Icon name="link" size={13}/>차량 연결</button>)}</footer>
       </article>;
     })}</div>:<div className="fleet-care-grid">{schedules.map(({asset,key,label,date})=><article className="fleet-care-card" key={asset.id+'-'+key}>
       <button type="button" className="fleet-care-card-open" aria-label={fleetAssetLabel(asset)+' '+label+' 일정 상세'} onClick={()=>setDetail({assetId:asset.id,key})}/>
-      <header><time dateTime={date||undefined}><Icon name="calendar" size={15}/>{date||'일정 미등록'}</time>{date&&<span className={'business-badge '+(date<today?'urgent':'info')}>{date<today?'기한 경과':'예정'}</span>}</header>
+      <header><time dateTime={date||undefined}><Icon name="calendar" size={15}/>{date?(deskOps?dotDay(date):date):'일정 미등록'}</time>{date&&<span className={'business-badge '+(date<today?'urgent':'info')}>{date<today?'기한 경과':'예정'}</span>}</header>
       <div className="fleet-care-vehicle"><CarImage vehicleId={asset.id} version={asset.profile?.car_image_url} fallback={<Icon name="car" size={24}/>}/>
         <div><strong>{fleetAssetLabel(asset)}</strong>{(asset.car_model||asset.department)&&<small>{[asset.car_model,asset.department].filter(Boolean).join(' · ')}</small>}</div></div>
       <h3>{label}</h3><p className="fleet-care-hint">{careHints[key]}</p>

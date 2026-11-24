@@ -89,9 +89,9 @@ function ReportsView({page,data,save,onPage,open}){
       {!(report&&desk)&&<section className="ops-table-panel" aria-label={util?'차량별 운영 내역':profit?'운송별 운임 차익':'화주별 합계'}>
         {report&&<header className="ops-table-head"><h2>화주별 합계</h2></header>}
         <FreightTable columns={displayColumns} rows={rows.map(reportRow)}/></section>}
-      <p className="ops-note">{util?'배차일은 차량별로 운송 일정이 잡힌 날짜를 한 번씩 집계합니다.':'상차 예정일 기준으로 승인된 추가 비용을 포함합니다. 양쪽 운임이 확정된 '+r.totals.known+'건의 차익을 집계했습니다.'}</p>
+      <p className="ops-note">{desk?(util?'배차일 비율은 선택 기간의 전체 일수 중 배차 일정이 있는 날짜의 비율이며 실제 주행 시간 비율과 다릅니다. 공차 주행거리는 위치·운행 이력 연결 후 집계할 수 있습니다.':'운임은 상차 예정일 기준의 합의 금액이며 승인된 추가 비용을 포함합니다. 미정 금액은 합계에서 제외됩니다'+(r.shipments.length-r.totals.known>0?' · 양쪽 운임 확인 필요 '+(r.shipments.length-r.totals.known)+'건':'')+'. 실제 수납·지급은 운임·정산에서 별도로 확인합니다.'):util?'배차일은 차량별로 운송 일정이 잡힌 날짜를 한 번씩 집계합니다.':'상차 예정일 기준으로 승인된 추가 비용을 포함합니다. 양쪽 운임이 확정된 '+r.totals.known+'건의 차익을 집계했습니다.'}</p>
       {profit&&<section className="ops-table-panel fr-report-cost"><header><div><h2>별도 차량 관리비</h2><p>선택 기간에 시작한 완료 정비·검사·보험 일정</p></div><strong>{costLabel(r.utilization.reduce((n,v)=>n+v.cost,0))}</strong></header>
-        <p>운임 차익에는 회사 부담 추가비만 반영됩니다. 차량 관리비는 별도로 집계합니다.</p><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 내역</FreightButton></section>}
+        <p>{desk?'운임 차익에는 회사 부담 추가비만 반영됩니다. 차량 관리비와 인건비 등 미배부 비용을 포함한 최종 순이익은 아닙니다.':'운임 차익에는 회사 부담 추가비만 반영됩니다. 차량 관리비는 별도로 집계합니다.'}</p><FreightButton onClick={()=>onPage('cargo-maintenance')}>정비·보험 내역</FreightButton></section>}
       </>}
     {failure&&<p role="alert">{failure}</p>}
     {vehicleView&&<FreightCatalogDialogs kind="vehicles" data={data} save={save} view={vehicleView} setView={setVehicleView} onOpenRecord={open}/>}

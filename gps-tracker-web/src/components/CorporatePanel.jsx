@@ -20,6 +20,8 @@ import FleetSites from './business/FleetSites';
 import FleetExpenses from './business/FleetExpenses';
 import FleetAnalytics from './business/FleetAnalytics';
 import MockupLineChart from './business/MockupLineChart';
+// Desktop design date '2026.11.21 09:00' (display only).
+const dotDateTime=value=>kstDateTime(value).replace(/^(\d{4})-(\d{2})-(\d{2})/,'$1.$2.$3');
 import FleetLive from './business/FleetLive';
 import FleetOperatingPolicy, { useOperatingPolicy } from './business/FleetReservationPolicy';
 import FleetTripPurposes from './business/FleetTripPurposes';
@@ -200,6 +202,7 @@ export default function CorporateAccountPanel({defaultOwner,allowedMemberships,.
 }
 
 function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSchedules, onVehicles, onExpenses, onLive, onWeeklyReport, onCreate, setup }) {
+  const deskOverview=!useCorporatePhone()&&hideOutsideMockup;
   const now=useBusinessClock(), period=businessPeriod(now), openVehicle=useBusinessVehicle();
   const tasksRef=useRef(null), [weekly,setWeekly]=useState(null), [showVehicles,setShowVehicles]=useState(false);
   const reservations=useReservations({from:period.todayStart,to:period.todayEnd},{refetchInterval:60000});
@@ -253,9 +256,9 @@ function CorporateOverview({ devices, onMap, onReport, onReserve, onMissingSched
           </button>;
         })}</div>
         {!devices.length&&<BusinessEmpty compact title="등록된 차량이 없습니다."/>}
-        {!!devices.length&&<button type="button" className="fleet-dashboard-search-toggle" aria-expanded={showVehicles} onClick={()=>setShowVehicles(v=>!v)}><Icon name="search" size={15}/>{showVehicles?'차량 검색 닫기':'차량 검색·위치 조회'}</button>}
+        {!!devices.length&&!deskOverview&&<button type="button" className="fleet-dashboard-search-toggle" aria-expanded={showVehicles} onClick={()=>setShowVehicles(v=>!v)}><Icon name="search" size={15}/>{showVehicles?'차량 검색 닫기':'차량 검색·위치 조회'}</button>}
       </BusinessSection>
-      <BusinessSection title="최근 7일 운행" description="운행기록부 반영 거리" action={onWeeklyReport&&<button type="button" className="fleet-dashboard-link" onClick={onWeeklyReport}>리포트 <Icon name="chevron-right" size={14}/></button>}>
+      <BusinessSection title="최근 7일 운행" description={deskOverview?'완료 운행의 일별 주행거리':'운행기록부 반영 거리'} action={onWeeklyReport&&<button type="button" className="fleet-dashboard-link" onClick={onWeeklyReport}>{deskOverview?'더보기':'리포트'} <Icon name="chevron-right" size={14}/></button>}>
         {summary?.checked>0?<FleetWeekChart days={days} distances={summary.days}/>:<BusinessEmpty compact title={!summary?.finished?'운행 조회 중…':!devices.length?'등록된 차량이 없습니다.':'운행 기록을 조회하지 못했습니다.'}/>}
         {summary?.checked>0&&!summary.complete&&<p className="fleet-dashboard-partial">조회된 {summary.checked}/{summary.total}대 기준</p>}
         <div className="fleet-dashboard-totals"><span>오늘 운행거리{stats.partial?' (일부)':''}<b>{distanceLabel}</b></span><span>점검 예정<b>{maintenance.length}건</b></span><span>사용 가능<b>{available}대</b></span></div>
@@ -1038,7 +1041,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
             <label className="fleet-date-endpoint"><span>시작일</span><input type="date" aria-label="예약 조회 시작일" value={dates.from} max={dates.to} onChange={e=>setDates({...dates,from:e.target.value})}/></label><span aria-hidden="true">~</span>
             <label className="fleet-date-endpoint"><span>종료일</span><input type="date" aria-label="예약 조회 종료일" value={dates.to} min={dates.from} onChange={e=>setDates({...dates,to:e.target.value})}/></label>
           </div></div>}
-          {viewMode==='list'&&<label>예약 상태<select aria-label="예약 상태 필터" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active','예정·진행',activeCount],['completed','완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled','취소',cancelledCount]].map(([value,label,count])=><option key={value} value={value}>{label} ({known?count:'—'})</option>)}</select></label>}
+          {viewMode==='list'&&<label>예약 상태<select aria-label="예약 상태 필터" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active','예정·진행',activeCount],['completed','완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled','취소',cancelledCount]].map(([value,label,count])=><option key={value} value={value}>{mockupDesk&&value==='all'?'전체 상태':label+' ('+(known?count:'—')+')'}</option>)}</select></label>}
           <label>차량<select value={vehicleFilter} onChange={e=>setVehicleFilter(e.target.value)}><option value="">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{reportVehicleLabel(d)}</option>)}</select></label>
           <label>예약 운전자<select value={driverFilter} onChange={e=>setDriverFilter(e.target.value)}><option value="">전체 예약 운전자</option><option value="unassigned">미지정</option>{staffAll?.map(s=><option value={s.id} key={s.id}>{s.name}{s.active===false?' (비활성)':''}</option>)}</select></label>
           <label>예약 운전자 부서<select value={driverDepartment} onChange={e=>setDriverDepartment(e.target.value)}><option value="">전체 부서</option>{departmentOptions.map(name=><option key={name}>{name}</option>)}</select></label>
@@ -1113,6 +1116,7 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
 }
 
 function ReservationRow({r,onOpen}) {
+  const deskDates=!useCorporatePhone()&&hideOutsideMockup;
   const state=RESV_STATUS[r.status]||RESV_STATUS.planned;
   const untilStart=Math.round((Date.parse(r.starts_at)-Date.now())/60000),untilEnd=Math.round((Date.parse(r.ends_at)-Date.now())/60000);
   const imminent=r.status==='planned'&&untilStart>=0&&untilStart<=60;
@@ -1121,7 +1125,7 @@ function ReservationRow({r,onOpen}) {
     if(!event.target.closest('button')){event.currentTarget.querySelector('.booking-detail-link')?.focus({preventScroll:true});onOpen();}
   }}>
     <td data-label="차량" className="corporate-reservation-vehicle"><i className="corporate-reservation-thumb" aria-hidden="true"><Icon name="car" size={18}/></i><span><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&r.vehicle_name&&r.vehicle_name!==r.license_plate&&<small>{r.vehicle_name}</small>}</span></td>
-    <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></td>
+    <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{deskDates?<>{dotDateTime(r.starts_at)}<small>{dotDateTime(r.ends_at)} 종료</small></>:<>{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></>}</td>
     <td data-label="운행목적 / 메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
     <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
   </tr>;

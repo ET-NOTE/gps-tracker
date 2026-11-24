@@ -104,7 +104,7 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
   const directory=foldUsage||kind==='templates';
   const usage=filter('사용 여부',status,setStatus,{all:kind==='templates'?'전체 양식':'전체',active:'사용 중',inactive:'사용 중지'});
   const clearFilters=()=>{setQuery('');setStatus('all');setType('all');setAccount('all');setLicense('all');};
-  const toolbar=<Toolbar count={rows.length} unit={kind==='accounts'?'개 거래처 조회':kind==='templates'?'개 양식 조회':kind==='customers'?'명 조회':'건'}>
+  const toolbar=mockup&&kind==='customers'?<div className="ro-toolbar ro-count-toolbar"><span>전체 {catalog.customers.length.toLocaleString('ko-KR')}명 중 {rows.length.toLocaleString('ko-KR')}명 조회</span><div><BusinessButton primary icon="plus" onClick={()=>setEdit(null)}>고객 등록</BusinessButton></div></div>:<Toolbar count={rows.length} unit={kind==='accounts'?'개 거래처 조회':kind==='templates'?'개 양식 조회':kind==='customers'?'명 조회':'건'}>
     {directory ? <BusinessButton primary icon="plus" onClick={()=>setEdit(null)}>{kind==='templates'?'양식 추가':kind==='customers'?'고객 등록':'거래처 등록'}</BusinessButton> :
       <Button onClick={()=>setEdit(null)}>{titles[kind]} 등록</Button>}</Toolbar>;
   return <div className={'rental-office'+(directory?' rental-directory':'')}>

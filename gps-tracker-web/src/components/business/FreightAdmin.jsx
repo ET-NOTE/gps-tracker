@@ -35,7 +35,7 @@ function Company({data={}}) {
   if(mockup){
     // Desktop design: company card and service usage side by side, from the team config and the cargo records.
     const team=q.data, vehicles=data.vehicles||[], staff=team.staff||[], branches=team.branches||[];
-    const facts=[['사업자등록번호',company.business_number],['대표자',company.representative],['연락처',company.phone],['주소',company.address],['운영 지점',branches.length?branches.map(b=>b.name).join(', '):'']];
+    const facts=[['사업자등록번호',company.business_number],['대표자',company.representative],['연락처',company.phone],['사용 시간대','서울 · UTC+09:00'],['운영 지점',branches.length+'개']];
     const linked=vehicles.filter(v=>v.deviceId).length, joined=staff.filter(s=>s.active&&s.joined).length;
     return <div className="rt-mockup rt-company-service"><TeamCompanyCard name={company.name} caption="화물 운송 업무 공간" facts={facts} onEdit={()=>setEditor(company)}/>
       <TeamServiceUsage bars={[['등록 차량',linked,vehicles.length,'대','단말 연결'],['등록 사용자',joined,staff.length,'명','사용 중']]}

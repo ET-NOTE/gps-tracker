@@ -17,6 +17,9 @@ export function Options({items}) {
   return Object.entries(items).map(([value,label])=><option key={value} value={value}>{label}</option>);
 }
 export function Table({columns,rows,empty,onRecord}) {
+  const desk=useDesk();
+  // Desktop design: an empty list shows the empty-state block without the header row.
+  if(desk&&!rows.length)return <div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>{empty}</strong><small>조회 조건을 변경하거나 새 항목을 등록해 주세요.</small></div>;
   return <div className="ro-table-box" role="region" aria-label={columns[0][0]+'별 목록'} tabIndex={0}><table className="ro-table"><thead><tr>{columns.map(([label])=><th key={label} scope="col">{label}</th>)}</tr></thead>
     <tbody>{rows.length ? rows.map(row=><tr key={row.id} data-record={onRecord?true:undefined} onClick={onRecord?event=>{
       if (!event.target.closest('button,a,input,select,textarea,label')) {
@@ -46,10 +49,11 @@ export function PeriodFields({period,onChange,label}) {
   </div>;
 }
 // Desktop design: an optional icon before the label and the unit set small after the number.
-const unitPattern=/^([-−]?[d,.]+)s*(원|명|건|대|곳|%|시간|일|km)$/;
-export function Metrics({items}) {
+const unitPattern=/^([-−]?[\d,.]+)\s*(원|명|건|대|곳|%|시간|일|km)$/;
+// Desktop design: counts take a small unit; amounts keep '원' attached unless `smallMoney` (statistics pages).
+export function Metrics({items,smallMoney=false}) {
   const desk=useDesk();
-  const show=value=>{const m=desk&&typeof value==='string'&&value.match(unitPattern);return m?<>{m[1]}<small>{m[2]}</small></>:value;};
+  const show=value=>{const m=desk&&typeof value==='string'&&value.match(unitPattern);return m&&(m[2]!=='원'||smallMoney)?<>{m[1]}<small>{m[2]}</small></>:value;};
   return <dl className="ro-metrics" data-desk={desk||undefined}>{items.map(([label,value,icon])=><div key={label}><dt>{desk&&icon&&<Icon name={icon} size={15}/>}{label}</dt><dd>{show(value)}</dd></div>)}</dl>;
 }
 export function FormModal({title,onClose,save,children,canSave=true,size=720,submitLabel='저장'}) {

@@ -322,7 +322,7 @@ test('desktop expense tabs follow the design order and the approved card sums ap
   const items=r.root.findByProps({label:'조회된 지출 요약'}).props.items;
   assert.deepEqual([...items.map(item=>item.name)],['조회 지출 합계','승인 완료','승인 대기','반려']);
   const approved=items.find(item=>item.name==='승인 완료');
-  assert.equal(approved.value,50000);assert.equal(approved.unit,'원');
+  assert.equal(approved.value,'50,000원','amounts keep 원 attached on the desktop design');assert.equal(approved.unit,undefined);
   assert.equal(items.find(item=>item.name==='승인 대기').value,1);
  }finally{await close();}
 });

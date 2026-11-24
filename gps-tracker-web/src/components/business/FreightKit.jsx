@@ -8,7 +8,7 @@ import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 // Desktop design: a trailing unit ('원', '건') is set small after the number; an optional icon leads the label.
-const statUnit=/^([-−]?[d,.]+)s*(원|명|건|대|곳|%|시간|km)$/;
+const statUnit=/^([-−]?[\d,.]+)\s*(원|명|건|대|곳|%|시간|km)$/;
 
 export function FreightButton({primary=false, children, icon, ...rest}) {
   return <button type="button" className={'fr-btn'+(primary?' is-primary':'')} {...rest}>{icon&&<Icon name={icon} size={15}/>} {children}</button>;
@@ -52,6 +52,8 @@ export function FreightDrawer({title,subtitle,onClose,footer,children}) {
   </BusinessDrawer>;
 }
 export function FreightTable({columns,rows,empty='조회된 내역이 없습니다.'}){
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
+  if(desk&&!rows.length)return <div className="mockup-empty" role="status"><Icon name="search" size={31}/><strong>{empty}</strong><small>조회 조건을 바꾸거나 새 항목을 등록해 주세요.</small></div>;
   return <div className="fr-list" role="region" aria-label={columns[0]+'별 목록'} tabIndex={0}><table className="fr-table"><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead>
     <tbody>{rows.map(({id,cells,onOpen})=><tr key={id} className={onOpen?'fr-open-row':undefined} onClick={onOpen?event=>{
       if(!event.target.closest('button,a,input,select,textarea,label')&&!window.getSelection()?.toString())onOpen();

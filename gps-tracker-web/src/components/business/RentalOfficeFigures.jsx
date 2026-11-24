@@ -14,6 +14,7 @@ import RentalRecordDrawer,{RecordFields} from './RentalRecordDrawer';
 import {HistoryContract} from './RentalCustomerHistory';
 import useCorporatePhone from '../../useCorporatePhone';
 import {hideOutsideMockup} from '../../lib/mockupHidden';
+import {oneDecimal} from '../../lib/mockupFormat';
 
 const total=(rows,value)=>rows.reduce((n,row)=>n+value(row),0);
 const decimal=n=>n.toLocaleString('ko-KR',{maximumFractionDigits:1});
@@ -68,6 +69,10 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
   const mileage={distance:total(usageRows,r=>r.distance),measured:total(usageRows,r=>r.measured),missing:total(usageRows,r=>r.missing)};
   const openRow=r=>setDetail(r.id);
   const detailLink=(r,name)=><button type="button" className="ro-detail-link" onClick={()=>openRow(r)}>{name}</button>;
+  // Desktop design: one-decimal hours and rates, one 정비 일정 column (completed + open schedules are different records), no revenue column.
+  const dec=mockup?oneDecimal:decimal, km=r=>r.measured?dec(r.distance)+' km':'0 km';
+  const deskUsageColumns=[['차량',r=>detailLink(r,r.name)],['대여 건수',r=>r.intervals.length+'건'],['대여 시간',r=>dec(r.hours)+'시간'],['가동률',r=>dec(r.utilization)+'%'],
+    ['정비 일정',r=>workStatus||dec(r.completedHours+r.scheduledHours)+'시간'],['운영비',r=>won(r.cost)],['반납 거리',r=>distanceStatus||km(r)]];
   const usageColumns=[['차량',r=>detailLink(r,r.name)],['대여 건수',r=>r.intervals.length+'건'],['대여 시간',r=>decimal(r.hours)+'시간'],['가동률',r=>decimal(r.utilization)+'%'],
     ['완료 정비 시간',r=>workStatus||decimal(r.completedHours)+'시간'],['진행·예정 일정',r=>workStatus||decimal(r.scheduledHours)+'시간'],
     ['운영비',r=>won(r.cost)],['반납 기록 거리',r=>distanceStatus||distanceText(r)],['이용료 순수납',r=>won(r.revenue)]];
@@ -76,7 +81,7 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
   const exportReport=usage?csv('차량 가동·운영비',period,usageColumns,usageRows.map(r=>[r.name,r.intervals.length,r.hours.toFixed(1),r.utilization.toFixed(1)+'%',
     workStatus||r.completedHours.toFixed(1),workStatus||r.scheduledHours.toFixed(1),r.cost,distanceStatus||distanceText(r),r.revenue])):
     csv('차종별 대여·매출',period,groupColumns,groups.map(g=>[g.id,g.contracts.length,g.amount,g.paid,g.cost]));
-  const stats=usage?[['차량 시간 가동률',decimal(usageRows.length?total(usageRows,r=>r.utilization)/usageRows.length:0)+'%','barAxis'],['총 대여 시간',decimal(total(usageRows,r=>r.hours))+'시간','clock'],['차량 운영비',won(total(usageRows,r=>r.cost)),'wallet'],['반납 기록 주행거리',distanceStatus||distanceText(mileage),'route']]:
+  const stats=usage?[['차량 시간 가동률',dec(usageRows.length?total(usageRows,r=>r.utilization)/usageRows.length:0)+'%','barAxis'],['총 대여 시간',dec(total(usageRows,r=>r.hours))+'시간','clock'],[mockup?'운영비':'차량 운영비',won(total(usageRows,r=>r.cost)),'wallet'],['반납 기록 주행거리',distanceStatus||distanceText(mileage),'route']]:
     [['기간 내 시작 계약',started.length+'건','file'],['대여료 순수납',won(pay),'wallet'],['운영 지출',won(cost),'wrenchSmall'],['수납 − 지출',won(pay-cost),'barAxis']];
   const selected=(usage?usageRows:groups).find(row=>row.id===detail);
   const asset=usage&&selected?vehicles.find(v=>v.id===selected.id):null;
@@ -87,14 +92,15 @@ export default function RentalOfficeFigures({book:all,devices:vehicles,period,da
     <div className="ops-filter-box"><div className="ro-filters">{dates}
       <Field label="소속 지점"><select value={branch} onChange={e=>setBranch(e.target.value)}><option value="">전체 지점</option>{branches.map(b=><option key={b}>{b}</option>)}</select></Field>
       <Field label="차종"><select value={model} onChange={e=>setModel(e.target.value)}><option value="">전체 차종</option>{models.map(m=><option key={m}>{m}</option>)}</select></Field></div>
-      <div className="ops-filter-actions"><span>{usage?'조회 차량 '+usageRows.length+'대':'기간 내 시작 계약 '+started.length+'건'}</span><button type="button" className="fleet-filter-reset-link" onClick={()=>{setBranch('');setModel('');onResetPeriod();}}>필터 초기화</button></div></div>
-    <Metrics items={stats}/>
+      <div className="ops-filter-actions"><span>{mockup?(usage?'전체 '+vehicles.length+'대 중 '+usageRows.length+'대 조회':'전체 '+all.contracts.length+'건 중 '+started.length+'건 조회'):usage?'조회 차량 '+usageRows.length+'대':'기간 내 시작 계약 '+started.length+'건'}</span><button type="button" className="fleet-filter-reset-link" onClick={()=>{setBranch('');setModel('');onResetPeriod();}}>필터 초기화</button></div></div>
+    <Metrics items={stats} smallMoney/>
     {usage&&work.isError&&<p className="ops-note" role="status">정비 일정을 불러오지 못했습니다. <button type="button" className="fr-link" onClick={()=>work.refetch()}>정비 일정 다시 조회</button></p>}
     {usage&&params&&readings.isError&&<p className="ops-note" role="status">반납 거리 기록을 불러오지 못했습니다. <button type="button" className="fr-link" onClick={()=>readings.refetch()}>반납 거리 다시 조회</button></p>}
     {usage?<ChartPanel title="차량별 가동률" subtitle="가동률이 높은 차량 최대 6대"><ReportBars values={usageRows.slice(0,6).map(r=>({label:r.name,value:Number(r.utilization.toFixed(1))}))} unit="%" height={170} empty="조회된 차량이 없습니다."/></ChartPanel>:
       <RentalOfficeCharts figures={daily} groups={groups} period={period}/>}
     <section className="ops-table-panel"><header className="ops-table-head"><h2>{usage?'차량별 운영 내역':'차종별 내역'}</h2>{!usage&&<small>{mockup?'행을 누르면 연결 계약이 열립니다.':'차종을 누르면 연결 계약을 확인할 수 있습니다.'}</small>}</header>
-      <Table columns={usage?usageColumns:groupColumns} rows={usage?usageRows:groups} onRecord={openRow} empty="조회 기간에 집계할 내역이 없습니다."/></section>
+      <Table columns={usage?(mockup?deskUsageColumns:usageColumns):groupColumns} rows={usage?usageRows:groups} onRecord={openRow} empty="조회 기간에 집계할 내역이 없습니다."/></section>
+    {mockup&&<p className="ops-form-hint">{usage?'가동률은 선택 기간의 전체 차량 시간 대비 대여 시간입니다. 오늘은 현재 시각까지 집계합니다. 인도·반납 시각을 우선하며 기록이 없으면 계약 시각을 사용합니다. 주행거리는 기간 내 반납 기록 기준입니다.':'대여료 순수납은 선택 기간의 결제·환불 기록이며 보증금은 제외합니다. 계약 금액은 선택 기간에 시작한 계약의 확정 금액입니다. 수납과 지출의 차액은 회계상 이익을 뜻하지 않습니다.'}</p>}
     {!usage&&!mockup&&<section className="ops-table-panel"><header className="ops-table-head"><h2>일별 수납·지출</h2><ExportButtons csvOnly disabled={pending} report={daysCsv}/></header>
       <Table columns={dayColumns} rows={daily} empty="조회 기간에 이용료 수납·환불 또는 지출이 없습니다."/></section>}
     {selected&&<RentalRecordDrawer title={usage?'렌트카 차량 상세':selected.id+' · 기간 내 시작·수납 계약'}

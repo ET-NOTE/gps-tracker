@@ -412,3 +412,93 @@
   .rnt-shell :is(.business-badge, .rfl-badge, .fr-badge, .rt-badge) { white-space: nowrap; }
   .rnt-shell :is(.rt-facts, .fr-facts) dt { flex: none; white-space: nowrap; }
 }
+/* Round 23: final design comparison — rental and freight (PC) */
+@media screen and (min-width: 768px) {
+  /* A. Status badges with a 4px dot */
+  .rnt-shell .rnt-content :is(.rfl-badge, .fr-badge, .rt-badge, .business-badge) { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px !important; border-radius: 5px !important; font-size: 10px !important; line-height: 1.2; white-space: nowrap; }
+  .rnt-shell .rnt-content :is(.rfl-badge, .fr-badge, .rt-badge, .business-badge)::before { content: ''; flex: none; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+  /* B. Summary card icons in a 25px tile */
+  .rnt-shell :is(.ro-metrics[data-desk], .fr-stats) dt:has(svg) { display: flex; align-items: center; gap: 8px; }
+  .rnt-shell :is(.ro-metrics[data-desk], .fr-stats) dt svg { box-sizing: content-box; flex: none; width: 15px; height: 15px; padding: 5px; border-radius: 8px; background: #edf3ff; color: #3676e5; }
+  .rnt-shell .rental-stage-metrics strong small, .rnt-shell .ro-metrics[data-desk] dd small { margin-left: 5px; }
+  /* C. Blue reset links without icons on the rental fleet and statistics pages */
+  .rnt-shell:is([data-page="vehicles"], [data-page="service"], [data-page="incidents"], [data-page="devices"], [data-page="live"], [data-page="rent-reports"], [data-page="rent-utilization"]) .fleet-filter-reset-link { color: #3676e5 !important; font-size: 11px !important; }
+  .rnt-shell:is([data-page="vehicles"], [data-page="service"], [data-page="incidents"], [data-page="devices"], [data-page="live"], [data-page="rent-reports"], [data-page="rent-utilization"]) .fleet-filter-reset-link svg { display: none; }
+  /* E. List cards end with their content */
+  .pt-member-shell .rnt-shell .rnt-content { min-height: 0 !important; }
+  .pt-member-shell .rnt-shell .rnt-content :is(.rfl-list-card, .rental-workflow > .rental-workflow-box, .fr-workflow > .fr-list, .fr-section > .fr-list) { flex: 0 0 auto !important; }
+  .pt-member-shell .rnt-shell .rnt-content > :last-child { flex: 0 0 auto !important; }
+  /* I. Names in tables: plain dark text with a small secondary line */
+  .rnt-shell:is([data-page="devices"], [data-page="cargo-devices"]) .rnt-content :is(.rfl-table, .fr-table) td:first-child :is(.rfl-link, .fr-link) { color: #414c5c !important; font-size: 12px !important; font-weight: 400 !important; text-decoration: none; }
+  .rnt-shell[data-page="cargo-devices"] .fr-inline-sub { display: none; }
+  .rnt-shell[data-page="vehicles"] .rfl-car strong { font-size: 12px; font-weight: 400; color: #414c5c; }
+  .rnt-shell[data-page="vehicles"] .rfl-car small { font-size: 10px; color: #929aa7; }
+  /* D. Empty list block */
+  .rnt-shell .mockup-empty { display: grid; justify-items: center; gap: 0; padding: 55px 25px; text-align: center; }
+  .rnt-shell .mockup-empty svg { width: 31px; height: 31px; margin-bottom: 13px; color: #b0bed2; }
+  .rnt-shell .mockup-empty strong { margin-bottom: 5px; font-size: 14px; font-weight: 400; color: #7b899b; }
+  .rnt-shell .mockup-empty small { font-size: 12px; color: #a4adba; }
+  /* Statistics notes */
+  .rnt-shell .ops-form-hint { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: #8a94a3; }
+}
+@media screen and (min-width: 768px) {
+  /* Rental 1, 6: captions and count line */
+  .rnt-shell .rnt-content .rental-workflow-toolbar > .rental-toolbar-caption { font-size: 14px; }
+  .rnt-shell .ro-count-toolbar > span { font-size: 11px; color: var(--fleet-caption, #7e8998); }
+  /* Rental 3: the dash between dates */
+  .rnt-shell .rnt-content :is(.rental-stage-period, .ro-desk-period) > div > span { font-size: 11px; color: #929aa7; }
+  /* Rental 4 and freight 4: week navigation (small ghost; this week = small soft) */
+  .rnt-shell .rnt-content .fr-week-controls .fr-btn { min-height: 29px !important; padding: 5px 9px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; box-shadow: none !important; font-size: 11px !important; color: #5b6574 !important; }
+  .rnt-shell .rnt-content .fr-week-controls .fr-btn:last-child { background: #eef2f7 !important; }
+  .rnt-shell .rnt-content .fr-week-controls > span { font-size: 14px; color: #353b45; }
+  /* Rental 5: no disclosure marker beside 차량 준비 현황 */
+  .rnt-shell .rnt-section-caption > summary { list-style: none; cursor: default; }
+  .rnt-shell .rnt-section-caption > summary::-webkit-details-marker { display: none; }
+  /* Rental 9: notice strip */
+  .rnt-shell .ro-desk-notice { gap: 0; padding: 12px 16px; border: 1px solid #e1e9f6; border-radius: 9px; background: #f5f8fe; color: #7e8da3; font-size: 11px; }
+  .rnt-shell .ro-desk-notice svg { display: none; }
+  /* Rental 12: company head and usage */
+  .rnt-shell :is(.rt-company-line, .fleet-company-line) > span { background: #f3f5f8 !important; color: #7e8998 !important; }
+  .rnt-shell :is(.rt-company-line, .fleet-company-line) strong { font-size: 14px !important; font-weight: 400 !important; }
+  .rnt-shell :is(.rt-company-line, .fleet-company-line) small { font-size: 10px; }
+  .rnt-shell .rt-small-button svg { margin-right: 4px; }
+  .rnt-shell .rt-usage .fleet-usage-bar > div > span { font-size: 14px; }
+  .rnt-shell .rt-usage .fleet-usage-bar small { display: none; }
+  .rnt-shell .rt-usage .rt-card-head p { font-size: 10px; }
+  .rnt-shell :is(.rt-company-service, .fleet-company-service) { align-items: stretch !important; }
+  /* Rental 13: group count */
+  .rt-roles > .rt-toolbar > span { font-size: 14px; }
+  /* Freight 1: list captions 14px */
+  .rnt-shell:is([data-page="cargo-dashboard"], [data-page="cargo-live"], [data-page="cargo-recurring"], [data-page="cargo-incidents"], [data-page="cargo-vehicles"], [data-page="cargo-drivers"], [data-page="cargo-maintenance"], [data-page="cargo-devices"], [data-page="cargo-reports"], [data-page="cargo-profit"], [data-page="cargo-utilization"]) .rnt-content :is(.fr-toolbar-caption, .ops-tools > p) { font-size: 14px !important; }
+  /* Freight 2: profit card button */
+  .rnt-shell .fr-report-cost .fr-btn { min-height: 28px; padding: 5px 9px; font-size: 11px !important; }
+  /* Freight 3: dispatch head — title and 더보기 on one line, description below */
+  .rnt-shell .fr-dispatch-requests > header { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 10px; }
+  .rnt-shell .fr-dispatch-requests > header > div { display: block; min-width: 0; }
+  .rnt-shell .fr-dispatch-requests > header h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rnt-shell .fr-dispatch-requests > header p { margin: 4px 0 0; font-size: 11px; }
+  .rnt-shell .fr-dispatch-requests > header > .fr-link { white-space: nowrap; }
+  /* Freight 7: policy and integration panels */
+  .rnt-shell:is([data-page="cargo-policies"], [data-page="cargo-integrations"]) .fr-dashboard-card { padding: 22px; border-radius: 15px; }
+  .rnt-shell:is([data-page="cargo-policies"], [data-page="cargo-integrations"]) .fr-dashboard-card > header { padding: 0; margin-bottom: 22px; }
+  .rnt-shell:is([data-page="cargo-policies"], [data-page="cargo-integrations"]) .fr-dashboard-card h2 { font-size: 15px; }
+  .rnt-shell:is([data-page="cargo-policies"], [data-page="cargo-integrations"]) .fr-setting-description { margin-top: 4px; font-size: 11px; }
+  .rnt-shell:is([data-page="cargo-policies"], [data-page="cargo-integrations"]) .fr-settings { padding: 0; row-gap: 23px; }
+  /* Freight 8: code rows like the other lists */
+  .rnt-shell[data-page="cargo-codes"] .fr-table td { padding-block: 14px; font-size: 13px; }
+}
+@media (max-width: 767px) {
+  /* Phone 3: freight search takes a full row */
+  .pt-member-shell .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .pt-member-shell .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields > .fr-resource-search { grid-column: 1 / -1 !important; width: auto !important; max-width: none !important; }
+  /* Phone 2: dispatch head */
+  .rnt-shell .fr-dispatch-requests > header { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; }
+  .rnt-shell .fr-dispatch-requests > header > div { grid-column: 1; min-width: 0; }
+  .rnt-shell .fr-dispatch-requests > header h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rnt-shell .fr-dispatch-requests > header > .fr-link { grid-column: 2; grid-row: 1; white-space: nowrap; }
+  /* Phone 4: label and value apart */
+  .rnt-shell :is(.rt-facts, .fr-facts) div { gap: 8px; }
+  /* Phone 6: calendar view tabs on one scrolling line */
+  .rnt-shell .rental-stage-tabs[aria-label="배차 화면"] { flex-wrap: nowrap !important; overflow-x: auto; }
+  .rnt-shell .rental-stage-tabs[aria-label="배차 화면"] button { flex: none; white-space: nowrap; }
+}
