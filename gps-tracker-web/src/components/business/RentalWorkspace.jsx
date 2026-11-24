@@ -18,7 +18,7 @@ export { rentalMenu, rentalPages } from '../../lib/rentalMenu';
 
 // Desktop design: pages kept off the menu (still reachable by URL) and menu-only labels.
 const mockupHiddenPages = ['history'];
-const mockupMenuLabels = {devices:'차량·단말기 연결', 'cargo-devices':'차량·단말기 연결', company:'회사·서비스 정보'};
+const mockupMenuLabels = {devices:'차량·단말기 연결', 'cargo-devices':'차량·단말기 연결'};
 // Desktop design captions for the team and settings screens (rental id / cargo id).
 const teamCaption = {users:'소속 조직과 권한 그룹을 관리합니다.', organization:'사용자와 차량의 소속 정보를 관리합니다.', permissions:'업무에 맞는 권한을 묶어 사용자에게 적용합니다.', notifications:'받을 알림과 수신 방법을 선택합니다.', company:'회사 기본 정보와 서비스 이용 현황을 확인합니다.'};
 const mockupHeadings = {
@@ -112,7 +112,7 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
     </aside>
     <div className="rnt-main"><header className="rnt-top ws-member-top no-print">
       <button className="ws-icon ws-menu" type="button" aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded={dialog==='nav'} onClick={()=>setDialog('nav')}><Icon name="menu"/></button>
-      <WorkspaceBreadcrumb service={heading} group={group.label} page={pageLabel}/>
+      <WorkspaceBreadcrumb service={heading} group={group.label} page={(mockup&&mockupHeadings[page]?.title)||pageLabel}/>
       <WorkspaceHeaderActions service={menu===rentalMenu?'rentcar':'cargo'} scope={<WorkspaceScope ownName={companyName}/>}
         widthControl={<WorkspaceWidthControl className="rnt-width" wide={wide} onChange={chooseWidth}/>}
         search={<button className="ws-wide-search" type="button" onClick={()=>setDialog('search')} aria-label="차량·메뉴 검색"><Icon name="search" size={17}/><span>차량·메뉴 검색</span></button>}
