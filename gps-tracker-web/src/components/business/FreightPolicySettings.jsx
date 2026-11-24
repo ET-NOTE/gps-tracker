@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { FreightField, FreightButton } from './FreightKit';
 import { record } from '../../lib/freightWorkflow';
+import useCorporatePhone from '../../useCorporatePhone';
+import { hideOutsideMockup } from '../../lib/mockupHidden';
 
 const policyGroups = [
   {title:'배차 기준', description:'저장 후 새 배차와 이후 업무 확인에 적용됩니다.', fields:[
@@ -28,6 +30,8 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
   const area=policy?'policies':'integrations', groups=policy?policyGroups:noticeGroups;
   const [busy,setBusy]=useState(false), [message,setMessage]=useState(''),[error,setError]=useState(false);
   const lock=useRef(false);
+  // Desktop design: the policy save button sits below the panels and checkboxes lead their labels.
+  const mockup=!useCorporatePhone()&&hideOutsideMockup&&policy;
   async function submit(event) {
     event.preventDefault();
     if(lock.current)return;
@@ -40,18 +44,20 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
     }catch(err){setError(true);setMessage(err.message||'설정을 저장하지 못했습니다.');}
     finally{lock.current=false;setBusy(false);}
   }
-  return <div className="fr-page">
-    <form className="fr-section" onSubmit={submit}>
-      <div className="fr-toolbar"><div className="fr-actions">
+  const toolbar=<div className="fr-toolbar"><div className="fr-actions">
         {!policy&&<FreightButton onClick={()=>onPage('cargo-dashboard')}>운영현황 보기</FreightButton>}
         <button className="fr-btn is-primary" type="submit" disabled={busy}>{busy?'저장 중…':policy?'정책 저장':'알림 설정 저장'}</button>
-      </div></div>
+      </div></div>;
+  return <div className="fr-page">
+    <form className="fr-section" data-mockup={mockup||undefined} onSubmit={submit}>
+      {!mockup&&toolbar}
       <div className="fr-setting-grid">{groups.map(group=><section className="fr-dashboard-card" key={group.title}>
         <header><div><h2>{group.title}</h2>{group.description&&<p className="fr-setting-description">{group.description}</p>}</div></header><div className="fr-settings">{group.fields.map(([key,label,min,max])=>min==null?
-          <label key={key} className="fr-setting-row"><span>{label}</span><input type="checkbox" name={key} defaultChecked={data[area][key]}/></label>:
+          <label key={key} className={'fr-setting-row'+(mockup?' is-leading':'')}>{mockup&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}<span>{label}</span>{!mockup&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}</label>:
           <FreightField key={key} label={label+' (분)'}><input name={key} type="number" required min={min} max={max} defaultValue={data[area][key]}/></FreightField>)}{group.note&&<p className="fr-note">{group.note}</p>}</div>
       </section>)}</div>
       {message&&<p role={error?'alert':'status'} className={error?'fr-error':'fr-note'}>{message}</p>}
+      {mockup&&toolbar}
     </form>
     {!policy&&<div className="fr-setting-grid">{connections.map(([title,text,page,label])=><section className="fr-dashboard-card" key={title}>
       <header><h2>{title}</h2></header><div className="fr-settings"><p className="fr-note">{text}</p><FreightButton onClick={()=>onPage(page)}>{label}</FreightButton></div>

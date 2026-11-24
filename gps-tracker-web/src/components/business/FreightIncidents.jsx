@@ -3,12 +3,15 @@ import {newId,getRow,stamp,timeLabel,record,vehicleName} from '../../lib/freight
 import {restoreVehicle} from '../../lib/freightCatalog';
 import {FreightButton,FreightField,FreightTable,FreightForm,FreightOptions,FreightBadge,FleetResourceFilters} from './FreightKit';
 import {choices, choicesFrom, OfficeFilter} from './FreightOfficeFields';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 
 const incidentTypes=['지연','사고','화물 손상','기타'];
 
 export default function FreightIncidents({data,save,onPage}) {
   const [editor,setEditor]=useState(null),[vehicle,setVehicle]=useState(''),[q,search]=useState(''),[status,filter]=useState('');
   const [branch,setBranch]=useState(''),[type,setType]=useState('');
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   async function submit(form){
     const v=Object.fromEntries(form),next=structuredClone(data);let incident;
     if(editor.id){
@@ -38,7 +41,12 @@ export default function FreightIncidents({data,save,onPage}) {
         <OfficeFilter label="구분" options={choices(incidentTypes)} value={type} onChange={setType}/>
         <OfficeFilter label="상태" options={{open:'처리 중',resolved:'처리 완료'}} value={status} onChange={filter}/>
     </FleetResourceFilters>
-    <FreightTable columns={['차량 / 운송','구분','발생 일시','발생 내용','처리 결과','처리 상태']} rows={list.map(i=>({id:i.id,cells:[<>{vehicleName(data,i.vehicleId)}<small>{getRow(data,'shipments',i.shipmentId)?.number}</small></>,<>{i.type}{i.severity==='urgent'&&<small>우선 확인</small>}</>,timeLabel(i.at),i.note,i.resolution||'—',i.status==='open'?<FreightButton onClick={()=>setEditor(i)}>처리 결과 등록</FreightButton>:<FreightBadge tone="green">처리 완료</FreightBadge>]}))}/>
+    {/* Desktop design: 발생 일시 | 차량 / 운송 | 구분 | 내용 | 처리 상태; the resolution moves under the note. */}
+    <FreightTable columns={mockup?['발생 일시','차량 / 운송','구분','내용','처리 상태']:['차량 / 운송','구분','발생 일시','발생 내용','처리 결과','처리 상태']} rows={list.map(i=>{
+      const vehicleCell=<>{vehicleName(data,i.vehicleId)}<small>{getRow(data,'shipments',i.shipmentId)?.number}</small></>, typeCell=<>{i.type}{i.severity==='urgent'&&<small>우선 확인</small>}</>;
+      const statusCell=i.status==='open'?<FreightButton onClick={()=>setEditor(i)}>처리 결과 등록</FreightButton>:<FreightBadge tone="green">처리 완료</FreightBadge>;
+      return {id:i.id,cells:mockup?[timeLabel(i.at),vehicleCell,typeCell,<>{i.note}{i.resolution&&<small>처리 결과 {i.resolution}</small>}</>,statusCell]:[vehicleCell,typeCell,timeLabel(i.at),i.note,i.resolution||'—',statusCell]};
+    })}/>
     {editor&&<FreightForm size={editor.id?530:720} title={editor.id?'처리 결과 등록':'지연·사고 등록'} onClose={()=>setEditor(null)} onSubmit={submit}>
       {editor.id?<><FreightField label="조치 내용" wide><textarea required name="resolution" maxLength={1500}/></FreightField>{editor.vehicleBlocked&&<label className="fr-checks"><input type="checkbox" required name="checked"/>차량 상태와 남은 제한 사유를 확인했습니다.</label>}</>:<>
         <FreightField label="차량"><select required value={vehicle} onChange={e=>setVehicle(e.target.value)}><FreightOptions rows={data.vehicles} label="plate"/></select></FreightField>

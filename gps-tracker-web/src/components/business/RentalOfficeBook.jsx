@@ -13,6 +13,8 @@ import Figures from './RentalOfficeFigures';
 import RentalRecordDrawer, {RecordFields} from './RentalRecordDrawer';
 import RentalPaymentDrawer, {RentalEntryDrawer} from './RentalPaymentDrawer';
 import {matchesVehicle} from '../../lib/rentalInventory';
+import useCorporatePhone from '../../useCorporatePhone';
+import {hideOutsideMockup} from '../../lib/mockupHidden';
 
 const sum=(rows,fn)=>rows.reduce((n,row)=>n+fn(row),0);
 const vehicle=d=>d.license_plate||d.display_name||('차량 '+d.id);
@@ -74,6 +76,8 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
   const matchesContract=(id,...values)=>matches('#'+id,'R-'+id,...values);
   if (kind==='reports'||kind==='utilization') return <Figures book={book} devices={devices} period={period} dates={dates} onResetPeriod={onResetPeriod} pending={pending} usage={kind==='utilization'}/>;
   const isCost=kind==='costs',isPayments=kind==='payments',isRefunds=kind==='refunds';
+  // Desktop refunds ledger: 수단 without the memo column; the memo stays in the entry drawer.
+  const refundDesk=isRefunds&&!useCorporatePhone()&&hideOutsideMockup;
   const balance=c=>c.billed_krw-c.paid_krw;
   const accountNames=new Map(catalog.accounts.map(a=>[a.id,a.name]));
   const contracts=book.contracts.filter(c=>{
@@ -95,7 +99,7 @@ export default function RentalOfficeBook({kind,book,catalog,devices,period,dates
       ['대여 기간',c=><>{kstDay(c.starts_at)}<span className="ro-secondary">~ {kstDay(c.ends_at)}</span></>],['청구액',c=>won(c.billed_krw)],['순수납액',c=>won(c.paid_krw)],
       ['미수금',c=>won(Math.max(0,balance(c)))],['보유 보증금',c=>won(c.held_krw)],['수납 상태',c=><span className={'ro-status'+(balance(c)>0?' amber':'')}>{balance(c)<0?'초과 수납':balance(c)>0?(c.paid_krw?'부분 수납':'수납 전'):'미수금 없음'}</span>]]:[
       ['거래 일시',e=><button type="button" className="ro-detail-link" onClick={()=>setEntry(e)}>{readTime(e.recorded_at)}</button>],['기록 구분',e=>entryKinds[e.kind]],
-      ['계약 / 고객',e=>'#'+e.contract_id+' · '+e.renter_name],['금액',e=><strong>{won(e.amount_krw)}</strong>],['거래 수단',e=>methods[e.method]],['메모',e=>e.memo||'—'],
+      ['계약 / 고객',e=>'#'+e.contract_id+' · '+e.renter_name],['금액',e=><strong>{won(e.amount_krw)}</strong>],[refundDesk?'수단':'거래 수단',e=>methods[e.method]],...(refundDesk?[]:[['메모',e=>e.memo||'—']]),
     ];
   const rows=isCost?costs:isPayments?contracts:entries;
   const csvTitle=isCost?'차량 운영비':isPayments?'청구·수납':'환불·보증금';

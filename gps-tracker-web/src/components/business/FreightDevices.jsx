@@ -38,7 +38,7 @@ export default function FreightDevices({data,save,devices=[],onMap,onRegisterDev
       <OfficeFilter label="운영 지점" options={choicesFrom(data.branches)} value={branch} onChange={setBranch}/>
       <OfficeFilter label={mockup?'수신 상태':'수신·연결 상태'} options={{online:'정상 수신',offline:'수신 확인 필요',unknown:'수신 전',unassigned:'차량 미연결'}} value={state} onChange={setState}/>
     </FleetResourceFilters>
-    <FreightTable columns={['단말기','연결 차량','운영 지점','마지막 수신','수신 상태','배터리']} rows={list.map(item=>{
+    <FreightTable columns={['단말기','연결 차량','운영 지점','마지막 수신',mockup?'상태':'수신 상태','배터리']} rows={list.map(item=>{
       const vehicle=vehicleFor(item.id);
       const reception=terminalState(item,data.policies),level=deviceBattery(item).percent;
       return {id:item.id,onOpen:()=>setView({action:'detail',id:item.id}),cells:[<><button className="fr-link" onClick={()=>setView({id:item.id,action:'detail'})}>{terminalName(item)}</button>{item.device_uid!==terminalName(item)&&<small>{item.device_uid}</small>}</>,

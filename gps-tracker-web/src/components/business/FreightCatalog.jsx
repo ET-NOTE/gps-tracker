@@ -66,7 +66,7 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
     if(!v.deviceId)return '미연결';
     const dev=devices.find(x=>String(x.id)===String(v.deviceId));
     return dev?terminalState(dev,data.policies).label:'단말 정보 확인 필요';
-  });
+  },mockup);
   const rows=data[kind].filter(row=>filters.every(f=>!filter[f.field]||f.value(row)===filter[f.field]) &&
     [...columns.map(([,cell])=>cell(row)),row.businessNumber,row.note,row.phone,row.email,row.instructions].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
   const headings=columns.map(([h])=>h);

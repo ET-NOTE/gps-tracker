@@ -199,3 +199,18 @@
   .rnt-shell[data-page="cargo-devices"] .rnt-content .fr-resource-filters > .fr-resource-fields { grid-template-columns: 190px repeat(2, minmax(0, 1fr)); }
   .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields > * { width: auto; min-width: 0; max-width: none; }
 }
+/* Round 13: reservation filters wrap, stage tabs, toolbar captions, policy layouts (2000px viewport) */
+@media screen and (min-width: 768px) {
+  .rnt-shell .rnt-content .rental-workflow-filters { flex-wrap: wrap !important; }
+  .rnt-shell .rnt-content .rental-workflow-filters > .fleet-filter-reset-link { margin-left: auto; }
+  .pt-member-shell .rnt-shell .rnt-content .rental-stage-tabs { gap: 22px; }
+  .pt-member-shell .rnt-shell .rnt-content :is(.fr-tabs .fr-tab, .rental-stage-tabs button) { padding-bottom: 11px; }
+  .rnt-shell .rnt-content .rental-workflow-toolbar > .rental-toolbar-caption { margin: 0; font: 400 11px/1.55 var(--fleet-font); color: var(--fleet-caption, #7e8998); }
+  .rnt-shell .rnt-content form.rnt-policy[data-mockup] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rnt-shell .rnt-content form.rnt-policy[data-mockup] > .rnt-policy-toolbar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+  .rnt-shell .rnt-content form.rnt-policy[data-mockup] > .rnt-policy-toolbar > div { display: flex; align-items: center; gap: 10px; margin-left: auto; font-size: 12px; }
+  .rnt-shell .rnt-content form.rnt-policy[data-mockup] .rnt-check { justify-content: flex-start; }
+  .rnt-shell .rnt-content form.rnt-policy[data-mockup] .rnt-check > input { order: -1; margin: 0; }
+  .rnt-shell .rnt-content .fr-section[data-mockup] > .fr-toolbar { justify-content: flex-end; }
+  .rnt-shell .rnt-content .fr-section[data-mockup] .fr-setting-row.is-leading { justify-content: flex-start; gap: 9px; border-bottom: 0; min-height: 34px; }
+}

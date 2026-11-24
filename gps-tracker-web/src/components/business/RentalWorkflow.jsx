@@ -35,6 +35,8 @@ import './rental-workflow.css';
 const baseFilters = {query:'',status:'',branch:'',from:'',to:'',device:'',vehicle:'',model:'',channel:'',subset:'',review:'',readiness:''};
 // Desktop design: filters each stage does not show. Hidden filters always stay at "all".
 const mockupHiddenFilters = {contracts:['model'],checkout:['from','to','model','status'],active:['from','to','model','status'],returns:['model','status']};
+// Desktop design: the toolbar shows the stage caption instead of the row count.
+const stageCaptions = {reservations:'예약에서 차량 인도까지 한 건으로 관리합니다.',contracts:'계약 조건, 차량 인도와 반납, 결제 기록을 함께 확인합니다.'};
 const stageTabs = {
   checkout:[['','전체 출고 예정'],['pickup','오늘 출고']],
   active:[['','전체 대여 중'],['due','오늘 반납'],['late','반납 지연']],
@@ -164,7 +166,7 @@ export default function RentalWorkflow({ stage='reservations', devices=[], vehic
   return <div className="rental-workflow">
     <div className="rental-stage-metrics">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><strong>{result.isLoading || result.error || invalid || value==null ? "—" : <>{value.toLocaleString("ko-KR")}<small>{unit || "건"}</small></>}</strong></div>)}</div>
     <div className="rental-workflow-toolbar">
-      {stageTabs[stage] ? <div className="rental-stage-tabs" aria-label="업무 범위">{stageTabs[stage].map(([key,label])=><button type="button" key={key} aria-pressed={filters.subset===key} onClick={()=>change("subset",key)}>{label}</button>)}</div> : <span>{shown.length.toLocaleString()}건 조회</span>}
+      {stageTabs[stage] ? <div className="rental-stage-tabs" aria-label="업무 범위">{stageTabs[stage].map(([key,label])=><button type="button" key={key} aria-pressed={filters.subset===key} onClick={()=>change("subset",key)}>{label}</button>)}</div> : mockup&&stageCaptions[stage] ? <span className="rental-toolbar-caption">{stageCaptions[stage]}</span> : <span>{shown.length.toLocaleString()}건 조회</span>}
       <div><ExportButtons grouped={!mockup} csvOnly={mockup} report={rentalReport(shown,{now,filterText:rentalStageNames[stage],settlement:stage==="returns" && (filters.status==="반납 완료" || filters.subset==="returned")})} disabled={!!result.error || invalid || result.isLoading}/>
         {["reservations","dispatch","contracts"].includes(stage) && <BusinessButton primary icon="plus" onClick={()=>open("edit",null)}>예약 등록</BusinessButton>}</div></div>
     <div className="rental-workflow-filters" data-compact={compactFilters || undefined}>

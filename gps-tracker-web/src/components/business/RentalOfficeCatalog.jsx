@@ -91,6 +91,11 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
     rates:[['차종',recordLink],['1일 대여요금',c=>won(c.daily_krw)],['보증금',c=>won(c.deposit_krw)],['1일 자차 보장료',c=>won(c.coverage_krw)],['등록 차량',c=>(c.vehicles_count||0)+'대']],
     templates:[['양식 이름',recordLink],['내용',c=><span className="ro-excerpt">{c.body.slice(0,80)}</span>],['미리보기',c=><Button variant="ghost" size="sm" onClick={()=>setPreview(c)}>미리보기</Button>]]
   }[kind];
+  const statusCell=r=><span className={r.active?'ro-status':'ro-status off'}>{r.active?'사용 중':'사용 중지'}</span>;
+  // Desktop design has no 상태/관리 columns (templates: 상태 before 미리보기, no 관리); the row opens
+  // the detail drawer, which carries the status and the edit button.
+  const tableColumns=!mockup?[...cols,['상태',statusCell],['관리',editButton]]:kind==='templates'?[cols[0],cols[1],['상태',statusCell],cols[2]]:cols;
+  const statusRow=mockup?[['상태',statusCell(selected||{})]]:[];
   const filter=(label,selected,onChange,items)=><Field label={label}><select value={selected} onChange={e=>onChange(e.target.value)}><Options items={items}/></select></Field>;
   const foldUsage=kind==='accounts'||kind==='customers';
   const directory=foldUsage||kind==='templates';
@@ -118,11 +123,11 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
       </div>
       {directory&&toolbar}
       <section className="ro-panel">{!directory&&toolbar}
-        <Table columns={[...cols,['상태',r=><span className={r.active?'ro-status':'ro-status off'}>{r.active?'사용 중':'사용 중지'}</span>],['관리',editButton]]} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
+        <Table columns={tableColumns} rows={rows} empty={'조회된 '+titles[kind]+' 항목이 없습니다.'} onRecord={openRecord}/></section>
     </>}
     {selected&&kind==='rates'&&<RentalRecordDrawer title="요금표 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}
       footer={<Button variant="primary" onClick={()=>setEdit(selected)}>요금 수정</Button>}>
-      <RecordFields rows={cols.slice(1).map(([label,render])=>[label,render(selected)])}/>
+      <RecordFields rows={[...cols.slice(1).map(([label,render])=>[label,render(selected)]),...statusRow]}/>
       <p className="rental-record-notice">변경한 요금은 새 견적에 적용됩니다. 기존 계약은 약정한 금액을 유지합니다.</p>
     </RentalRecordDrawer>}
     {selected&&kind==='templates'&&<RentalRecordDrawer title="계약서 양식" subtitle={selected.name} onClose={()=>setSelectedId(null)}
@@ -134,9 +139,9 @@ export default function RentalOfficeCatalog({kind,catalog,devices}) {
     </RentalRecordDrawer>}
     {selected&&(kind==='customers'||kind==='accounts')&&<RentalRecordDrawer title={titles[kind]+' 상세'} subtitle={selected.name} onClose={()=>setSelectedId(null)}
       footer={<>{mockup&&kind==='customers'&&<Button variant="ghost" onClick={()=>{setSelectedId(null);setHistory(true);}}>계약 이력·경고 관리</Button>}<Button variant="primary" onClick={()=>setEdit(selected)}>{kind==='accounts'?'거래처':'고객'} 수정</Button></>}>
-      {kind==='customers'?<><CustomerFields person={selected} accounts={catalog.accounts}/><RentalCustomerHistory key={selected.id} customerId={selected.id}/></>:<>
+      {kind==='customers'?<>{mockup&&<RecordFields rows={statusRow}/>}<CustomerFields person={selected} accounts={catalog.accounts}/><RentalCustomerHistory key={selected.id} customerId={selected.id}/></>:<>
         <RecordFields rows={[['사업자등록번호',selected.business_number],['담당자',selected.contact],['연락처',selected.phone],
-          ['정산 방식',billing[selected.billing]],['현재 미수금',won(selected.outstanding_krw)]]}/>
+          ['정산 방식',billing[selected.billing]],['현재 미수금',won(selected.outstanding_krw)],...statusRow]}/>
         <section><h3>연결 고객 · {selected.customers_count||0}명</h3>{catalog.customers.filter(c=>String(c.account_id)===String(selected.id)).map(c=>
           <button type="button" key={c.id} className="rental-record-related" onClick={()=>setRelatedId(c.id)}>{c.name}<small>{c.phone}</small></button>)}</section>
         {selected.memo&&<section><h3>메모</h3><p className="rental-record-text">{selected.memo}</p></section>}
