@@ -121,3 +121,8 @@
   .pt-member-shell .pt-fence-list {top:var(--pt-fence-left,var(--pt-map-inset)); left:auto!important; right:var(--pt-fence-left,var(--pt-map-inset))!important; max-width:min(230px,calc(100% - 332px));}
 }
 @media print { .pt-member-shell>.pt-rail {display:none;} }
+/* Round 22: phones hide the platform rail in the business workspaces (their menu drawer has the same
+   destinations); home, devices and account keep it because it is their only navigation. */
+@media (max-width:767px) {
+  .pt-member-shell[data-phone-rail="hidden"] > .pt-rail {display:none}
+}

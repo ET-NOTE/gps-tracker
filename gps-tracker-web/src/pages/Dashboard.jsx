@@ -989,8 +989,9 @@ export default function Dashboard({ onLogout }) {
   );
 
   if (routeProblem === 'denied' && view !== 'admin') return <Navigate replace to="/profile?tab=services" />;
+  // Phones hide the platform rail inside the business workspaces, whose menu drawer lists the same destinations.
   return (
-    <div className="dashboard-layout pt-member-shell" data-view={view} style={{ height: '100dvh', display: 'flex' }}>
+    <div className="dashboard-layout pt-member-shell" data-view={view} data-phone-rail={['corporate','rentcar','delivery'].includes(view)&&!staffEntry?'hidden':undefined} style={{ height: '100dvh', display: 'flex' }}>
 
       {deviceLink.notice && <div role="alert" style={{ position: 'fixed', zIndex: 45,
         left: isDesktop ? 84 : 12, right: 12, bottom: isDesktop ? 20 : 'calc(76px + env(safe-area-inset-bottom, 0px))',

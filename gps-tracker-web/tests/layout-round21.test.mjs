@@ -24,3 +24,14 @@ test('dialog footers and setup buttons keep an 8px gap',async()=>{
   assert.match(flat(await css('business/business.css')),/\.business-dialog-actions \{ display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; \}/);
   assert.match(flat(await css('business/workspace-mockup-sync.css')),/\.rnt-prerequisites \{ display: flex; flex-wrap: wrap; align-items: center; gap: 8px; \}/);
 });
+
+test('phones hide the platform rail only in business workspaces, whose drawers keep the destinations',async()=>{
+  const rail=flat(await css('portal/memberWorkspace.css'));
+  assert.match(rail,/@media \(max-width:767px\) \{ \.pt-member-shell\[data-phone-rail="hidden"\] > \.pt-rail \{display:none\} \}/);
+  const dashboard=await readFile(new URL('../src/pages/Dashboard.jsx',import.meta.url),'utf8');
+  assert.match(dashboard,/data-phone-rail=\{\['corporate','rentcar','delivery'\]\.includes\(view\)&&!staffEntry\?'hidden':undefined\}/);
+  const rental=await css('business/RentalWorkspace.jsx'),corporate=await css('business/CorporateMobileHeader.jsx');
+  assert.match(rental,/dialog==='nav'&&<BusinessDrawer navigation[\s\S]*ws-nav-account[\s\S]*계정 메뉴/,'the rental and freight drawer opens the account destinations');
+  assert.match(rental,/const accountLinks = \(destinations \|\|/);
+  assert.match(corporate,/destinations/,'the corporate phone menu lists the account destinations');
+});
