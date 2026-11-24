@@ -77,7 +77,7 @@ export default function NotificationSettings({portal = false, desk = false}) {
           <label htmlFor="connection-alert-delay" style={{ fontSize: 13, color: 'var(--text-2)' }}>연결 확인 안내 시점</label>
           <select id="connection-alert-delay" aria-label="연결 확인 안내 시점" value={s.offline_minutes}
             onChange={e => patch({ offline_minutes: Number(e.target.value) })}
-            style={{ ...input, width: 132, minHeight: 44 }}>
+            style={{ ...input, width: 160, minHeight: 44 }}>
             {Array.from(new Set([30, 60, 360, 720, 1440, 2880, 10080, s.offline_minutes]))
               .filter(m => m > s.signal_loss_minutes).sort((a, b) => a - b)
               .map(m => <option key={m} value={m}>{formatDelay(m)} 후{m === 1440 ? ' (기본)' : ''}</option>)}
@@ -189,7 +189,7 @@ function DeskSettings({ s, busy, saveMsg, patch }) {
       <div className="nt-fields">
         <NumField label="수신 지연 안내까지 (분)" value={s.signal_loss_minutes} min={1} max={Math.min(30, s.offline_minutes - 1)} onCommit={v => patch({ signal_loss_minutes: v })}/>
         <div style={row}><label htmlFor="connection-alert-delay" style={{ fontSize: 13, color: 'var(--text-2)' }}>연결 확인 안내 시점</label>
-          <select id="connection-alert-delay" aria-label="연결 확인 안내 시점" value={s.offline_minutes} onChange={e => patch({ offline_minutes: Number(e.target.value) })} style={{ ...input, width: 132, minHeight: 36 }}>
+          <select id="connection-alert-delay" aria-label="연결 확인 안내 시점" value={s.offline_minutes} onChange={e => patch({ offline_minutes: Number(e.target.value) })} style={{ ...input, width: 160, minHeight: 36 }}>
             {Array.from(new Set([30, 60, 360, 720, 1440, 2880, 10080, s.offline_minutes])).filter(m => m > s.signal_loss_minutes).sort((a, b) => a - b)
               .map(m => <option key={m} value={m}>{formatDelay(m)} 후{m === 1440 ? ' (기본)' : ''}</option>)}
           </select></div>

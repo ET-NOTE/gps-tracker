@@ -732,3 +732,5 @@
   .business-workspace--corporate .business-content { padding: 20px 16px; }
   .business-workspace--corporate.has-mobile-nav .business-content { padding-bottom: calc(var(--bottom-nav-content-height) + 25px); }
 }
+/* Round 21: dialog footers keep an 8px gap between their buttons */
+.business-dialog-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }

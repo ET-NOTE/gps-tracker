@@ -117,3 +117,11 @@
   .pt-member-shell .business-workspace--corporate .fleet-member-heading h1,
   .pt-member-shell .rnt-shell .rnt-title h1 {font-size:25px}
 }
+/* Round 21: phone header shows the screen name on one line, cut with an ellipsis when long */
+@media (max-width:767px) {
+  .ws-member-top .ws-crumb {flex:1 1 auto; min-width:0}
+  .ws-member-top .ws-crumb[data-has-page="true"] :is(.ws-crumb-group, svg) {display:none}
+  .ws-member-top .ws-crumb span {display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; word-break:keep-all; overflow-wrap:normal; -webkit-line-clamp:unset; max-width:100%}
+  .ws-member-top .ws-crumb :is(.ws-crumb-group, [aria-current="page"]) {flex:1 1 auto; min-width:0}
+  .pt-member-shell .ws-member-top .ws-scope {width:88px; max-width:88px; flex:none}
+}

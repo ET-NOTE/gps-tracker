@@ -885,3 +885,34 @@ div.fleet-role-matrix-note p+p {margin-top:4px}
 .mlc .mlc-grid {display:block; width:auto; height:1px; margin:0; padding:0; border-radius:0; background:#e8edf2}
 .mlc .mlc-point {display:block; flex:none; padding:0}
 .mlc .mlc-y span, .mlc .mlc-x span, .mlc .mlc-unit {display:block; width:auto; height:auto; background:none; border-radius:0}
+/* Round 21: layout fixes — sidebar overflow, field widths, mobile wrapping */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .business-nav {overflow-y:auto}
+  .business-workspace--corporate .business-nav-tools {position:sticky; bottom:-16px; margin-bottom:-16px; padding-bottom:16px!important; background:inherit; z-index:1}
+  .business-workspace--corporate .ws-crumb [aria-current="page"] {flex:none}
+  .business-workspace--corporate .ws-crumb .ws-crumb-service {flex:0 100 auto}
+  .business-workspace--corporate .fleet-analytics-controls>label:has(select[aria-label="차량"]) {flex:0 1 180px; min-width:180px}
+  .business-workspace--corporate .business-content label:has(>select[aria-label="조회 차량"]),
+  .business-workspace--corporate .business-content :has(>select[aria-label="조회 차량"]) {min-width:180px}
+  .business-workspace--corporate .fleet-approval-filters label:has(.fleet-approval-search) {flex:0 1 210px; min-width:210px}
+}
+@media (max-width:767px) {
+  /* Dashboard vehicles: icon and name use the row, badges follow without overlapping */
+  .business-workspace--corporate .fleet-dashboard-vehicles .fleet-dashboard-row-head {display:none}
+  .business-workspace--corporate .fleet-dashboard-vehicles button {flex-wrap:wrap; row-gap:6px; column-gap:8px}
+  .business-workspace--corporate .fleet-dashboard-vehicles button>.fleet-dashboard-vehicle-name {flex:1 1 100%; display:flex; align-items:center; gap:10px; min-width:0}
+  .business-workspace--corporate .fleet-dashboard-vehicles button>.fleet-dashboard-vehicle-name>span {display:grid; min-width:0; flex:1}
+  .business-workspace--corporate .fleet-dashboard-vehicles button>span:not(.fleet-dashboard-vehicle-name) {flex:0 0 auto; display:inline-flex; align-items:center; gap:4px}
+  .business-workspace--corporate .fleet-dashboard-vehicles .business-badge {white-space:nowrap}
+  /* Full-width search, then filters */
+  .business-workspace--corporate .fleet-member-live-tools .fleet-member-search {flex:1 1 100%; order:-1}
+  .business-workspace--corporate .fleet-member-search input {width:100%}
+  .business-workspace--corporate .fleet-record-query .fleet-inline-search {flex:1 1 100%; width:100%}
+  /* Selects whose default text needs a full row */
+  .business-workspace--corporate :is(label:has(>select.fleet-people-role-filter), .fleet-people-role-filter),
+  .business-workspace--corporate label:has(>select option[value="unassigned"]),
+  .business-workspace--corporate label:has(>select[aria-label="조회 차량"]),
+  .business-workspace--corporate .fleet-analytics-controls>label:has(select[aria-label="차량"]) {grid-column:1/-1; flex:1 1 100%; min-width:0}
+  .business-workspace--corporate :is(dt, dd, td, small) {word-break:keep-all; overflow-wrap:anywhere}
+  .business-workspace--corporate .business-badge {white-space:nowrap}
+}

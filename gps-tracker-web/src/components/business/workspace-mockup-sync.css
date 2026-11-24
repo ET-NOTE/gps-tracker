@@ -381,3 +381,34 @@
   .rt-toolbar .rt-small-button { min-height: 28px !important; height: auto; padding: 5px 9px !important; font-size: 11px !important; }
   .rt-toolbar .business-button.is-primary { min-height: 35px; padding: 8px 13px; font-size: 12px; font-weight: 400; }
 }
+/* Round 21: layout fixes — sidebar overflow, field widths, mobile wrapping */
+.rnt-shell .rnt-sidebar { overflow: hidden; }
+.rnt-shell .rnt-sidebar > .rnt-nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.rnt-shell .rnt-sidebar > :is(.rnt-nav-tools, .rnt-account) { flex: none; }
+.rnt-prerequisites { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rnt-prerequisites > p { flex-basis: 100%; }
+@media screen and (min-width: 768px) {
+  /* Breadcrumb: the screen name never shrinks; service and group give way first */
+  .rnt-shell .ws-crumb [aria-current="page"] { flex: none; }
+  .rnt-shell .ws-crumb .ws-crumb-group { flex: 0 1 auto; }
+  .rnt-shell .ws-crumb .ws-crumb-service { flex: 0 100 auto; }
+  /* Field widths that cut their default text */
+  .rnt-shell[data-page="cargo-incidents"] .rnt-content .fr-resource-filters > .fr-resource-fields { grid-template-columns: 220px repeat(3, minmax(0, 1fr)); }
+  .rnt-shell[data-page="cargo-payables"] .rnt-content .fr-ledger > .fr-filters > .fr-field:not(.is-wide) { flex-basis: 135px; width: 135px; }
+}
+@media (max-width: 767px) {
+  /* Card heads: title and 더보기 stay on one line, the description goes below */
+  .rnt-shell :is(.rfl-card, .fr-dashboard-card) > header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 10px; }
+  .rnt-shell :is(.rfl-card, .fr-dashboard-card) > header h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rnt-shell :is(.rfl-card, .fr-dashboard-card) > header > :is(button, a, .fr-link, .rfl-link) { white-space: nowrap; }
+  /* Search fields take a full row; filters follow */
+  .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .rnt-shell .rnt-content .fr-resource-filters > .fr-resource-fields > :has(input[type="search"]) { grid-column: 1 / -1; }
+  .rnt-shell .rnt-content .ro-filters > .ro-field:has(.ro-search-control) { flex: 1 1 100%; grid-column: 1 / -1; min-width: 0; }
+  .rnt-shell .rnt-content .rfl-filters > .rfl-connection-filter,
+  .rnt-shell .rnt-content .business-export-bar > label:has(select[aria-label="내보낼 자료"]) { grid-column: 1 / -1; flex: 1 1 100%; }
+  /* Korean words stay whole; badges stay on one line */
+  .rnt-shell :is(dt, dd, td, small, .rfl-caption, .rfl-live-list small) { word-break: keep-all; overflow-wrap: anywhere; }
+  .rnt-shell :is(.business-badge, .rfl-badge, .fr-badge, .rt-badge) { white-space: nowrap; }
+  .rnt-shell :is(.rt-facts, .fr-facts) dt { flex: none; white-space: nowrap; }
+}
