@@ -18,7 +18,16 @@ export { rentalMenu, rentalPages } from '../../lib/rentalMenu';
 
 // Desktop design: pages kept off the menu (still reachable by URL) and menu-only labels.
 const mockupHiddenPages = ['history'];
-const mockupMenuLabels = {devices:'차량·단말기 연결', 'cargo-devices':'차량·단말기 연결'};
+const mockupMenuLabels = {devices:'차량·단말기 연결', 'cargo-devices':'차량·단말기 연결', company:'회사·서비스 정보'};
+// Desktop design captions for the team and settings screens (rental id / cargo id).
+const teamCaption = {users:'소속 조직과 권한 그룹을 관리합니다.', organization:'사용자와 차량의 소속 정보를 관리합니다.', permissions:'업무에 맞는 권한을 묶어 사용자에게 적용합니다.', notifications:'받을 알림과 수신 방법을 선택합니다.', company:'회사 기본 정보와 서비스 이용 현황을 확인합니다.'};
+const mockupHeadings = {
+  staff:{description:teamCaption.users}, users:{description:teamCaption.users},
+  branches:{description:teamCaption.organization}, organization:{description:teamCaption.organization},
+  groups:{description:teamCaption.permissions}, permissions:{description:teamCaption.permissions},
+  notifications:{description:teamCaption.notifications},
+  settings:{title:'회사·서비스 정보', description:teamCaption.company}, company:{title:'회사·서비스 정보', description:teamCaption.company},
+};
 
 function WorkspaceNav({page, group, onTab, menu, label, mockup=false}) {
   const [expanded, setExpanded] = useState(() => new Set([group.id]));
@@ -110,7 +119,7 @@ export default function RentalWorkspace({page,onTab,onNavigate,destinations,devi
         alerts={headerAction&&<div className="ws-alert-action">{headerAction}</div>}/>
       <WorkspaceAvatar label="계정 메뉴 열기" expanded={dialog==='account'} onClick={()=>setDialog('account')}/>
     </header><div className="rnt-scroller" ref={content}><div className="rnt-content">
-      <div className="rnt-title"><div><h1>{title}</h1>{description && <p>{description}</p>}</div><div className="rnt-title-actions"><time>{today}</time></div></div>
+      <div className="rnt-title"><div><h1>{(mockup&&mockupHeadings[page]?.title)||title}</h1>{((mockup&&mockupHeadings[page]?.description)||description) && <p>{(mockup&&mockupHeadings[page]?.description)||description}</p>}</div><div className="rnt-title-actions"><time>{today}</time></div></div>
       {children}
     </div></div></div>
     {dialog==='nav'&&<BusinessDrawer navigation title={heading} subtitle={(companyName||serviceLabel)+' · 업무 공간'} onHome={()=>choose(landing)} onClose={()=>setDialog(null)}>{nav}

@@ -7,11 +7,11 @@ import './workspace-mockup-sync.css';
 // people, organization, permission group and company screens, fed by each service's own data.
 
 /** 사용자 목록: toolbar with search and action, then a ledger table. */
-export function TeamPeopleLedger({rows, total, query, onQuery, action, extra}) {
+export function TeamPeopleLedger({rows, total, query, onQuery, action, extra, filters, caption}) {
   return <div className="rt-people">
     <div className="rt-toolbar"><label className="rt-search"><Icon name="search" size={15}/><input type="search" aria-label="사용자 검색" placeholder="이름, 이메일 검색" value={query} onChange={e=>onQuery(e.target.value)}/></label>
-      <span className="rt-count">전체 {total}명 중 {rows.length}명</span><div className="rt-actions">{action}</div></div>
-    <section className="rt-card" aria-label="사용자 목록"><div className="rt-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="rt-table">
+      {filters}{!filters&&<span className="rt-count">전체 {total}명 중 {rows.length}명</span>}<div className="rt-actions">{action}</div></div>
+    <section className="rt-card" aria-label="사용자 목록">{filters&&<header className="rt-card-head rt-ledger-head"><div><h3>사용자 {rows.length}명</h3><p>{caption||'전체 · 전체 '+total+'명'}</p></div></header>}<div className="rt-table-wrap" tabIndex={0} role="region" aria-label="사용자 목록 표"><table className="rt-table">
       <thead><tr>{['사용자','지점','권한 그룹','계정 상태','수정'].map(label=><th key={label} scope="col">{label}</th>)}</tr></thead>
       <tbody>{rows.length===0&&<tr className="rt-empty-row"><td colSpan={5}><p>조회된 사용자가 없습니다.</p></td></tr>}
         {rows.map(r=><tr key={r.id}><td><strong>{r.name}</strong><small>{r.email}</small></td><td>{r.branch}</td><td>{r.group}</td>
@@ -91,10 +91,23 @@ export function TeamRoleWorkspace({groups, memberCount, menus, implied={}, save,
   </div>;
 }
 
-/** 회사 정보: the corporate company card. */
-export function TeamCompanyCard({name, facts, onEdit}) {
-  return <section className="rt-card rt-company" aria-label="회사 정보"><header className="rt-card-head"><h3>회사 정보</h3>{onEdit&&<BusinessButton icon="edit" onClick={onEdit}>회사 정보 수정</BusinessButton>}</header>
-    <div className="rt-company-line"><span><Icon name="office" size={25}/></span><strong>{name||'회사명 미등록'}</strong></div>
+/** 회사 정보: the corporate company card. `caption` is the line under the company name. */
+export function TeamCompanyCard({name, caption, facts, onEdit}) {
+  return <section className="rt-card rt-company" aria-label="회사 정보"><header className="rt-card-head"><h3>회사 정보</h3>{onEdit&&<button type="button" className="business-button rt-small-button" aria-label="회사 정보 수정" onClick={onEdit}>수정</button>}</header>
+    <div className="rt-company-line"><span><Icon name="office" size={25}/></span><div><strong>{name||'회사명 미등록'}</strong>{caption&&<small>{caption}</small>}</div></div>
     <dl className="rt-facts">{facts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'미등록'}</dd></div>)}</dl>
+  </section>;
+}
+
+/**
+ * 서비스 이용 현황: plan badge, usage bars and a fact list, like the corporate company page.
+ * `bars` is [[label, part, total, unit, note]]; the bar shows part / total. Plan limits are not
+ * part of the service, so no "n / limit" is shown.
+ */
+export function TeamServiceUsage({badge, bars, facts}) {
+  return <section className="rt-card rt-usage" aria-label="서비스 이용 현황"><header className="rt-card-head"><div><h3>서비스 이용 현황</h3><p>현재 등록된 차량과 사용자 수입니다.</p></div>{badge}</header>
+    {bars.map(([label,part,total,unit,note])=><div key={label} className="fleet-usage-bar"><div><span>{label}</span><strong>{total==null?'—':total+unit}<small>{total?' · '+note+' '+part+unit:''}</small></strong></div>
+      <i aria-hidden="true"><b style={{width:(total?100*part/total:0)+'%'}}/></i></div>)}
+    <dl className="fleet-usage-facts">{facts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
   </section>;
 }

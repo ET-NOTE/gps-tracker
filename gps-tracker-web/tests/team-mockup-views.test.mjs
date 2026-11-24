@@ -144,7 +144,7 @@ test('freight company card saves through the cargo company API',async t=>{
   await act(async()=>{renderer=create(React.createElement(mod.namespace.default,{page:'company',data:{},save:async()=>{},onPage(){}}));});
   t.after(()=>act(()=>renderer.unmount()));
   assert.match(text(renderer.toJSON()),/테스트물류.*대표자.*홍길동/);
-  await act(async()=>findButton(renderer,'회사 정보 수정').props.onClick());
-  await act(async()=>renderer.root.findByProps({'aria-label':'회사 정보 수정'}).props.onSubmit({}));
+  await act(async()=>findButton(renderer,'수정').props.onClick());
+  await act(async()=>renderer.root.find(n=>n.type==='form'&&n.props['aria-label']==='회사 정보 수정').props.onSubmit({}));
   assert.deepEqual(calls,[['PUT','/company',{name:'새물류',phone:'02-0000-0000',revision:4}]]);
 });

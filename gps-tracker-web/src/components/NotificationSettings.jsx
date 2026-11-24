@@ -9,7 +9,7 @@ import Icon from './Icon';
 import { Fragment, useState, useEffect } from 'react';
 import { api } from '../api';
 
-export default function NotificationSettings({portal = false}) {
+export default function NotificationSettings({portal = false, desk = false}) {
   const [s, setS]       = useState(null);
   const [busy, setBusy] = useState(false);
   // (2026-07-01) 저장 결과 UI — auto-save 가 조용히 실패하던 케이스 진단용.
@@ -42,6 +42,7 @@ export default function NotificationSettings({portal = false}) {
     {loadError ? <>알림 설정을 불러오지 못했습니다. <button onClick={load}>다시 시도</button></> : '알림 설정을 불러오는 중…'}
   </div>;
 
+  if (desk && !portal) return <DeskSettings s={s} busy={busy} saveMsg={saveMsg} patch={patch}/>;
   const MoreSettings = portal ? 'details' : Fragment;
   return (
     <fieldset disabled={busy} aria-busy={busy} style={{ display: 'flex', flexDirection: 'column', gap: 14, border: 0, padding: 0, margin: 0, minWidth: 0 }}>
@@ -156,6 +157,49 @@ export default function NotificationSettings({portal = false}) {
       </div>
     </fieldset>
   );
+}
+
+// Desktop design (rental 알림 설정): the existing toggles as the 업무 알림 list on the left and the
+// thresholds with a summary as 현재 설정 on the right. There are no delivery channels to choose,
+// so the design's 수신 방법 panel is left out.
+function DeskSettings({ s, busy, saveMsg, patch }) {
+  const alerts = [
+    ['signal_loss_alert', 'wifi', '새 정보 수신 지연', `${s.signal_loss_minutes}분 미수신 시 한 번 안내`, s.signal_loss_alert],
+    ['offline_alert', 'antenna', '연결 확인 필요', `${formatDelay(s.offline_minutes)} 미수신 시 한 번 안내`, s.offline_alert],
+    ['online_alert', 'link', '연결 복구', '수신이 지연된 뒤 장치에서 정보를 다시 받았을 때', s.online_alert],
+    ['sleep_alert', 'moon', '절전 모드 전환', '절전 모드로 전환될 때', s.sleep_alert],
+    ['wake_alert', 'power', '전원 켜짐·정기 상태 보고', '전원이 켜지거나 정기 확인을 위해 깨어날 때', s.wake_alert],
+    ['cycle_first_fix_alert', 'sat', '기동 후 첫 위치 확인', '장치 기동 후 GPS 위치가 처음 확인될 때', s.cycle_first_fix_alert ?? false],
+    ['low_batt_alert', 'battery', '배터리 전압 알림', '배터리 전압이 설정한 기준보다 낮을 때', s.low_batt_alert],
+    ['device_health_alert', 'mapPin', '위치·전원 이상', 'GPS 위치 확인 지연이나 저전압 재시작이 확인될 때', s.device_health_alert ?? true],
+    ['motion_alert', 'spark', '움직임으로 깨어남', '움직임 센서로 장치가 깨어났을 때', s.motion_alert],
+    ['geofence_alert', 'fence', '설정한 구역 출입', '설정한 펜스에 들어가거나 벗어날 때', s.geofence_alert],
+    ['reservation_alert', 'calendar', '차량 예약 알림', '예약 시작·종료 30분 전부터 안내', s.reservation_alert ?? true],
+    ['rental_alert', 'clock', '차량 반납 알림', '반납 예정 24시간 전부터 안내', s.rental_alert ?? true],
+  ];
+  const on = alerts.filter(a => a[4]).length;
+  return <fieldset className="nt-desk" disabled={busy} aria-busy={busy}>
+    <section className="nt-panel nt-alerts" aria-label="업무 알림"><header><h3>업무 알림</h3><span>변경 즉시 저장</span></header>
+      <ul>{alerts.map(([key, icon, title, description, active]) => <li key={key}><span className="nt-icon"><Icon name={icon} size={16}/></span>
+        <div><strong>{title}</strong><small>{description}</small></div><Switch label={title} checked={active} onChange={v => patch({ [key]: v })}/></li>)}</ul>
+    </section>
+    <section className="nt-panel nt-current" aria-label="현재 설정"><header><h3>현재 설정</h3></header>
+      <dl><div><dt>사용 중인 알림</dt><dd>{alerts.length}개 중 {on}개</dd></div><div><dt>수신 지연 안내</dt><dd>{s.signal_loss_minutes}분</dd></div>
+        <div><dt>연결 확인 안내</dt><dd>{formatDelay(s.offline_minutes)} 후</dd></div><div><dt>배터리 알림 기준</dt><dd>{(s.low_batt_threshold_mv / 1000).toFixed(2)} V</dd></div></dl>
+      <div className="nt-fields">
+        <NumField label="수신 지연 안내까지 (분)" value={s.signal_loss_minutes} min={1} max={Math.min(30, s.offline_minutes - 1)} onCommit={v => patch({ signal_loss_minutes: v })}/>
+        <div style={row}><label htmlFor="connection-alert-delay" style={{ fontSize: 13, color: 'var(--text-2)' }}>연결 확인 안내 시점</label>
+          <select id="connection-alert-delay" aria-label="연결 확인 안내 시점" value={s.offline_minutes} onChange={e => patch({ offline_minutes: Number(e.target.value) })} style={{ ...input, width: 132, minHeight: 36 }}>
+            {Array.from(new Set([30, 60, 360, 720, 1440, 2880, 10080, s.offline_minutes])).filter(m => m > s.signal_loss_minutes).sort((a, b) => a - b)
+              .map(m => <option key={m} value={m}>{formatDelay(m)} 후{m === 1440 ? ' (기본)' : ''}</option>)}
+          </select></div>
+        <NumField label="직접 설정 (분, 최대 7일)" value={s.offline_minutes} min={Math.max(5, s.signal_loss_minutes + 1)} max={10080} onCommit={v => patch({ offline_minutes: v })}/>
+        <NumField label="배터리 알림 전압 (mV)" value={s.low_batt_threshold_mv} min={3000} max={4200} onCommit={v => patch({ low_batt_threshold_mv: v })}/>
+      </div>
+      <p className="nt-note">알림을 꺼도 장치의 정기 보고는 유지됩니다.</p>
+      <div role="status" aria-live="polite" className={saveMsg?.ok === false ? 'nt-note is-error' : 'nt-note'}>{busy ? '저장 중…' : saveMsg?.text}</div>
+    </section>
+  </fieldset>;
 }
 
 function formatDelay(minutes) {

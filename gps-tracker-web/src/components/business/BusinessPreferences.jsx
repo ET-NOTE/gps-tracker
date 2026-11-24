@@ -11,7 +11,7 @@ import './fleet-administration.css';
 const fields = [['business_number', '사업자번호', '000-00-00000'], ['company_name', '상호 (회사명)', '회사명'], ['representative', '대표자', '대표자 이름'], ['address', '주소 (선택)', '사업장 주소'], ['phone', '연락처 (선택)', '02-0000-0000']];
 const timezones = [['Asia/Seoul', '한국 표준시 (Asia/Seoul)'], ['Asia/Tokyo', '일본 표준시 (Asia/Tokyo)'], ['Asia/Shanghai', '중국 표준시 (Asia/Shanghai)'], ['Asia/Singapore', '싱가포르 (Asia/Singapore)'], ['Asia/Ho_Chi_Minh', '베트남 (Asia/Ho_Chi_Minh)'], ['America/Los_Angeles', '미국 서부 (America/Los_Angeles)'], ['America/New_York', '미국 동부 (America/New_York)'], ['Europe/London', '영국 (Europe/London)'], ['UTC', '협정 세계시 (UTC)']];
 const timezoneLabel = zone => timezones.find(([value]) => value === zone)?.[1] || zone;
-export function BusinessCompanyInfo({readOnly=false}) {
+export function BusinessCompanyInfo({readOnly=false, extraFacts=[], compactEdit=false, caption}) {
   const result = useCorporateInfo(), qc = useQueryClient(), [draft, setDraft] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [saved, setSaved] = useState(false), lock = useRef(false);
   const info = result.data;
   async function save() {
@@ -25,11 +25,14 @@ export function BusinessCompanyInfo({readOnly=false}) {
   if (!info && !draft) return <SkeletonList count={3} itemHeight={70} />;
   function close() { if (!lock.current) { setDraft(null); setError(''); } }
   return <div className="business-support fleet-company-profile">
-    <BusinessSection title="회사 정보" action={!readOnly&&<BusinessButton icon="edit" onClick={()=>{setDraft({...info});setError('');setSaved(false);}}>회사 정보 수정</BusinessButton>}>
-      <div className="fleet-company-line"><span><Icon name="office" size={25}/></span><strong>{info?.company_name||'회사명 미등록'}</strong></div>
+    <BusinessSection title="회사 정보" action={!readOnly&&(compactEdit
+      ? <button type="button" className="business-button rt-small-button" aria-label="회사 정보 수정" onClick={()=>{setDraft({...info});setError('');setSaved(false);}}>수정</button>
+      : <BusinessButton icon="edit" onClick={()=>{setDraft({...info});setError('');setSaved(false);}}>회사 정보 수정</BusinessButton>)}>
+      <div className="fleet-company-line"><span><Icon name="office" size={25}/></span>{caption?<div><strong>{info?.company_name||'회사명 미등록'}</strong><small>{caption}</small></div>:<strong>{info?.company_name||'회사명 미등록'}</strong>}</div>
       <dl className="fleet-company-facts">
         {[['business_number','사업자등록번호'],['representative','대표자'],['address','사업장 주소'],['phone','연락처']].map(([key,label])=><div key={key}><dt>{label}</dt><dd>{info?.[key]||'미등록'}</dd></div>)}
         <div><dt>사용 시간대</dt><dd>{timezoneLabel(info?.timezone || 'Asia/Seoul')}</dd></div>
+        {extraFacts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'미등록'}</dd></div>)}
       </dl>
       {saved&&<p role="status" className="business-support-success">회사 정보를 저장했습니다.</p>}
     </BusinessSection>

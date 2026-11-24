@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { FreightField, FreightButton } from './FreightKit';
+import { FreightField, FreightButton, FreightBadge } from './FreightKit';
+import Icon from '../Icon';
 import { record } from '../../lib/freightWorkflow';
 import useCorporatePhone from '../../useCorporatePhone';
 import { hideOutsideMockup } from '../../lib/mockupHidden';
@@ -19,11 +20,12 @@ const policyGroups = [
 const noticeGroups=[{title:'알림 표시',description:'상단 알림 패널에 표시할 업무 항목을 선택합니다.',note:'현재 표시 채널: 앱 알림 · 문자와 이메일은 발송하지 않습니다.',fields:[
   ['dispatchNotice','배차 요청·수락 대기'],['delayNotice','운송 지연·긴급 이슈'],['proofNotice','인수증 미제출·확인 대기'],['connectionNotice','단말 수신 확인 필요'],
 ]}];
+// [title, description, page, button, icon]
 const connections=[
-  ['차량 단말기','연결된 단말의 위치와 수신 시각을 조회합니다.','cargo-devices','단말기 관리'],
-  ['기사 앱','직원 초대와 업무 접근 범위를 관리합니다.','users','사용자 목록'],
-  ['전자 세금계산서','청구·수납 기록을 조회하고 CSV로 내려받을 수 있습니다. 세금계산서 발행은 별도로 진행합니다.','cargo-billing','청구·수납'],
-  ['외부 화물망','운송 주문 목록에서 CSV 파일로 주문을 일괄 등록할 수 있습니다.','cargo-orders','운송 주문'],
+  ['차량 단말기','연결된 단말의 위치와 수신 시각을 조회합니다.','cargo-devices','단말기 관리','antenna'],
+  ['기사 앱','직원 초대와 업무 접근 범위를 관리합니다.','users','사용자 목록','user'],
+  ['전자 세금계산서','청구·수납 기록을 조회하고 CSV로 내려받을 수 있습니다. 세금계산서 발행은 별도로 진행합니다.','cargo-billing','청구·수납','file'],
+  ['외부 화물망','운송 주문 목록에서 CSV 파일로 주문을 일괄 등록할 수 있습니다.','cargo-orders','운송 주문','truck'],
 ];
 
 export default function FreightPolicySettings({policy,data,save,onPage}) {
@@ -31,7 +33,11 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
   const [busy,setBusy]=useState(false), [message,setMessage]=useState(''),[error,setError]=useState(false);
   const lock=useRef(false);
   // Desktop design: the policy save button sits below the panels and checkboxes lead their labels.
-  const mockup=!useCorporatePhone()&&hideOutsideMockup&&policy;
+  const desk=!useCorporatePhone()&&hideOutsideMockup, mockup=desk&&policy;
+  // Desktop 알림·연동: two-column checkboxes, the channel note and save button inside the panel, no page toolbar.
+  const notice=desk&&!policy, leading=mockup||notice;
+  const linked=(data.vehicles||[]).filter(v=>v.deviceId).length;
+  const badges={'차량 단말기':linked?'연결 '+linked+'대':'연결 없음','기사 앱':'직원 초대','전자 세금계산서':'발행 별도','외부 화물망':'CSV 등록'};
   async function submit(event) {
     event.preventDefault();
     if(lock.current)return;
@@ -49,18 +55,19 @@ export default function FreightPolicySettings({policy,data,save,onPage}) {
         <button className="fr-btn is-primary" type="submit" disabled={busy}>{busy?'저장 중…':policy?'정책 저장':'알림 설정 저장'}</button>
       </div></div>;
   return <div className="fr-page">
-    <form className="fr-section" data-mockup={mockup||undefined} onSubmit={submit}>
-      {!mockup&&toolbar}
+    <form className="fr-section" data-mockup={leading||undefined} data-notice={notice||undefined} onSubmit={submit}>
+      {!leading&&toolbar}
       <div className="fr-setting-grid">{groups.map(group=><section className="fr-dashboard-card" key={group.title}>
         <header><div><h2>{group.title}</h2>{group.description&&<p className="fr-setting-description">{group.description}</p>}</div></header><div className="fr-settings">{group.fields.map(([key,label,min,max])=>min==null?
-          <label key={key} className={'fr-setting-row'+(mockup?' is-leading':'')}>{mockup&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}<span>{label}</span>{!mockup&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}</label>:
-          <FreightField key={key} label={label+' (분)'}><input name={key} type="number" required min={min} max={max} defaultValue={data[area][key]}/></FreightField>)}{group.note&&<p className="fr-note">{group.note}</p>}</div>
+          <label key={key} className={'fr-setting-row'+(leading?' is-leading':'')}>{leading&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}<span>{label}</span>{!leading&&<input type="checkbox" name={key} defaultChecked={data[area][key]}/>}</label>:
+          <FreightField key={key} label={label+' (분)'}><input name={key} type="number" required min={min} max={max} defaultValue={data[area][key]}/></FreightField>)}{group.note&&!notice&&<p className="fr-note">{group.note}</p>}</div>
+        {notice&&<footer className="fr-notice-foot"><p className="fr-note">{group.note}</p><button className="fr-btn is-primary" type="submit" disabled={busy}>{busy?'저장 중…':'알림 설정 저장'}</button></footer>}
       </section>)}</div>
       {message&&<p role={error?'alert':'status'} className={error?'fr-error':'fr-note'}>{message}</p>}
       {mockup&&toolbar}
     </form>
-    {!policy&&<div className="fr-setting-grid">{connections.map(([title,text,page,label])=><section className="fr-dashboard-card" key={title}>
-      <header><h2>{title}</h2></header><div className="fr-settings"><p className="fr-note">{text}</p><FreightButton onClick={()=>onPage(page)}>{label}</FreightButton></div>
+    {!policy&&<div className={'fr-setting-grid'+(notice?' fr-connection-grid':'')}>{connections.map(([title,text,page,label,icon])=><section className="fr-dashboard-card" key={title}>
+      {notice?<header className="fr-connection-head"><h2><span className="fr-connection-icon"><Icon name={icon} size={16}/></span>{title}</h2><FreightBadge tone={title==='차량 단말기'&&linked?'green':'neutral'}>{badges[title]}</FreightBadge></header>:<header><h2>{title}</h2></header>}<div className="fr-settings"><p className="fr-note">{text}</p><FreightButton onClick={()=>onPage(page)}>{label}</FreightButton></div>
     </section>)}</div>}
   </div>;
 }

@@ -214,3 +214,63 @@
   .rnt-shell .rnt-content .fr-section[data-mockup] > .fr-toolbar { justify-content: flex-end; }
   .rnt-shell .rnt-content .fr-section[data-mockup] .fr-setting-row.is-leading { justify-content: flex-start; gap: 9px; border-bottom: 0; min-height: 34px; }
 }
+/* Round 14: team and settings screens, top bar inside the body width (PC) */
+@media screen and (min-width: 768px) {
+  .rnt-shell:not([data-wide="true"]) .rnt-top { padding-inline: max(22px, calc((100% - 1280px) / 2)); }
+  /* 사용자 목록: search and filters in the toolbar, ledger card header */
+  .rt-people .rt-search { width: 238px; }
+  .rt-toolbar .rt-filter { height: 37px; min-width: 130px; padding: 0 30px 0 10px; border: 1px solid #e2e6ed; border-radius: 8px; background-color: #fff; font: inherit; font-size: 12px; color: var(--text); }
+  .rt-ledger-head h3 { margin: 0; }
+  .rt-ledger-head p { margin: 3px 0 0; font-size: 12px; color: #929ba7; }
+  /* 조직·지점 관리: underline tabs with counts */
+  .rt-org .rt-tabs { display: flex; gap: 22px; padding: 0; border-radius: 0; background: none; border-bottom: 1px solid #e7eaf0; }
+  .rt-org .rt-tabs button { min-height: 0; padding: 0 0 11px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; font-size: 13px; color: #8c94a0; align-items: baseline; gap: 7px; }
+  .rt-org .rt-tabs button[aria-pressed=true] { background: none; color: var(--primary); border-bottom-color: var(--primary); }
+  .rt-org .rt-tabs small { font-size: 11px; color: #a2a9b4; }
+  /* 회사·서비스 정보: two equal panels */
+  .rnt-shell .rt-company-service, .rnt-shell .fleet-company-service { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+  .rnt-shell .fleet-company-service > section { min-width: 0; display: grid; gap: 18px; }
+  .rnt-shell .fleet-company-service .business-feature-grid, .rnt-shell .fleet-company-service section:has(> .business-feature-grid) { display: none; }
+  .rnt-shell .fleet-company-service .fleet-company-profile .business-section { max-width: none; }
+  .rnt-shell .rt-small-button { min-height: 0 !important; height: 28px; padding: 0 10px !important; font-size: 11px !important; }
+  .rnt-shell :is(.rt-company-line, .fleet-company-line) > div { display: grid; gap: 2px; }
+  .rnt-shell :is(.rt-company-line, .fleet-company-line) small { font-size: 12px; color: #929ba7; }
+  .rnt-shell .rt-company .rt-facts { grid-template-columns: minmax(0, 1fr); }
+  .rnt-shell .rt-company .rt-facts dt { font-size: 12px; }
+  .rt-usage .rt-card-head p { margin: 3px 0 0; font-size: 12px; color: #929ba7; }
+  .rt-usage .fleet-usage-bar { display: grid; gap: 8px; padding: 16px 20px 0; }
+  .rt-usage .fleet-usage-bar > div { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+  .rt-usage .fleet-usage-bar strong { font-weight: 500; } .rt-usage .fleet-usage-bar small { font-size: 11px; font-weight: 400; color: #929ba7; }
+  .rt-usage .fleet-usage-bar i { display: block; height: 6px; border-radius: 99px; background: #eef1f5; overflow: hidden; }
+  .rt-usage .fleet-usage-bar b { display: block; height: 100%; border-radius: inherit; background: #2f6fed; }
+  .rt-usage .fleet-usage-facts { margin: 0; padding: 12px 20px 18px; }
+  .rt-usage .fleet-usage-facts div { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid #f0f2f6; font-size: 12px; }
+  .rt-usage .fleet-usage-facts dt { color: #7e8998; } .rt-usage .fleet-usage-facts dd { margin: 0; }
+  /* 렌트 알림 설정 */
+  .rnt-shell .nt-desk { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: start; border: 0; padding: 0; margin: 0; min-width: 0; }
+  .rnt-shell .nt-panel { border: 1px solid #e3e7ee; border-radius: 10px; background: #fff; min-width: 0; padding: 18px 20px; }
+  .rnt-shell .nt-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .rnt-shell .nt-panel > header h3 { margin: 0; font-size: 15px; font-weight: 500; }
+  .rnt-shell .nt-panel > header span { font-size: 11px; color: #929ba7; }
+  .rnt-shell .nt-alerts ul { margin: 0; padding: 0; list-style: none; border: 1px solid #eef1f5; border-radius: 8px; }
+  .rnt-shell .nt-alerts li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; }
+  .rnt-shell .nt-alerts li + li { border-top: 1px solid #eef1f5; }
+  .rnt-shell .nt-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: #eef4ff; color: #2f6fed; }
+  .rnt-shell .nt-alerts strong { display: block; font-size: 13px; font-weight: 500; }
+  .rnt-shell .nt-alerts small { display: block; margin-top: 2px; font-size: 11px; color: #929ba7; }
+  .rnt-shell .nt-current dl { margin: 0 0 12px; }
+  .rnt-shell .nt-current dl div { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid #f0f2f6; font-size: 12px; }
+  .rnt-shell .nt-current dt { color: #7e8998; } .rnt-shell .nt-current dd { margin: 0; }
+  .rnt-shell .nt-fields { display: grid; gap: 6px; }
+  .rnt-shell .nt-note { margin: 10px 0 0; font-size: 11px; color: #929ba7; } .rnt-shell .nt-note.is-error { color: var(--danger); }
+  /* 화물 알림·연동 */
+  .rnt-shell .fr-section[data-notice] .fr-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+  .rnt-shell .fr-notice-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 16px 16px; }
+  .rnt-shell .fr-notice-foot .fr-note { margin: 0; font-size: 11px; }
+  .rnt-shell .fr-connection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rnt-shell .fr-connection-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .rnt-shell .fr-connection-head h2 { display: flex; align-items: center; gap: 9px; margin: 0; }
+  .rnt-shell .fr-connection-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #eef4ff; color: #2f6fed; }
+  /* 배차 일정: small ghost week buttons */
+  .rnt-shell .fr-week-controls .fr-btn { background: transparent !important; border-color: transparent !important; box-shadow: none !important; font-size: 11px !important; min-height: 28px; padding: 4px 8px; }
+}

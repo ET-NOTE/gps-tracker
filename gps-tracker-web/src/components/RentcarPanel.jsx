@@ -14,6 +14,7 @@ import RentalWorkflow from './business/RentalWorkflow';
 import RentalTeam, {useRentalTeamConfig} from './business/RentalTeam';
 import NotificationSettings from './NotificationSettings';
 import { BusinessCompanyInfo, BusinessSubscription as SubTab } from './business/BusinessPreferences';
+import { TeamServiceUsage } from './business/TeamMockupViews';
 import { fleetRequestScope } from '../lib/fleetSession';
 import { rentalReport, invoiceReport, rentalPeriod } from '../lib/businessExport';
 import { RentalVehicleScope, BusinessButton, BusinessError, BusinessEmpty } from './business/BusinessWorkspace';
@@ -37,7 +38,8 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import './business/rental-reference.css';
 
-function RentalCompanySettings({subscription,onSubscription,team}) {
+function RentalCompanySettings({subscription,onSubscription,team,vehicles=[],vehiclesReady=false}) {
+  const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const me=useMe();
   const ownScope=fleetRequestScope('/corporate/info').owner==null;
   const info=useCorporateInfo({enabled:ownScope&&team.isSuccess});
@@ -50,11 +52,24 @@ function RentalCompanySettings({subscription,onSubscription,team}) {
   } else if(!ownScope||(info.isSuccess&&me.isSuccess&&!ownsProfile)) {
     profile=<BusinessError>현재 렌트카 계정의 회사 정보를 확인할 수 없습니다.</BusinessError>;
   } else if(team.isSuccess&&ownsProfile) {
-    profile=<BusinessCompanyInfo/>;
+    const branches=team.data.branches||[];
+    profile=mockup
+      ? <BusinessCompanyInfo compactEdit caption="렌트카 업무 공간" extraFacts={[['운영 지점',branches.map(b=>b.name).join(', ')]]}/>
+      : <BusinessCompanyInfo/>;
   }
-  return <div className="rental-company-settings">{profile}{subscription.error
+  const subscriptionPanel=subscription.error
     ? <BusinessError onRetry={subscription.refetch}>이용권 정보를 불러오지 못했습니다.</BusinessError>
-    : <SubTab kind="rentcar" sub={subscription.data} onChange={onSubscription}/>}</div>;
+    : <SubTab kind="rentcar" sub={subscription.data} onChange={onSubscription}/>;
+  if(mockup) {
+    // Desktop design: 회사 정보 and 서비스 이용 현황 side by side, as on the corporate company page.
+    const staff=team.data?.staff||[], linked=vehicles.filter(v=>v.device_id!=null).length, joined=staff.filter(s=>s.active&&s.joined).length;
+    const sub=subscription.data, badge=sub&&<span className={'business-badge '+(sub.active?'info':'')}>{sub.active?'리포트 이용 중':'리포트 미사용'}</span>;
+    return <div className="rental-company-settings fleet-company-service rt-mockup"><section aria-label="회사 정보">{profile}</section>
+      <section aria-label="서비스 이용 현황"><TeamServiceUsage badge={badge}
+        bars={[['등록 차량',linked,vehiclesReady?vehicles.length:null,'대','단말 연결'],['등록 사용자',joined,team.data?staff.length:null,'명','사용 중']]}
+        facts={[['연결 단말',vehiclesReady?linked+'대':'—'],['권한 그룹',team.data?(team.data.groups||[]).length+'개':'—']]}/>{subscriptionPanel}</section></div>;
+  }
+  return <div className="rental-company-settings">{profile}{subscriptionPanel}</div>;
 }
 
 function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, destinations, onManageVehicle, onDevicesChange }) {
@@ -68,6 +83,7 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
   const assets=useRentalAssets();
   const vehicles=useMemo(()=>rentalInventory(assets.data || [],devices),[assets.data,devices]);
   const qc = useQueryClient();
+  const phone = useCorporatePhone();
   const setTab = onPage || setLocalTab;
   function visit(id,workId) {setRequest(typeof workId==='number'?{stage:id,workId}:null);setTab(id);}
   function openContracts(value) {
@@ -88,8 +104,8 @@ function RentcarPanel({ devices = [], onMap, onNavigate, meta, page, onPage, des
       {tab.startsWith('rent-')&&<RentalOffice key={tab} page={tab} devices={vehicles}/>}
       {tab==='history'&&<RentalsTab devices={devices} vehicles={vehicles} request={activeRequest}/>}
       {tab==='policy'&&<RentalPolicy/>}
-      {tab==='notifications'&&<NotificationSettings/>}
-      {tab==='settings'&&<RentalCompanySettings subscription={subscription} team={company}
+      {tab==='notifications'&&<NotificationSettings desk={!phone&&hideOutsideMockup}/>}
+      {tab==='settings'&&<RentalCompanySettings subscription={subscription} team={company} vehicles={assets.data||[]} vehiclesReady={assets.isSuccess}
         onSubscription={v=>qc.setQueryData(qk.businessSubscription('rentcar'),v)}/>}
     </RentalWorkspace>
   </RentalVehicleScope>;

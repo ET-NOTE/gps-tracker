@@ -64,6 +64,7 @@ export default function RentalTeam({page,onTab,cargo=false}) {
   const [editor,setEditor]=useState(null),[code,setCode]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const mockup=!useCorporatePhone()&&hideOutsideMockup;
   const [query,setQuery]=useState('');
+  const [branchFilter,setBranchFilter]=useState(''),[stateFilter,setStateFilter]=useState(''),[groupFilter,setGroupFilter]=useState('');
   if(config.isPending)return <p role="status">사용자 정보를 불러오는 중…</p>;
   if(config.error)return <BusinessError onRetry={config.refetch}>사용자 정보를 불러오지 못했습니다.</BusinessError>;
   const data=config.data, ready=page!=='staff'||(data.branches.length>0&&data.groups.length>0);
@@ -75,10 +76,17 @@ export default function RentalTeam({page,onTab,cargo=false}) {
     {code&&<InviteCode code={code} cargo={cargo} onClose={()=>setCode('')}/>}</>;
   if(mockup&&page==='staff'){
     const needle=query.trim().toLowerCase();
-    const rows=data.staff.filter(r=>!needle||[r.name,r.email].some(v=>String(v||'').toLowerCase().includes(needle))).map(r=>({id:r.id,name:r.name,email:r.email,branch:find('branches',r.branch_id),group:find('groups',r.group_id),
+    const stateOf=r=>r.active?(r.joined?'active':'pending'):'stopped';
+    const rows=data.staff.filter(r=>(!needle||[r.name,r.email].some(v=>String(v||'').toLowerCase().includes(needle)))
+      &&(!branchFilter||String(r.branch_id)===branchFilter)&&(!stateFilter||stateOf(r)===stateFilter)&&(!groupFilter||String(r.group_id)===groupFilter)).map(r=>({id:r.id,name:r.name,email:r.email,branch:find('branches',r.branch_id),group:find('groups',r.group_id),
       state:r.active?(r.joined?'사용 중':'초대 대기'):'사용 중지',tone:r.active?(r.joined?'good':'warn'):'',
       actions:<>{r.active&&!r.joined&&<button type="button" className="rt-link" disabled={busy} onClick={()=>reissue(r.id)}>코드 재발급</button>}<button type="button" className="rt-link" aria-label={r.name+' 수정'} onClick={()=>setEditor({initial:r})}>수정</button></>}));
-    return <div className="rnt-team rt-mockup"><TeamPeopleLedger rows={rows} total={data.staff.length} query={query} onQuery={setQuery}
+    const select=(label,value,onChange,all,items)=><select className="rt-filter" aria-label={label} value={value} onChange={e=>onChange(e.target.value)}><option value="">{all}</option>{items.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select>;
+    const filters=<>{select('지점',branchFilter,setBranchFilter,'전체 지점',data.branches.map(b=>[String(b.id),b.name]))}
+      {select('계정 상태',stateFilter,setStateFilter,'전체 상태',[['active','사용 중'],['pending','초대 대기'],['stopped','사용 중지']])}
+      {select('권한 그룹',groupFilter,setGroupFilter,'전체 권한 그룹',data.groups.map(g=>[String(g.id),g.name]))}</>;
+    const caption=(branchFilter?data.branches.find(b=>String(b.id)===branchFilter)?.name||'선택 지점':'전체 지점')+' · 전체 '+data.staff.length+'명';
+    return <div className="rnt-team rt-mockup"><TeamPeopleLedger rows={rows} total={data.staff.length} query={query} onQuery={setQuery} filters={filters} caption={caption}
       action={<BusinessButton primary icon="plus" disabled={!ready} onClick={()=>setEditor({initial:null})}>사용자 추가</BusinessButton>}
       extra={<>{!ready&&<div className="rnt-prerequisites"><p>직원을 초대하려면 소속 지점과 권한 그룹을 먼저 등록해 주세요.</p>{!data.branches.length&&<BusinessButton onClick={()=>onTab('branches')}>지점 등록하기</BusinessButton>} {!data.groups.length&&<BusinessButton onClick={()=>onTab('groups')}>권한 그룹 등록하기</BusinessButton>}</div>}
         {data.notes.length>0&&<section className="rt-card"><header className="rt-card-head"><h3>최근 인수인계 메모</h3></header><ul className="rt-notes">{data.notes.map(n=><li key={n.id}><strong>{n.body}</strong><small>{n.branch} · {n.staff} · {cargo?"운송":"계약"} #{cargo?n.shipment_id:n.contract_id}</small></li>)}</ul></section>}</>}/>{dialogs}</div>;
