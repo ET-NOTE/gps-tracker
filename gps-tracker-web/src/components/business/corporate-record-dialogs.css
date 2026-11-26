@@ -171,3 +171,17 @@
   }
   .gps-modal .corporate-record-body .corporate-reservation-badge::before {content:''; width:4px; height:4px; border-radius:50%; background:currentColor; flex:none}
 }
+/* Round 36: reservation list rows as in the design (66px rows, sedan art, column widths) */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table {table-layout:fixed}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table :is(th,td):nth-child(1) {width:28.8%}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table :is(th,td):nth-child(2) {width:11.3%; min-width:0}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table :is(th,td):nth-child(3) {width:21.9%}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table :is(th,td):nth-child(4) {width:21.9%; min-width:0; white-space:normal}
+  .business-workspace--corporate .corporate-reservations .corporate-reservation-table :is(th,td):nth-child(5) {width:16.1%; min-width:0}
+  .business-workspace--corporate .corporate-reservation-table td {line-height:19px}
+  .business-workspace--corporate .corporate-reservation-table .corporate-reservation-car {width:70px; height:33px; margin-right:11px; object-fit:contain; vertical-align:middle; flex:none}
+  .business-workspace--corporate .corporate-reservation-table td.corporate-reservation-vehicle>span {display:inline-flex; flex-direction:column; vertical-align:middle; min-width:0}
+  .business-workspace--corporate .business-content .corporate-reservation-table .booking-detail-link {min-height:0!important; height:auto!important; padding:0!important; font-size:12px!important; line-height:19px!important; color:#414c5c; border:0!important}
+  .business-workspace--corporate .business-content .corporate-reservation-table td small:not(.corporate-reservation-alert) {display:block; margin-top:3px!important; font-size:10px!important; line-height:15.5px!important; color:#929aa7!important}
+}
