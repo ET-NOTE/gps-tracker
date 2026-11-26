@@ -58,9 +58,11 @@ async function components({save=async()=>{},view='list'}={}) {
  return {...mod.namespace,Modal,calls,alerts,queries};
 }
 
+// New desktop bookings need a visit place before saving.
+async function visit(r){await act(async()=>r.root.findByProps({placeholder:'예: A사 본사'}).props.onChange({target:{value:'A사 본사'}}));}
 function props(kind,onSaved=()=>{},onClose=()=>{}) {
  return kind==='trip'?{trip,staff:[{id:3,name:'김운전자'}],deviceId:2,onSaved,onClose}:
-  {init:kind==='update'?booking:null,presetDate:'2026-11-17',devices:[vehicle],staff:[{id:3,name:'김운전자',active:true}],onSaved,onClose};
+  {init:kind==='update'?booking:null,presetVehicleId:kind==='create'?vehicle.id:undefined,presetDate:'2026-11-17',devices:[vehicle],staff:[{id:3,name:'김운전자',active:true}],onSaved,onClose};
 }
 
 test('booking and trip editors persist and clear the company purpose independently from the tax purpose',async()=>{
@@ -89,7 +91,7 @@ for(const kind of ['trip','create','update']) {
  test(`${kind}: one write per rapid double click, with close and form locked until completion`,async()=>{
   const wait=pending(),c=await components({save:()=>wait.promise});let r,saved=0,closed=0;
   const Component=kind==='trip'?c.TripEditorModal:c.ReservationDialog;
-  await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++,()=>closed++)));});
+  await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++,()=>closed++)));});if(kind==='create')await visit(r);
   const submit=button(r,kind==='create'?'예약 등록':'저장').props.onClick,close=r.root.findByType(c.Modal).props.onClose;
   let first,second;
   await act(async()=>{first=submit();second=submit();close();});
@@ -107,7 +109,7 @@ for(const kind of ['trip','create','update']) {
   let attempts=0;
   const c=await components({save:async()=>{if(++attempts===1)throw new Error('연결 실패');}});let r,saved=0;
   const Component=kind==='trip'?c.TripEditorModal:c.ReservationDialog;
-  await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++)));});
+  await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++)));});if(kind==='create')await visit(r);
   const memo=()=>kind==='trip'?r.root.findByProps({placeholder:'메모'}):r.root.findByType('textarea');
   await act(async()=>memo().props.onChange({target:{value:'다시 저장할 메모'}}));
   const saveLabel=kind==='create'?'예약 등록':'저장';
@@ -125,7 +127,7 @@ for(const kind of ['trip','create','update']) {
   for(const outcome of ['resolve','reject']) {
    const wait=pending(),c=await components({save:()=>wait.promise});let r,saved=0;
    const Component=kind==='trip'?c.TripEditorModal:c.ReservationDialog;
-   await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++)));});
+   await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++)));});if(kind==='create')await visit(r);if(kind==='create')await visit(r);
    let request;await act(async()=>{request=button(r,kind==='create'?'예약 등록':'저장').props.onClick();});
    await act(async()=>r.unmount());
    await act(async()=>{wait[outcome](outcome==='reject'?new Error('늦은 실패'):undefined);await request;});
@@ -204,7 +206,7 @@ test('reservation forms and query boundaries remain Korean time in a Los Angeles
   assert.equal(c.localToIso('2026-11-17T09:00'),'2026-11-17T00:00:00.000Z');
   assert.equal(c.isoToLocal('2026-11-17T00:00:00Z'),'2026-11-17T09:00');
   let r;
-  await act(async()=>{r=create(React.createElement(c.ReservationDialog,props('create')));});mounted.push(r);
+  await act(async()=>{r=create(React.createElement(c.ReservationDialog,props('create')));});mounted.push(r);await visit(r);
   assert.deepEqual(r.root.findAllByProps({type:'datetime-local'}).map(n=>n.props.value),['2026-11-17T09:00','2026-11-17T10:00']);
   assert.match(text(r.toJSON()),/한국시간\(KST\)/);
   await act(async()=>button(r,'예약 등록').props.onClick());
@@ -222,4 +224,17 @@ test('reservation forms and query boundaries remain Korean time in a Los Angeles
   for(const r of mounted)await act(async()=>r.unmount());
   if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;
  }
+});
+
+test('desktop booking starts without a vehicle and needs a visit place',async()=>{
+ const c=await components();let r;
+ await act(async()=>{r=create(React.createElement(c.ReservationDialog,{...props('create'),presetVehicleId:undefined}));});
+ assert.equal(r.root.findByProps({'aria-label':'예약 차량'}).props.value,'');
+ await act(async()=>r.root.findByProps({'aria-label':'예약 차량'}).props.onChange({target:{value:String(vehicle.id)}}));
+ await act(async()=>button(r,'예약 등록').props.onClick());
+ assert.equal(c.calls.length,0);assert.equal(c.alerts.at(-1).body,'방문할 장소명을 입력해 주세요.');
+ await act(async()=>r.root.findByProps({placeholder:'예: A사 본사'}).props.onChange({target:{value:'  A사 본사  '}}));
+ await act(async()=>button(r,'예약 등록').props.onClick());
+ assert.equal(c.calls.length,1);assert.equal(c.calls[0].payload.purpose,'A사 본사');assert.equal(c.calls[0].payload.vehicle_id,vehicle.id);
+ await act(async()=>r.unmount());
 });

@@ -124,3 +124,7 @@
   .gps-modal:has(.service-form-actions)>div:first-child>button[aria-label="닫기"] .gps-modal-close-text {display:none}
   .gps-modal:has(.service-form-actions)>div:first-child>button[aria-label="닫기"] .gps-modal-close-icon {display:block!important}
 }
+/* Round 31: reservation memo block under the detail list */
+.corporate-record-body .corporate-booking-note {margin-top:23px}
+.corporate-record-body .corporate-booking-note h3 {margin:0 0 12px; font:500 13px/1.5 var(--fleet-font); color:#657388}
+.corporate-record-body .corporate-booking-note p {margin:0; font:400 12px/1.7 var(--fleet-font); color:var(--text-2); white-space:pre-wrap; overflow-wrap:anywhere}

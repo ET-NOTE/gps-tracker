@@ -1028,8 +1028,8 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
   const shown=known?list:null;
   const report=shown&&{
     title:'차량 예약',filename:`차량_예약_${businessDate(resvParams.from)}_${businessDate(Date.parse(resvParams.to)-1)}`,
-    columns:[['vehicle','차량'],['plate','차량번호'],['driver','운전자'],['start','시작 일시'],['end','종료 일시'],['purpose','목적'],['note','메모'],['status','상태']].map(([key,label])=>({key,label})),
-    rows:shown.map(r=>({vehicle:r.vehicle_name||r.device_name,plate:r.license_plate,driver:r.driver_name,start:kstDateTime(r.starts_at),end:kstDateTime(r.ends_at),purpose:bookingPurpose(r),note:r.note,status:RESV_STATUS[r.status]?.label||r.status})),
+    columns:[['vehicle','차량'],['plate','차량번호'],['driver','운전자'],['start','시작 일시'],['end','종료 일시'],['companyPurpose','운행목적'],['purpose','방문 장소'],['note','메모'],['status','상태']].map(([key,label])=>({key,label})),
+    rows:shown.map(r=>({vehicle:r.vehicle_name||r.device_name,plate:r.license_plate,driver:r.driver_name,start:kstDateTime(r.starts_at),end:kstDateTime(r.ends_at),companyPurpose:r.company_purpose_name,purpose:r.purpose,note:r.note,status:RESV_STATUS[r.status]?.label||r.status})),
   };
   return (
     <div className="corporate-reservations">
@@ -1114,8 +1114,8 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
   const writable=access.write_reservations!==false && r.can_edit!==false;
   const editable=writable && !(r.approval_required && ['rejected','cancelled','completed'].includes(r.status));
   const state=RESV_STATUS[r.status] || RESV_STATUS.planned;
-  const details=desk?[['운전자',r.driver_name || '미지정'],['운행목적',r.company_purpose_name || '미지정'],['방문 장소',r.purpose || '—'],['시작 시간',kstDateTime(r.starts_at)],
-    ['종료 시간',kstDateTime(r.ends_at)],['이용 구분',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']]:[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
+  const details=desk?[['운전자',r.driver_name || '미지정'],['이용 구분',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['운행목적',r.company_purpose_name || '미지정'],
+    ['시작 시간',kstDateTime(r.starts_at)],['종료 시간',kstDateTime(r.ends_at)],['방문 장소',r.purpose || '—'],['요청일',r.created_at?dotDateTime(r.created_at).slice(0,10):'—']]:[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
     ['종료 시간',kstDateTime(r.ends_at)],['운행기록부 용무',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']];
   return <Modal open placement="end" size={470} title="예약 상세" subtitle={kstDateTime(r.starts_at)+' · '+(r.driver_name||'운전자 미지정')} onClose={onClose}
     footer={<div className="corporate-detail-actions">
@@ -1126,6 +1126,7 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
       {r.license_plate && r.vehicle_name && r.vehicle_name!==r.license_plate && <small>{r.vehicle_name}</small>}</div>
       <span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span></div>
       <dl>{details.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      {desk&&r.note&&<div className="corporate-booking-note"><h3>메모</h3><p>{r.note}</p></div>}
       {r.approval_required && <ReservationApproval row={r} reviewable={access.review_reservations!==false} onFinished={onClose}/>}
     </div>
   </Modal>;
@@ -1304,7 +1305,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
     return new Date((Math.floor(Date.now() / 3600_000) + 1) * 3600_000);
   };
   const options=(devices||[]).filter(d=>d.enabled!==false||d.id===init?.vehicle_id);
-  const [deviceId, setDeviceId] = useState(init?.vehicle_id ?? presetVehicleId ?? options[0]?.id ?? '');
+  const [deviceId, setDeviceId] = useState(init?.vehicle_id ?? presetVehicleId ?? (desk ? '' : options[0]?.id ?? ''));
   const vehicleAllowed=options.some(d=>String(d.id)===String(deviceId));
   const [driverId, setDriverId] = useState(init?.driver_staff_id ?? (!access.manage_reports?access.staff_id:''));
   const [startsAt, setStartsAt] = useState(init ? isoToLocal(init.starts_at) : isoToLocal(defaultStart().toISOString()));
@@ -1326,6 +1327,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
   async function save() {
     if (locked || saving.current || busy || !mounted.current) return;
     if (!vehicleAllowed) { alertDialog({ title: '차량 선택 필요', body: '예약 가능한 차량을 선택해 주세요.', tone: 'danger' }); return; }
+    if (desk && !purpose.trim()) { alertDialog({ title: '방문 장소 입력 필요', body: '방문할 장소명을 입력해 주세요.', tone: 'danger' }); return; }
     if (!startsAt || !endsAt) { alertDialog({ title: '시간 입력 필요', body: '', tone: 'danger' }); return; }
     const start = init && isoToLocal(init.starts_at)===startsAt ? new Date(init.starts_at).toISOString() : localToIso(startsAt);
     const end = init && isoToLocal(init.ends_at)===endsAt ? new Date(init.ends_at).toISOString() : localToIso(endsAt);
@@ -1359,7 +1361,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
     <Modal open mobileForm onClose={busy ? undefined : close} size={720} title={init?.id ? (locked?'예약 상세':'예약 편집') : desk?'차량 예약':'새 예약'} subtitle={desk?'차량과 운행 목적을 선택하고 이용 일정을 등록합니다.':'차량과 운전자를 선택하고 이용 일정을 확인하세요.'} footer={<div className="service-form-actions booking-form-actions">
       {onCancel&&init?.status==='completed'&&access.write_reservations!==false&&init.can_edit!==false&&<Button disabled={busy} variant="ghost" onClick={async()=>{if(await onCancel(init)&&mounted.current)onClose();}}>완료된 예약 취소</Button>}
       <Button onClick={close} disabled={busy} variant="ghost" size="lg">{locked?'닫기':'취소'}</Button>
-      {!locked&&<Button onClick={save} busy={busy} disabled={busy||!vehicleAllowed} variant="primary" size="lg">
+      {!locked&&<Button onClick={save} busy={busy} disabled={busy||(!desk&&!vehicleAllowed)} variant="primary" size="lg">
         {busy ? '저장 중...' : !init&&desk?'예약 등록':!init&&approvalRequired?'승인 요청':'저장'}
       </Button>}
     </div>}>
@@ -1404,7 +1406,7 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
           <Select value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option></Select>
         </FormField>}
         <CompanyPurposePicker label={desk?'운행목적':undefined} value={companyPurposeId} onChange={setCompanyPurposeId} initialId={init?.company_purpose_id} initialName={init?.company_purpose_name}/>
-        <div className="corporate-booking-purpose"><FormField label={desk?'방문 장소':'예약 목적'}>
+        <div className="corporate-booking-purpose"><FormField label={desk?'방문 장소 *':'예약 목적'}>
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
             placeholder={desk?'예: A사 본사':'거래처 방문, 외근...'} />
         </FormField></div>

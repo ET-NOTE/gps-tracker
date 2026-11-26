@@ -4,13 +4,13 @@ import {expenseMoney} from './fleetExpenses.js';
 export const approvalLabels={pending:'승인 대기',approved:'승인 완료',rejected:'반려',cancelled:'취소'};
 const bookingDecision={pending:'pending',planned:'approved',in_progress:'approved',completed:'approved',rejected:'rejected',cancelled:'cancelled'};
 
-export function approvalRecords(bookings, expenses, staff) {
+export function approvalRecords(bookings, expenses, staff, {visitTitle=false}={}) {
   const people=new Map(staff.map(person=>[person.id,person]));
   const bookingRows=bookings.filter(row=>row.approval_required&&row.can_review&&bookingDecision[row.status]).map(row=>{
     const driver=people.get(row.driver_staff_id);
     return {type:'reservation',kind:'차량 예약',raw:row,status:bookingDecision[row.status],person:row.driver_name,personId:row.driver_staff_id,
       department:driver?.department,departmentUnknown:row.driver_staff_id!=null&&!driver,departmentId:driver?.department_id,vehicle:row.vehicle_name||row.license_plate||row.device_name,
-      title:row.company_purpose_name||row.purpose||'차량 예약',date:kstDateTime(row.created_at),period:kstDateTime(row.starts_at)+' ~ '+kstDateTime(row.ends_at)};
+      title:(visitTitle?row.purpose||row.company_purpose_name:row.company_purpose_name||row.purpose)||'차량 예약',date:kstDateTime(row.created_at),period:kstDateTime(row.starts_at)+' ~ '+kstDateTime(row.ends_at)};
   });
   const expenseRows=expenses.filter(row=>row.can_review&&approvalLabels[row.status]).map(row=>({
     type:'expense',kind:'지출',raw:row,status:row.status,person:row.staff_name,personId:row.staff_id,department:row.department_name,

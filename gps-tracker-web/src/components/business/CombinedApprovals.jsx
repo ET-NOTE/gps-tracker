@@ -38,7 +38,7 @@ export default function CombinedApprovals({onOpen,canExpenses,canReservations}){
   const bookings=useQuery({queryKey:['business','corporate','vehicle-reservations',bookingFilter],queryFn:()=>api.listFleetReservations(bookingFilter),enabled:valid&&canReservations});
   const ready=valid&&(!canExpenses||expenses.isSuccess&&!expenses.isFetching)&&(!canReservations||bookings.isSuccess&&!bookings.isFetching);
   const staffRows=staff.error?[]:scopedStaff(staff.data||[],access);
-  const records=ready?approvalRecords(canReservations?bookings.data:[],canExpenses?expenses.data.items:[],staffRows):[];
+  const records=ready?approvalRecords(canReservations?bookings.data:[],canExpenses?expenses.data.items:[],staffRows,{visitTitle:desk}):[];
   const rows=filterApprovals(records,filters),pending=rows.filter(row=>row.status==='pending'&&row.raw.updated_at);
   const waiting=rows.filter(row=>row.status==='pending');
   const waitingExpenses=waiting.filter(row=>row.type==='expense');

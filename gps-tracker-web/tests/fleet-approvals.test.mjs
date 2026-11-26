@@ -20,3 +20,10 @@ test('combined approvals preserve server review scope, composite IDs and actual 
   assert.match(csv,/숙박/);assert.match(csv,/승인 완료/);assert.doesNotMatch(csv,/고객 방문|can_review|cancelled/);
   assert.equal(report.rows.length,1);
 });
+
+test('desktop approval titles lead with the visit place',()=>{
+ const base={id:1,created_at:'2026-11-01T10:00:00Z',can_review:true,approval_required:true,status:'pending',starts_at:'2026-11-02T01:00:00Z',ends_at:'2026-11-02T02:00:00Z'};
+ const titles=opts=>approvalRecords([{...base,purpose:'A사 본사',company_purpose_name:'영업'},{...base,id:2,company_purpose_name:'영업'},{...base,id:3}],[],[],opts).map(row=>row.title).sort();
+ assert.deepEqual(titles({visitTitle:true}),['A사 본사','영업','차량 예약']);
+ assert.deepEqual(titles(),['영업','영업','차량 예약']);
+});
