@@ -1291,6 +1291,7 @@ function isoToLocal(iso) {
 
 function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, onCancel, onClose, onSaved }) {
   const access=useFleetAccess();
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const locked=Boolean(access.write_reservations===false||init?.can_edit===false||(init?.approval_required&&['rejected','cancelled','completed'].includes(init.status)));
   const policy=useQuery({queryKey:['fleet-reservation-policy'],queryFn:()=>api.fleetReservationPolicy(),enabled:!init});
   const approvalRequired=init?init.approval_required:policy?.data?.approval_required;
@@ -1353,21 +1354,21 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
   }
 
   return (
-    <Modal open mobileForm onClose={busy ? undefined : close} size={720} title={init?.id ? (locked?'예약 상세':'예약 편집') : '새 예약'} subtitle="차량과 운전자를 선택하고 이용 일정을 확인하세요." footer={<div className="service-form-actions booking-form-actions">
+    <Modal open mobileForm onClose={busy ? undefined : close} size={720} title={init?.id ? (locked?'예약 상세':'예약 편집') : desk?'차량 예약':'새 예약'} subtitle={desk?'차량과 운행 목적을 선택하고 이용 일정을 등록합니다.':'차량과 운전자를 선택하고 이용 일정을 확인하세요.'} footer={<div className="service-form-actions booking-form-actions">
       {onCancel&&init?.status==='completed'&&access.write_reservations!==false&&init.can_edit!==false&&<Button disabled={busy} variant="ghost" onClick={async()=>{if(await onCancel(init)&&mounted.current)onClose();}}>완료된 예약 취소</Button>}
       <Button onClick={close} disabled={busy} variant="ghost" size="lg">{locked?'닫기':'취소'}</Button>
       {!locked&&<Button onClick={save} busy={busy} disabled={busy||!vehicleAllowed} variant="primary" size="lg">
-        {busy ? '저장 중...' : !init&&approvalRequired?'승인 요청':'저장'}
+        {busy ? '저장 중...' : !init&&desk?'예약 등록':!init&&approvalRequired?'승인 요청':'저장'}
       </Button>}
     </div>}>
         {init?.approval_required&&<ReservationApproval row={init} reviewable={access.review_reservations!==false} onFinished={onSaved}/>}
-        {!init&&approvalRequired&&<p className="business-note">승인 대기 중에도 이 차량의 이용 시간이 확보됩니다. 반려하거나 취소하면 같은 시간에 다시 예약할 수 있습니다.</p>}
+        {!init&&approvalRequired&&!desk&&<p className="business-note">승인 대기 중에도 이 차량의 이용 시간이 확보됩니다. 반려하거나 취소하면 같은 시간에 다시 예약할 수 있습니다.</p>}
         {!init&&policy?.error&&<p className="business-note" role="status">승인 정책을 조회하지 못했습니다. 저장 시 회사의 현재 정책이 적용됩니다.</p>}
         {init?.approval_required&&init.status==='planned'&&!locked&&<p className="business-note">예약 내용을 수정하면 다시 승인을 받아야 합니다.</p>}
         <fieldset className="corporate-booking-fields" disabled={busy||locked} aria-busy={busy}>
-        <FormField label="차량">
+        <FormField label={desk?'차량 *':'차량'}>
           <select aria-label="예약 차량" value={vehicleAllowed?deviceId:''} onChange={e => {setDeviceId(e.target.value);setDriverId(access.manage_reports?'':access.staff_id);}}>
-            {!vehicleAllowed&&<option value="">예약 가능한 차량 선택</option>}
+            {!vehicleAllowed&&<option value="">{desk?'차량을 선택하세요':'예약 가능한 차량 선택'}</option>}
             {options.map(d => (
               <option key={d.id} value={d.id}>
                 {reportVehicleLabel(d)}
@@ -1376,38 +1377,41 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
           </select>
         </FormField>
 
-        <FormField label="운전자 (선택)">
+        <FormField label={desk?'운전자':'운전자 (선택)'}>
           <select value={driverId} onChange={e => setDriverId(e.target.value)}>
-            {access.manage_reports&&<option value="">— 미지정 —</option>}
+            {access.manage_reports&&<option value="">{desk?'미지정':'— 미지정 —'}</option>}
             {staff.filter(s=>staffCanDrive(s,devices.find(d=>d.id===Number(deviceId)))).map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` (${s.role})` : ''}</option>)}
           </select>
         </FormField>
 
-        <p className="business-note">예약 일시는 한국시간(KST) 기준입니다.</p>
+        {desk?<div className="corporate-booking-wide"><FormField label="이용 구분">
+          <Select aria-label="이용 구분" value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="business">업무</option><option value="commute">출퇴근</option><option value="other">기타</option></Select>
+        </FormField></div>:<p className="business-note">예약 일시는 한국시간(KST) 기준입니다.</p>}
         {!locked && <FleetBookingHours hintOnly start={startsAt} end={endsAt}
           checkInterval={!init || init.vehicle_id!==Number(deviceId) || isoToLocal(init.starts_at)!==startsAt || isoToLocal(init.ends_at)!==endsAt}/>}
         <div className="business-datetime-fields">
-          <FormField label="시작">
+          <FormField label={desk?'시작 시간 *':'시작'}>
             <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} />
           </FormField>
-          <FormField label="종료">
+          <FormField label={desk?'종료 시간 *':'종료'}>
             <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} />
           </FormField>
         </div>
 
-        <FormField label="운행기록부 용무 (선택)">
+        {!desk&&<FormField label="운행기록부 용무 (선택)">
           <Select value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option></Select>
-        </FormField>
-        <CompanyPurposePicker value={companyPurposeId} onChange={setCompanyPurposeId} initialId={init?.company_purpose_id} initialName={init?.company_purpose_name}/>
-        <FormField label="예약 목적">
+        </FormField>}
+        <CompanyPurposePicker label={desk?'운행목적':undefined} value={companyPurposeId} onChange={setCompanyPurposeId} initialId={init?.company_purpose_id} initialName={init?.company_purpose_name}/>
+        <div className="corporate-booking-purpose"><FormField label="예약 목적">
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
             placeholder="거래처 방문, 외근..." />
-        </FormField>
+        </FormField></div>
 
-        <FormField label="메모 (선택)">
+        <FormField label={desk?'메모':'메모 (선택)'}>
           <textarea value={note} onChange={e => setNote(e.target.value)}
-            placeholder="예약 관련 내용을 입력하세요." />
+            placeholder={desk?'동승자나 준비 사항을 남겨 주세요.':'예약 관련 내용을 입력하세요.'} />
         </FormField>
+        {desk&&!locked&&<p className="corporate-booking-hint">{!init&&(approvalRequired?'등록하거나 변경한 예약은 관리자 승인 후 이용할 수 있습니다. ':'등록하면 바로 예약이 확정됩니다. ')}예약 일시는 한국시간(KST) 기준입니다.</p>}
 
         {init?.id && (
           <div className="corporate-editor-field">

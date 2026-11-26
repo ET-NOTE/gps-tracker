@@ -90,7 +90,7 @@ for(const kind of ['trip','create','update']) {
   const wait=pending(),c=await components({save:()=>wait.promise});let r,saved=0,closed=0;
   const Component=kind==='trip'?c.TripEditorModal:c.ReservationDialog;
   await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++,()=>closed++)));});
-  const submit=button(r,'저장').props.onClick,close=r.root.findByType(c.Modal).props.onClose;
+  const submit=button(r,kind==='create'?'예약 등록':'저장').props.onClick,close=r.root.findByType(c.Modal).props.onClose;
   let first,second;
   await act(async()=>{first=submit();second=submit();close();});
   assert.equal(c.calls.length,1);assert.equal(closed,0);
@@ -110,10 +110,11 @@ for(const kind of ['trip','create','update']) {
   await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++)));});
   const memo=()=>kind==='trip'?r.root.findByProps({placeholder:'메모'}):r.root.findByType('textarea');
   await act(async()=>memo().props.onChange({target:{value:'다시 저장할 메모'}}));
-  await act(async()=>button(r,'저장').props.onClick());
+  const saveLabel=kind==='create'?'예약 등록':'저장';
+  await act(async()=>button(r,saveLabel).props.onClick());
   assert.equal(c.alerts.at(-1).body,'연결 실패');assert.equal(saved,0);
   assert.equal(memo().props.value,'다시 저장할 메모');assert.equal(r.root.findByType('fieldset').props.disabled,false);
-  await act(async()=>button(r,'저장').props.onClick());
+  await act(async()=>button(r,saveLabel).props.onClick());
   assert.equal(c.calls.length,2);assert.equal(saved,1);
   const payload=kind==='update'?c.calls[1].payload.body:c.calls[1].payload;
   assert.equal(payload.note,'다시 저장할 메모');
@@ -125,7 +126,7 @@ for(const kind of ['trip','create','update']) {
    const wait=pending(),c=await components({save:()=>wait.promise});let r,saved=0;
    const Component=kind==='trip'?c.TripEditorModal:c.ReservationDialog;
    await act(async()=>{r=create(React.createElement(Component,props(kind,()=>saved++)));});
-   let request;await act(async()=>{request=button(r,'저장').props.onClick();});
+   let request;await act(async()=>{request=button(r,kind==='create'?'예약 등록':'저장').props.onClick();});
    await act(async()=>r.unmount());
    await act(async()=>{wait[outcome](outcome==='reject'?new Error('늦은 실패'):undefined);await request;});
    assert.equal(saved,0);assert.equal(c.alerts.length,0);
@@ -206,7 +207,7 @@ test('reservation forms and query boundaries remain Korean time in a Los Angeles
   await act(async()=>{r=create(React.createElement(c.ReservationDialog,props('create')));});mounted.push(r);
   assert.deepEqual(r.root.findAllByProps({type:'datetime-local'}).map(n=>n.props.value),['2026-11-17T09:00','2026-11-17T10:00']);
   assert.match(text(r.toJSON()),/한국시간\(KST\)/);
-  await act(async()=>button(r,'저장').props.onClick());
+  await act(async()=>button(r,'예약 등록').props.onClick());
   assert.equal(c.calls[0].payload.starts_at,'2026-11-17T00:00:00.000Z');
   await act(async()=>{r=create(React.createElement(c.ReservationDialog,{...props('create'),presetDate:null}));});mounted.push(r);
   assert.deepEqual(r.root.findAllByProps({type:'datetime-local'}).map(n=>n.props.value),['2026-11-17T10:00','2026-11-17T11:00']);
