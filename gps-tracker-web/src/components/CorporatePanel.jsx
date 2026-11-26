@@ -48,6 +48,7 @@ import { calendarDate, businessDate, businessPeriod, maintenanceTasks, vehicleNa
 import { confirmDialog, alertDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 import CarImage from './CarImage';
+import sedanArt from './entry/login-vehicle.png';
 
 const receptionTones={active:'good',sleeping:'info',gps_loss:'warning',signal_loss:'warning',low_batt:'warning',offline:'urgent',lost:'urgent',critical_batt:'urgent',overcharge:'urgent'};
 const receptionToneOf=status=>receptionTones[status?.id]||'';
@@ -1113,21 +1114,30 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
   const desk=!useCorporatePhone()&&hideOutsideMockup;
   const writable=access.write_reservations!==false && r.can_edit!==false;
   const editable=writable && !(r.approval_required && ['rejected','cancelled','completed'].includes(r.status));
+  const cancellable=writable && !['cancelled','rejected'].includes(r.status);
+  const reviewable=access.review_reservations!==false;
+  const reviewNow=desk && r.approval_required && r.can_review && reviewable && r.status==='pending';
+  const [decision,setDecision]=useState(null);
   const state=RESV_STATUS[r.status] || RESV_STATUS.planned;
   const details=desk?[['운전자',r.driver_name || '미지정'],['이용 구분',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['운행목적',r.company_purpose_name || '미지정'],
-    ['시작 시간',kstDateTime(r.starts_at)],['종료 시간',kstDateTime(r.ends_at)],['방문 장소',r.purpose || '—'],['목적지 주소',r.destination_address || '미등록'],['요청일',r.created_at?dotDateTime(r.created_at).slice(0,10):'—']]:[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
+    ['시작 시간',dotDateTime(r.starts_at)],['종료 시간',dotDateTime(r.ends_at)],['방문 장소',r.purpose || '—'],['목적지 주소',r.destination_address || '미등록'],['요청일',r.created_at?dotDateTime(r.created_at).slice(0,10):'—']]:[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
     ['종료 시간',kstDateTime(r.ends_at)],['운행기록부 용무',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']];
-  return <Modal open placement="end" size={470} title="예약 상세" subtitle={kstDateTime(r.starts_at)+' · '+(r.driver_name||'운전자 미지정')} onClose={onClose}
-    footer={<div className="corporate-detail-actions">
+  const cancel=async()=>{if(await onCancel(r))onClose();};
+  return <Modal open placement="end" size={470} title="예약 상세" subtitle={(desk?dotDateTime(r.starts_at).slice(0,10):kstDateTime(r.starts_at))+' · '+(r.driver_name||'운전자 미지정')} onClose={onClose}
+    footer={desk?<div className="corporate-detail-actions booking-detail-actions">
+      {reviewNow&&<><BusinessButton className="business-button booking-reject" onClick={()=>setDecision('reject')}>반려</BusinessButton><BusinessButton primary icon="check" onClick={()=>setDecision('approve')}>승인</BusinessButton></>}
+      {editable && <BusinessButton icon="pencil" onClick={onEdit}>변경</BusinessButton>}
+      {cancellable && <BusinessButton className="business-button booking-cancel-link" onClick={cancel}>예약 취소</BusinessButton>}
+    </div>:<div className="corporate-detail-actions">
       {writable && !['cancelled','rejected'].includes(r.status) && <BusinessButton onClick={async()=>{if(await onCancel(r))onClose();}}>예약 취소</BusinessButton>}
       <BusinessButton onClick={onClose}>닫기</BusinessButton>{editable && <BusinessButton primary icon="edit" onClick={onEdit}>예약 변경</BusinessButton>}
     </div>}>
-    <div className="corporate-record-body"><div className="booking-detail-vehicle"><div><strong>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</strong>
+    <div className="corporate-record-body"><div className="booking-detail-vehicle">{desk&&<img className="booking-detail-car" src={sedanArt} alt=""/>}<div><strong>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</strong>
       {r.license_plate && r.vehicle_name && r.vehicle_name!==r.license_plate && <small>{r.vehicle_name}</small>}</div>
       <span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span></div>
       <dl>{details.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       {desk&&r.note&&<div className="corporate-booking-note"><h3>메모</h3><p>{r.note}</p></div>}
-      {r.approval_required && <ReservationApproval row={r} reviewable={access.review_reservations!==false} onFinished={onClose}/>}
+      {r.approval_required && (desk?<ReservationApproval compact row={r} reviewable={reviewable} decision={decision} onDecision={setDecision} onFinished={onClose}/>:<ReservationApproval row={r} reviewable={reviewable} onFinished={onClose}/>)}
     </div>
   </Modal>;
 }

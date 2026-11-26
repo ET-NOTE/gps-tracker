@@ -23,7 +23,7 @@ const pending=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resol
 // Exercise the actual component functions; mutation hooks intentionally leave
 // isPending false to reproduce two clicks before React Query updates its state.
 async function components({save=async()=>{},view='list'}={}) {
- const calls=[],alerts=[],queries=[];
+ const calls=[],alerts=[],queries=[],approvals=[];
  const source=await readFile(new URL('../src/components/CorporatePanel.jsx',import.meta.url),'utf8');
  class Clock extends Date {constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}}
  const context=vm.createContext({console,Date:Clock,localStorage:{getItem:()=>view,setItem(){}}});
@@ -44,18 +44,18 @@ async function components({save=async()=>{},view='list'}={}) {
   alertDialog:async args=>{alerts.push(args);},
  };
  const companyPicker=({value,onChange})=>React.createElement('select',{'aria-label':'회사 운행 목적',value,onChange:e=>onChange(e.target.value)});
- const real={react:React,'react/jsx-runtime':jsx,'./business/CompanyPurposePicker':{default:companyPicker},'../api':{api:{annotateFleetVehicleTrip:(id,payload)=>write('trip',{id,...payload})}},
+ const real={'./business/ReservationApproval':{default:props=>{approvals.push(props);return null;}},react:React,'react/jsx-runtime':jsx,'./business/CompanyPurposePicker':{default:companyPicker},'../api':{api:{annotateFleetVehicleTrip:(id,payload)=>write('trip',{id,...payload})}},
   '../lib/business':{...business,businessDate:(value=now)=>business.businessDate(value)},'../lib/businessExport':businessExport,'../lib/ntsReport':ntsReport,'../lib/tripQuality':tripQuality,'../lib/tripOdometer':tripOdometer};
  const imports=new Map();
  for(const match of source.matchAll(/import\s+([^;]+?)\s+from\s+['"]([^'"]+)['"]/g)) {
   const names=match[1].match(/\{([^}]+)\}/)?.[1].split(',').map(name=>name.trim().split(/\s+as\s+/)[0])||[];
   imports.set(match[2],[...new Set([...(imports.get(match[2])||[]),...names])]);
  }
- const code=(await transform(source+'\nexport {TripEditorModal,ReservationDialog,ReservationsTab,localToIso,isoToLocal};',{loader:'jsx',jsx:'automatic',format:'esm'})).code;
+ const code=(await transform(source+'\nexport {TripEditorModal,ReservationDialog,ReservationDetails,ReservationsTab,localToIso,isoToLocal};',{loader:'jsx',jsx:'automatic',format:'esm'})).code;
  const mod=new vm.SourceTextModule(code,{context});
  await mod.link(name=>moduleOf(real[name]||Object.fromEntries(['default',...(imports.get(name)||[])].map(key=>[key,mocks[key]||noop]))));
  await mod.evaluate();
- return {...mod.namespace,Modal,calls,alerts,queries};
+ return {...mod.namespace,Modal,calls,alerts,queries,approvals};
 }
 
 // New desktop bookings need a visit place before saving.
@@ -251,5 +251,19 @@ test('desktop booking saves a trimmed optional destination address',async()=>{
  await act(async()=>address().props.onChange({target:{value:'  부산 해운대구  '}}));
  await act(async()=>button(r,'저장').props.onClick());
  assert.equal(c.calls[1].payload.body.destination_address,'부산 해운대구');
+ await act(async()=>r.unmount());
+});
+
+test('desktop reservation detail footer carries review, change and cancel in the design order',async()=>{
+ const c=await components();let r;
+ const row={...booking,status:'pending',approval_required:true,can_review:true,created_at:'2026-11-16T01:00:00Z'};
+ await act(async()=>{r=create(React.createElement(c.ReservationDetails,{row,onEdit(){},onCancel:async()=>false,onClose(){}}));});
+ const labels=()=>r.root.findAll(n=>n.type==='button').map(n=>text(n.children).trim());
+ assert.deepEqual(labels(),['반려','승인','변경','예약 취소']);
+ await act(async()=>button(r,'승인').props.onClick());
+ assert.equal(c.approvals.at(-1).decision,'approve');assert.equal(c.approvals.at(-1).compact,true);
+ await act(async()=>c.approvals.at(-1).onDecision(null));
+ await act(async()=>r.update(React.createElement(c.ReservationDetails,{row:{...row,status:'planned',can_review:false},onEdit(){},onCancel:async()=>false,onClose(){}})));
+ assert.deepEqual(labels(),['변경','예약 취소']);
  await act(async()=>r.unmount());
 });

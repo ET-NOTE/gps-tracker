@@ -128,3 +128,25 @@
 .corporate-record-body .corporate-booking-note {margin-top:23px}
 .corporate-record-body .corporate-booking-note h3 {margin:0 0 12px; font:500 13px/1.5 var(--fleet-font); color:#657388}
 .corporate-record-body .corporate-booking-note p {margin:0; font:400 12px/1.7 var(--fleet-font); color:var(--text-2); white-space:pre-wrap; overflow-wrap:anywhere}
+/* Round 33: reservation detail drawer follows the desktop design */
+@media screen and (min-width:768px) {
+  /* corporate-console.css gives every modal/drawer business-button 18px/48px; detail footers stay compact */
+  .gps-modal .corporate-detail-actions .business-button,.business-drawer .expense-detail-content .business-button,
+  .gps-modal .corporate-record-body .fleet-reservation-review .business-button {font:400 12px/1.5 var(--fleet-font)!important; min-height:36px!important; padding:8px 13px!important; border-radius:8px!important}
+  .booking-detail-actions .business-button:not(.is-primary) {background:#fff; border-color:#e0e5ec; color:#5b6574}
+  .booking-detail-actions .business-button.booking-reject {background:#eef2f7; border-color:#eef2f7}
+  .booking-detail-actions .business-button.booking-cancel-link {background:transparent; border-color:transparent}
+  .gps-modal:has(.corporate-record-body)>div:first-child>button[aria-label="닫기"] {display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; min-width:32px!important; min-height:32px!important; padding:0!important; border-radius:8px!important; color:#818a98!important}
+  .gps-modal:has(.corporate-record-body)>div:first-child>button[aria-label="닫기"] .gps-modal-close-text {display:none}
+  .gps-modal:has(.corporate-record-body)>div:first-child>button[aria-label="닫기"] .gps-modal-close-icon {display:block!important}
+  .gps-modal:has(.booking-detail-vehicle)>div:first-child>div>div+div {font-size:11px!important; color:#77808e!important}
+  .corporate-record-body .booking-detail-vehicle {justify-content:flex-start; gap:12px}
+  .corporate-record-body .booking-detail-vehicle>div {flex:1}
+  .corporate-record-body .booking-detail-car {width:70px; height:33px; object-fit:contain; flex:none}
+  .corporate-record-body .booking-detail-vehicle strong {display:block; font:500 13px/1.55 var(--fleet-font); color:#657388}
+  .corporate-record-body .booking-detail-vehicle small {font:400 14px/1.55 var(--fleet-font)!important; color:#77808e!important}
+  .corporate-record-body dl>div {display:flex; justify-content:space-between; align-items:baseline}
+  .corporate-record-body dl dt {flex:none; color:#939ca9!important}
+  .corporate-record-body dl dd {flex:1; min-width:0; text-align:right; color:#5b6676!important}
+  .corporate-record-body .fleet-reservation-review>strong {display:none}
+}
