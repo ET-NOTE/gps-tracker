@@ -150,3 +150,16 @@
   .corporate-record-body dl dd {flex:1; min-width:0; text-align:right; color:#5b6676!important}
   .corporate-record-body .fleet-reservation-review>strong {display:none}
 }
+/* Round 34: reservation detail drawer spacing measured against the design */
+@media screen and (min-width:768px) {
+  .gps-member-modal .gps-modal:has(.booking-detail-vehicle)>div:first-child {align-items:flex-start!important}
+  .corporate-record-body .booking-detail-vehicle {align-items:center; min-height:54px; padding-bottom:20px; border-bottom:1px solid var(--record-line)}
+  .corporate-record-body .booking-detail-vehicle small {margin-top:12px}
+  .corporate-record-body:has(.booking-detail-vehicle) dl {margin-top:20px; border-top:0}
+  .corporate-record-body:has(.booking-detail-vehicle) dl>div:last-child {border-bottom:0}
+  .corporate-record-body .corporate-booking-note {margin:0 0 23px}
+  .corporate-record-body .corporate-booking-note h3 {margin:0 0 12px; font:500 13px/1.55 var(--fleet-font); color:#657388}
+  .corporate-record-body .corporate-booking-note p {font:400 12px/1.7 var(--fleet-font); color:#77808e}
+  .corporate-record-body:has(.booking-detail-vehicle) .fleet-reservation-review {margin:0; padding:0; border:0; border-radius:0; background:transparent}
+  .corporate-record-body:has(.booking-detail-vehicle) dl+.fleet-reservation-review {margin-top:20px}
+}
