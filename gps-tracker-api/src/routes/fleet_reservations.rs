@@ -54,8 +54,23 @@ struct Input {
     company_purpose_id: Option<Option<i64>>,
     report_purpose: Option<String>,
     note: Option<String>,
+    /// Absent keeps the saved address (older clients); null or blank clears it.
+    #[serde(default, deserialize_with = "present_text")]
+    destination_address: Option<Option<String>>,
     status: Option<String>,
     updated_at: Option<DateTime<Utc>>,
+}
+fn present_text<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Option<String>>, D::Error> {
+    Option::<String>::deserialize(d).map(Some)
+}
+/// Trim the address, store blanks as NULL and refuse more than 200 characters.
+fn destination_address(value: Option<Option<String>>) -> AppResult<Option<Option<String>>> {
+    let Some(value) = value else { return Ok(None) };
+    let value = value.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty());
+    if value.as_ref().is_some_and(|s| s.chars().count() > 200) {
+        return Err(AppError::BadRequest("목적지 주소는 200자 이내로 입력해 주세요.".into()));
+    }
+    Ok(Some(value))
 }
 const ROW:&str="SELECT to_jsonb(r)||jsonb_build_object('vehicle_name',v.name,'license_plate',v.license_plate,'driver_name',COALESCE(r.driver_name_snapshot,s.name),'vehicle_id',r.fleet_vehicle_id,'company_purpose_name',p.name) FROM vehicle_reservations r JOIN fleet_vehicles v ON v.id=r.fleet_vehicle_id AND v.owner_id=r.user_id LEFT JOIN staff s ON s.id=r.driver_staff_id AND s.user_id=r.user_id LEFT JOIN fleet_trip_purposes p ON p.id=r.company_purpose_id AND p.owner_id=r.user_id";
 async fn list(
@@ -112,9 +127,10 @@ async fn save(
     state: &AppState,
     owner: i64,
     id: Option<i64>,
-    input: Input,
+    mut input: Input,
     scope: Option<crate::auth::fleet::FleetScope>,
 ) -> AppResult<Value> {
+    input.destination_address = destination_address(input.destination_address.take())?;
     if input.ends_at <= input.starts_at
         || input.ends_at - input.starts_at > chrono::Duration::days(366)
     {
@@ -249,12 +265,15 @@ async fn save(
             ));
         }
     }
+    let address = input.destination_address.clone().unwrap_or_else(|| {
+        before.as_ref().and_then(|row| row["destination_address"].as_str().map(str::to_owned))
+    });
     let saved: i64 = if let Some(id) = id {
-        sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,report_purpose=$10,company_purpose_id=$11,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
-            .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(company_purpose_id).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("UPDATE vehicle_reservations SET fleet_vehicle_id=$3,device_id=NULL,driver_staff_id=$4,starts_at=$5,ends_at=$6,purpose=$7,note=$8,status=$9,report_purpose=$10,company_purpose_id=$11,destination_address=$12,alerted_at=CASE WHEN starts_at IS DISTINCT FROM $5 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE alerted_at END,ended_alerted_at=CASE WHEN ends_at IS DISTINCT FROM $6 OR fleet_vehicle_id IS DISTINCT FROM $3 THEN NULL ELSE ended_alerted_at END,updated_at=clock_timestamp() WHERE id=$1 AND user_id=$2 RETURNING id")
+            .bind(id).bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(company_purpose_id).bind(&address).fetch_one(&mut *tx).await.map_err(booking_error)?
     } else {
-        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose,submitted_by,company_purpose_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id")
-            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(actor).bind(company_purpose_id).fetch_one(&mut *tx).await.map_err(booking_error)?
+        sqlx::query_scalar("INSERT INTO vehicle_reservations(user_id,fleet_vehicle_id,driver_staff_id,starts_at,ends_at,purpose,note,status,report_purpose,submitted_by,company_purpose_id,destination_address) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id")
+            .bind(owner).bind(input.vehicle_id).bind(input.driver_staff_id).bind(input.starts_at).bind(input.ends_at).bind(input.purpose).bind(input.note).bind(status).bind(input.report_purpose).bind(actor).bind(company_purpose_id).bind(&address).fetch_one(&mut *tx).await.map_err(booking_error)?
     };
     let mut row: Value = sqlx::query_scalar(&format!("{ROW} WHERE r.id=$1 AND r.user_id=$2"))
         .bind(saved)
@@ -344,5 +363,38 @@ fn booking_error(e: sqlx::Error) -> AppError {
         AppError::Conflict("이용 시간이 겹치는 예약이 있습니다.".into())
     } else {
         AppError::Database(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    fn input(extra: Value) -> Input {
+        let mut body = json!({"vehicle_id":1,"starts_at":"2026-11-20T00:00:00Z","ends_at":"2026-11-20T01:00:00Z"});
+        body.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+        serde_json::from_value(body).unwrap()
+    }
+    #[test]
+    fn absent_address_keeps_and_null_or_blank_clears() {
+        assert_eq!(destination_address(input(json!({})).destination_address).unwrap(), None);
+        assert_eq!(destination_address(input(json!({"destination_address":null})).destination_address).unwrap(), Some(None));
+        assert_eq!(destination_address(input(json!({"destination_address":"   "})).destination_address).unwrap(), Some(None));
+        assert_eq!(
+            destination_address(input(json!({"destination_address":"  서울특별시 강남구 테헤란로 123 "})).destination_address).unwrap(),
+            Some(Some("서울특별시 강남구 테헤란로 123".into()))
+        );
+    }
+    #[test]
+    fn address_is_limited_to_200_characters() {
+        assert!(destination_address(Some(Some("가".repeat(200)))).is_ok());
+        assert!(matches!(destination_address(Some(Some("가".repeat(201)))), Err(AppError::BadRequest(_))));
+    }
+    #[test]
+    fn changed_address_needs_another_review_but_absent_address_does_not() {
+        let row = json!({"fleet_vehicle_id":1,"starts_at":"2026-11-20T00:00:00Z","ends_at":"2026-11-20T01:00:00Z","status":"planned","destination_address":"서울"});
+        assert_eq!(review::edited_status(&row, &input(json!({})), "planned").unwrap(), "planned");
+        assert_eq!(review::edited_status(&row, &input(json!({"destination_address":"서울"})), "planned").unwrap(), "planned");
+        assert_eq!(review::edited_status(&row, &input(json!({"destination_address":"부산"})), "planned").unwrap(), "pending");
     }
 }

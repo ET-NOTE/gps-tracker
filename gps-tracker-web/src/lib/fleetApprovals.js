@@ -27,7 +27,7 @@ export function filterApprovals(records,{status,person,department,query}) {
   const terms=query.toLocaleLowerCase('ko').trim().split(/\s+/).filter(Boolean);
   return records.filter(row=>{
     if(status&&row.status!==status||person&&row.personKey!==person||department&&row.departmentKey!==department)return false;
-    const text=[row.title,row.vehicle,row.person,row.department,row.raw.license_plate,row.raw.note].filter(Boolean).join(' ').toLocaleLowerCase('ko');
+    const text=[row.title,row.vehicle,row.person,row.department,row.raw.license_plate,row.raw.destination_address,row.raw.note].filter(Boolean).join(' ').toLocaleLowerCase('ko');
     return terms.every(term=>text.includes(term));
   });
 }

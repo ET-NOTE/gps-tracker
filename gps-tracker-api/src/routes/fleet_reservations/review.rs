@@ -66,7 +66,8 @@ pub(super) fn edited_status<'a>(
         || row["purpose"].as_str() != input.purpose.as_deref()
         || input.company_purpose_id.is_some_and(|id| id != row["company_purpose_id"].as_i64())
         || row["report_purpose"].as_str() != input.report_purpose.as_deref()
-        || row["note"].as_str() != input.note.as_deref();
+        || row["note"].as_str() != input.note.as_deref()
+        || input.destination_address.as_ref().is_some_and(|a| a.as_deref() != row["destination_address"].as_str());
     match (previous, requested) {
         ("pending", "pending") => Ok("pending"),
         ("planned", "planned") if changed => Ok("pending"),

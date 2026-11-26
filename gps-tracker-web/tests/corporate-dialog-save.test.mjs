@@ -238,3 +238,18 @@ test('desktop booking starts without a vehicle and needs a visit place',async()=
  assert.equal(c.calls.length,1);assert.equal(c.calls[0].payload.purpose,'A사 본사');assert.equal(c.calls[0].payload.vehicle_id,vehicle.id);
  await act(async()=>r.unmount());
 });
+
+test('desktop booking saves a trimmed optional destination address',async()=>{
+ const c=await components();let r;
+ await act(async()=>{r=create(React.createElement(c.ReservationDialog,props('create')));});await visit(r);
+ await act(async()=>button(r,'예약 등록').props.onClick());
+ assert.equal(c.calls[0].payload.destination_address,null);
+ await act(async()=>r.unmount());
+ await act(async()=>{r=create(React.createElement(c.ReservationDialog,{...props('update'),init:{...booking,destination_address:'서울 중구'}}));});
+ const address=()=>r.root.findByProps({placeholder:'예: 서울특별시 강남구 테헤란로 123'});
+ assert.equal(address().props.value,'서울 중구');assert.equal(address().props.maxLength,200);
+ await act(async()=>address().props.onChange({target:{value:'  부산 해운대구  '}}));
+ await act(async()=>button(r,'저장').props.onClick());
+ assert.equal(c.calls[1].payload.body.destination_address,'부산 해운대구');
+ await act(async()=>r.unmount());
+});
