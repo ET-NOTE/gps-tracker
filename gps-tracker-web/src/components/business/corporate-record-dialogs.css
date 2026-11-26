@@ -115,3 +115,12 @@
 .corporate-booking-fields>.corporate-booking-wide {grid-column:1/-1}
 .corporate-booking-fields:not(:has(select[aria-label="운행목적"]))>.corporate-booking-purpose {grid-column:1/-1}
 .corporate-booking-fields>.corporate-booking-hint {grid-column:1/-1; margin:-11px 0 0; font:400 11px/1.5 var(--fleet-font); color:var(--text-3,#8d98a6)}
+/* Round 29: reservation form fields and form dialog close icon (desktop design) */
+@media screen and (min-width:768px) {
+  .gps-modal .corporate-booking-fields.corporate-booking-fields :is(input,select,textarea) {border-radius:8px!important}
+  .gps-modal .corporate-booking-fields.corporate-booking-fields select {padding:9px 31px 9px 11px!important; text-overflow:ellipsis}
+  .gps-modal .corporate-booking-fields>.corporate-booking-hint {color:#9aa3af!important; font-size:11px!important}
+  .gps-modal:has(.service-form-actions)>div:first-child>button[aria-label="닫기"] {display:inline-flex; align-items:center; justify-content:center; border-radius:8px!important; color:#818a98!important}
+  .gps-modal:has(.service-form-actions)>div:first-child>button[aria-label="닫기"] .gps-modal-close-text {display:none}
+  .gps-modal:has(.service-form-actions)>div:first-child>button[aria-label="닫기"] .gps-modal-close-icon {display:block!important}
+}

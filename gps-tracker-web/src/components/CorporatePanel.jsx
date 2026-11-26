@@ -1070,9 +1070,9 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
       {invalidPeriod&&<BusinessError>시작일과 종료일을 1년 이내로 선택해 주세요.</BusinessError>}
       {!error && !invalidPeriod && viewMode==='list' && list && <section className="corporate-reservation-ledger">
         <div className="corporate-reservation-scroll" role="region" aria-label="차량 예약 목록 · 좌우 스크롤" tabIndex={0}>
-          <table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">운행목적 / 메모</th><th scope="col">상태</th></tr></thead>
+          {!(mockupDesk&&!list.length)&&<table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">운행목적 / 메모</th><th scope="col">상태</th></tr></thead>
             <tbody>{list.map(r=><ReservationRow key={r.id} r={r} onOpen={()=>setOpened(r)}/>)}</tbody>
-          </table>
+          </table>}
           {!list.length&&mockupDesk&&<BusinessEmpty mockup title="조회된 내역이 없습니다">기간이나 검색 조건을 변경해 보세요.</BusinessEmpty>}{!list.length&&!mockupDesk&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
         </div>
         <footer className="corporate-reservation-footer">{list.length}건</footer>

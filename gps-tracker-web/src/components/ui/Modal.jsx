@@ -134,7 +134,7 @@ export default function Modal({
                   borderRadius: 'var(--radius-sm)',
                   fontSize: 18, lineHeight: 1, minWidth: 44, minHeight: 44, flexShrink: 0,
                 }}
-              >×</button>
+              ><span className="gps-modal-close-text">×</span><svg className="gps-modal-close-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'none' }}><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             )}
           </div>
         )}
