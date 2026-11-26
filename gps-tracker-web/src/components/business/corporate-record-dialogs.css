@@ -163,3 +163,11 @@
   .corporate-record-body:has(.booking-detail-vehicle) .fleet-reservation-review {margin:0; padding:0; border:0; border-radius:0; background:transparent}
   .corporate-record-body:has(.booking-detail-vehicle) dl+.fleet-reservation-review {margin-top:20px}
 }
+/* Round 35: reservation status badge as in the design (10px, dot, 4px 7px) */
+@media screen and (min-width:768px) {
+  .business-workspace--corporate .corporate-reservation-badge,.gps-modal .corporate-record-body .corporate-reservation-badge {
+    display:inline-flex!important; align-items:center; gap:5px; padding:4px 7px!important; border-radius:5px!important;
+    font:400 10px/1.4 var(--fleet-font)!important; white-space:nowrap;
+  }
+  .gps-modal .corporate-record-body .corporate-reservation-badge::before {content:''; width:4px; height:4px; border-radius:50%; background:currentColor; flex:none}
+}

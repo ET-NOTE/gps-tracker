@@ -934,6 +934,16 @@ const RESV_STATUS = {
   completed:   { label: '완료',   color: 'var(--text-3)',  bg: 'var(--surface-2)' },
   cancelled:   { label: '취소',   color: 'var(--danger)',  bg: 'color-mix(in srgb, var(--danger) 12%, transparent)' },
 };
+// Desktop design badges (list, detail, week and month views).
+const RESV_STATUS_DESK = {
+  pending:     { label:'승인 대기', color:'#b77923', bg:'#fff5e5' },
+  rejected:    { label:'반려',     color:'#b94e59', bg:'#fff0f1' },
+  planned:     { label:'예약 승인', color:'#26856b', bg:'#eaf6f0' },
+  in_progress: { label:'이용 중',  color:'#26856b', bg:'#eaf6f0' },
+  completed:   { label:'이용 완료', color:'#7b8593', bg:'#f0f2f6' },
+  cancelled:   { label:'예약 취소', color:'#7b8593', bg:'#f0f2f6' },
+};
+const resvState=(status,desk)=>(desk?RESV_STATUS_DESK:RESV_STATUS)[status]||(desk?RESV_STATUS_DESK:RESV_STATUS).planned;
 
 function shiftBookingDay(day, days) {
   const date = new Date(day + 'T00:00:00Z');
@@ -1062,7 +1072,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
             <label className="fleet-date-endpoint"><span>시작일</span><input type="date" aria-label="예약 조회 시작일" value={dates.from} max={dates.to} onChange={e=>setDates({...dates,from:e.target.value})}/></label><span aria-hidden="true">~</span>
             <label className="fleet-date-endpoint"><span>종료일</span><input type="date" aria-label="예약 조회 종료일" value={dates.to} min={dates.from} onChange={e=>setDates({...dates,to:e.target.value})}/></label>
           </div></div>}
-          {viewMode==='list'&&<label>예약 상태<select aria-label="예약 상태 필터" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active','예정·진행',activeCount],['completed','완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled','취소',cancelledCount]].map(([value,label,count])=><option key={value} value={value}>{mockupDesk&&value==='all'?'전체 상태':label+' ('+(known?count:'—')+')'}</option>)}</select></label>}
+          {viewMode==='list'&&<label>예약 상태<select aria-label="예약 상태 필터" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{[['all','전체',searched?.length],['pending','승인 대기',searched?.filter(r=>r.status==='pending').length],['active',mockupDesk?'예약 승인':'예정·진행',activeCount],['completed',mockupDesk?'이용 완료':'완료',completedCount],['rejected','반려',searched?.filter(r=>r.status==='rejected').length],['cancelled',mockupDesk?'예약 취소':'취소',cancelledCount]].map(([value,label,count])=><option key={value} value={value}>{mockupDesk&&value==='all'?'전체 상태':label+' ('+(known?count:'—')+')'}</option>)}</select></label>}
           <label>차량<select value={vehicleFilter} onChange={e=>setVehicleFilter(e.target.value)}><option value="">전체 차량</option>{devices.map(d=><option key={d.id} value={d.id}>{reportVehicleLabel(d)}</option>)}</select></label>
           <label>예약 운전자<select value={driverFilter} onChange={e=>setDriverFilter(e.target.value)}><option value="">전체 예약 운전자</option><option value="unassigned">미지정</option>{staffAll?.map(s=><option value={s.id} key={s.id}>{s.name}{s.active===false?' (비활성)':''}</option>)}</select></label>
           <label>예약 운전자 부서<select value={driverDepartment} onChange={e=>setDriverDepartment(e.target.value)}><option value="">전체 부서</option>{departmentOptions.map(name=><option key={name}>{name}</option>)}</select></label>
@@ -1093,6 +1103,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
 }
 
 function ReservationWeek({week,today,list,setWeek,onNew,onOpen}) {
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const weekdays=['월','화','수','목','금','토','일'];
   return <section className="fleet-booking-week" aria-label="주간 차량 예약">
     <header>
@@ -1107,7 +1118,7 @@ function ReservationWeek({week,today,list,setWeek,onNew,onOpen}) {
         {bookings.map(r=><button type="button" className="fleet-week-event" key={r.id} aria-label={`예약 ${r.id} 상세·수정`} onClick={()=>onOpen(r)}>
           <strong>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</strong>
           <small>{businessDate(r.starts_at)<day?'이전날부터':kstTime(r.starts_at)} ~ {businessDate(Date.parse(r.ends_at)-1)>day?'다음날까지':kstTime(r.ends_at)}</small>
-          <small>{r.driver_name||'미지정'} · {RESV_STATUS[r.status]?.label||r.status}</small>
+          <small>{r.driver_name||'미지정'} · {(desk?RESV_STATUS_DESK:RESV_STATUS)[r.status]?.label||r.status}</small>
         </button>)}
         {!bookings.length&&<p>예약 없음</p>}
       </section>;
@@ -1124,7 +1135,7 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
   const reviewable=access.review_reservations!==false;
   const reviewNow=desk && r.approval_required && r.can_review && reviewable && r.status==='pending';
   const [decision,setDecision]=useState(null);
-  const state=RESV_STATUS[r.status] || RESV_STATUS.planned;
+  const state=resvState(r.status,desk);
   const details=desk?[['운전자',r.driver_name || '미지정'],['이용 구분',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['운행목적',r.company_purpose_name || '미지정'],
     ['시작 시간',dotDateTime(r.starts_at)],['종료 시간',dotDateTime(r.ends_at)],['방문 장소',r.purpose || '—'],['목적지 주소',r.destination_address || '미등록'],['요청일',r.created_at?dotDateTime(r.created_at).slice(0,10):'—']]:[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
     ['종료 시간',kstDateTime(r.ends_at)],['운행기록부 용무',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']];
@@ -1150,7 +1161,7 @@ function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
 
 function ReservationRow({r,onOpen}) {
   const deskDates=!useCorporatePhone()&&hideOutsideMockup;
-  const state=RESV_STATUS[r.status]||RESV_STATUS.planned;
+  const state=resvState(r.status,deskDates);
   const untilStart=Math.round((Date.parse(r.starts_at)-Date.now())/60000),untilEnd=Math.round((Date.parse(r.ends_at)-Date.now())/60000);
   const imminent=r.status==='planned'&&untilStart>=0&&untilStart<=60;
   const returning=r.status==='in_progress'&&untilEnd>=0&&untilEnd<=60;
@@ -1168,6 +1179,7 @@ function ReservationRow({r,onOpen}) {
 // (2026-07-28) Stage-4F-2: 월 캘린더 뷰. 7x6 grid, 각 셀 = 하루.
 // 각 날짜에는 두 건을 먼저 표시하고 같은 날의 나머지 예약은 목록에서 연다.
 function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const [openDay, setOpenDay] = useState(null);
   const [y, m] = ym.split('-').map(Number);
   const monthStart = new Date(y, m - 1, 1);
@@ -1244,7 +1256,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
                 {c.date.getDate()}
               </button>
               {dayResv.slice(0, MAX_BADGES).map(r => {
-                const s = RESV_STATUS[r.status] || RESV_STATUS.planned;
+                const s = resvState(r.status, desk);
                 return (
                   <button type="button" className="corporate-calendar-event" key={r.id} aria-haspopup="dialog"
                     onClick={event => showBooking(event, r)} style={{
@@ -1274,7 +1286,7 @@ function ReservationCalendar({ ym, list, onDayClick, onEventClick }) {
         {onDayClick && openDay.startsWith(ym+'-') && <BusinessButton primary onClick={() => onDayClick(openDay)}>이 날짜에 예약</BusinessButton>}
       </div>}>
       {openBookings.length ? <ul className="corporate-calendar-bookings">{openBookings.map(r => {
-        const state = RESV_STATUS[r.status] || RESV_STATUS.planned;
+        const state = resvState(r.status, desk);
         const plate = r.license_plate?.trim();
         const vehicle = (r.vehicle_name || r.device_name)?.trim();
         const vehicleLabel = vehicle && plate && vehicle.replace(/\s/g, '') === plate.replace(/\s/g, '')

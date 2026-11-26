@@ -267,3 +267,14 @@ test('desktop reservation detail footer carries review, change and cancel in the
  assert.deepEqual(labels(),['변경','예약 취소']);
  await act(async()=>r.unmount());
 });
+
+test('desktop reservation badge uses the design status names and colors',async()=>{
+ const c=await components();let r;
+ const open=row=>act(async()=>{r=create(React.createElement(c.ReservationDetails,{row,onEdit(){},onCancel:async()=>false,onClose(){}}));});
+ const badge=()=>r.root.find(n=>n.props?.className==='corporate-reservation-badge');
+ for(const [status,label,color] of [['planned','예약 승인','#26856b'],['pending','승인 대기','#b77923'],['completed','이용 완료','#7b8593'],['cancelled','예약 취소','#7b8593'],['rejected','반려','#b94e59'],['in_progress','이용 중','#26856b']]){
+  await open({...booking,status});
+  assert.equal(text(badge().children),label);assert.equal(badge().props.style.color,color);
+  await act(async()=>r.unmount());
+ }
+});
