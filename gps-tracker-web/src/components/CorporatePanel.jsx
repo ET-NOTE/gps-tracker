@@ -1070,7 +1070,7 @@ function ReservationsTab({ devices, request,requestsOnly=false }) {
       {invalidPeriod&&<BusinessError>시작일과 종료일을 1년 이내로 선택해 주세요.</BusinessError>}
       {!error && !invalidPeriod && viewMode==='list' && list && <section className="corporate-reservation-ledger">
         <div className="corporate-reservation-scroll" role="region" aria-label="차량 예약 목록 · 좌우 스크롤" tabIndex={0}>
-          {!(mockupDesk&&!list.length)&&<table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">운행목적 / 메모</th><th scope="col">상태</th></tr></thead>
+          {!(mockupDesk&&!list.length)&&<table className="corporate-reservation-table"><thead><tr><th scope="col">차량</th><th scope="col">운전자</th><th scope="col">이용 일정</th><th scope="col">{mockupDesk?'운행목적 / 방문 장소':'운행목적 / 메모'}</th><th scope="col">상태</th></tr></thead>
             <tbody>{list.map(r=><ReservationRow key={r.id} r={r} onOpen={()=>setOpened(r)}/>)}</tbody>
           </table>}
           {!list.length&&mockupDesk&&<BusinessEmpty mockup title="조회된 내역이 없습니다">기간이나 검색 조건을 변경해 보세요.</BusinessEmpty>}{!list.length&&!mockupDesk&&<BusinessEmpty title={query?'검색 결과가 없습니다.':requestsOnly?'조회된 승인 요청이 없습니다.':'예약이 없습니다.'}>{requestsOnly||!canWrite?'조회 기간이나 상태를 변경해 주세요.':query?'검색어나 상태를 변경해 주세요.':'새 예약을 등록하거나 조회 상태를 변경해 주세요.'}</BusinessEmpty>}
@@ -1110,10 +1110,12 @@ function ReservationWeek({week,today,list,setWeek,onNew,onOpen}) {
 
 function ReservationDetails({row:r,onEdit,onCancel,onClose}) {
   const access=useFleetAccess();
+  const desk=!useCorporatePhone()&&hideOutsideMockup;
   const writable=access.write_reservations!==false && r.can_edit!==false;
   const editable=writable && !(r.approval_required && ['rejected','cancelled','completed'].includes(r.status));
   const state=RESV_STATUS[r.status] || RESV_STATUS.planned;
-  const details=[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
+  const details=desk?[['운전자',r.driver_name || '미지정'],['운행목적',r.company_purpose_name || '미지정'],['방문 장소',r.purpose || '—'],['시작 시간',kstDateTime(r.starts_at)],
+    ['종료 시간',kstDateTime(r.ends_at)],['이용 구분',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']]:[['운전자',r.driver_name || '미지정'],['운행 목적',bookingPurpose(r) || '미지정'],['시작 시간',kstDateTime(r.starts_at)],
     ['종료 시간',kstDateTime(r.ends_at)],['운행기록부 용무',{commute:'출퇴근',business:'업무',other:'기타'}[r.report_purpose] || '미지정'],['메모',r.note || '—']];
   return <Modal open placement="end" size={470} title="예약 상세" subtitle={kstDateTime(r.starts_at)+' · '+(r.driver_name||'운전자 미지정')} onClose={onClose}
     footer={<div className="corporate-detail-actions">
@@ -1140,7 +1142,7 @@ function ReservationRow({r,onOpen}) {
   }}>
     <td data-label="차량" className="corporate-reservation-vehicle"><i className="corporate-reservation-thumb" aria-hidden="true"><Icon name="car" size={18}/></i><span><button type="button" className="booking-detail-link" onClick={onOpen} aria-label={`예약 ${r.id} 보기`}>{r.license_plate||r.vehicle_name||r.device_name||'차량'}</button>{r.license_plate&&r.vehicle_name&&r.vehicle_name!==r.license_plate&&<small>{r.vehicle_name}</small>}</span></td>
     <td data-label="운전자">{r.driver_name||'미지정'}</td><td data-label="이용 일정">{deskDates?<>{dotDateTime(r.starts_at)}<small>{dotDateTime(r.ends_at)} 종료</small></>:<>{kstDateTime(r.starts_at)}<small>~ {kstDateTime(r.ends_at)}</small></>}</td>
-    <td data-label="운행목적 / 메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>
+    {deskDates?<td data-label="운행목적 / 방문 장소"><span>{r.company_purpose_name||'—'}</span>{r.purpose&&<small>{r.purpose}</small>}</td>:<td data-label="운행목적 / 메모"><span>{bookingPurpose(r)||'—'}</span>{r.note&&<small>{r.note}</small>}</td>}
     <td data-label="상태"><span className="corporate-reservation-badge" style={{color:state.color,background:state.bg}}>{state.label}</span>{imminent&&<small className="corporate-reservation-alert">{untilStart===0?'지금 시작':untilStart+'분 후 시작'}</small>}{returning&&<small className="corporate-reservation-alert">{untilEnd===0?'지금 반납':untilEnd+'분 후 반납'}</small>}</td>
   </tr>;
 }
@@ -1402,9 +1404,9 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
           <Select value={reportPurpose} onChange={e=>setReportPurpose(e.target.value)}><option value="">미지정</option><option value="commute">출퇴근</option><option value="business">업무</option><option value="other">기타</option></Select>
         </FormField>}
         <CompanyPurposePicker label={desk?'운행목적':undefined} value={companyPurposeId} onChange={setCompanyPurposeId} initialId={init?.company_purpose_id} initialName={init?.company_purpose_name}/>
-        <div className="corporate-booking-purpose"><FormField label="예약 목적">
+        <div className="corporate-booking-purpose"><FormField label={desk?'방문 장소':'예약 목적'}>
           <input value={purpose} onChange={e => setPurpose(e.target.value)}
-            placeholder="거래처 방문, 외근..." />
+            placeholder={desk?'예: A사 본사':'거래처 방문, 외근...'} />
         </FormField></div>
 
         <FormField label={desk?'메모':'메모 (선택)'}>
