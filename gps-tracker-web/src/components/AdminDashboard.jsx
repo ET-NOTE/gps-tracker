@@ -5,6 +5,7 @@ import { AdminPrivacyRequests } from './PrivacyRequests';
 import { useEffect, useRef, useState } from 'react';
 import { api, setTokens } from '../api';
 import Icon from './Icon';
+import { toggleTheme, useTheme } from '../theme';
 import { confirmDialog, alertDialog, promptDialog } from './Dialog';
 import { StatCard, StatCardGrid } from './shared/StatCard';
 
@@ -39,6 +40,7 @@ function initialAdminSubTab() {
 export default function AdminDashboard() { return <AdminSecurityGate><AdminDashboardContent /></AdminSecurityGate>; }
 
 function AdminDashboardContent() {
+  const theme = useTheme();
   const [subTab, setSubTabRaw] = useState(initialAdminSubTab);
   const setSubTab = (v) => { setSubTabRaw(v); try { localStorage.setItem('admin_subtab', v); } catch {} };
   // (2026-07-28) Stage-4I: 상단 stat 카드 — 관리 요약. mount 시 4개 병렬 fetch.
@@ -71,7 +73,17 @@ function AdminDashboardContent() {
           <Icon name="wrench" size={16} style={{ color: 'var(--primary)' }} />
           <span style={{ fontSize: 14, fontWeight: 700 }}>관리자 콘솔</span>
         </div>
-        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>권한별 관리 · 접근 기록</span>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>권한별 관리 · 접근 기록</span>
+          <button type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'} title={theme === 'dark' ? '라이트 모드' : '다크 모드'} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 10px',
+            border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)',
+            color: 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+          }}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={14} />
+            {theme === 'dark' ? '라이트' : '다크'}
+          </button>
+        </div>
       </header>
 
       {/* (2026-07-28 Stage-4I) Fleet 톤 통일 — 상단 4-stat card row */}
