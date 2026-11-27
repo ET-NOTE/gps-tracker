@@ -94,11 +94,10 @@ export default function FleetTripPurposes() {
               <small className={p.active?'is-active':''}>{p.active?'사용 중':'사용 중지'}</small></div></td>
             {canEdit&&<td><div className="fleet-purpose-actions" onClick={event=>event.stopPropagation()}>
               <button type="button" disabled={busy} aria-label={p.name+' 수정'} onClick={()=>open(p)}>수정</button>
-              <button type="button" disabled={busy} aria-label={p.name+' 삭제'} onClick={()=>open(p,true)}>삭제</button></div></td>}
+              {!(usage(p)>0)&&<button type="button" disabled={busy} aria-label={p.name+' 삭제'} onClick={()=>open(p,true)}>삭제</button>}</div></td>}
           </tr>)}</tbody>
         </table></div>}
     </BusinessSection>
-    <p className="fleet-purpose-note">기존 예약이나 운행 기록에서 사용한 목적은 삭제 대신 사용 중지됩니다.</p>
     {message&&<p className="fleet-purpose-info" role="status">{message}</p>}
     {error&&!draft&&!selected&&<BusinessError>{error}</BusinessError>}
     {selected&&<BusinessDrawer title="운행 목적 상세" subtitle={selected.name} onClose={()=>setSelectedId(null)}>

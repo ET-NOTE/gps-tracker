@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
+import { installDatePicker } from './lib/datePicker';
 const App = React.lazy(() => import('./App'));
 const DemoWorkspace = React.lazy(() => import('./pages/DemoWorkspace'));
 const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || undefined;
@@ -17,6 +18,8 @@ if ('serviceWorker' in navigator && import.meta.env.PROD
     });
   });
 }
+
+installDatePicker();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
