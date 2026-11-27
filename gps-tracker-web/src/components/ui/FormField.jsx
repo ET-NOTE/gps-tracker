@@ -41,7 +41,7 @@ export default function FormField({ label, hint, error, children, style }) {
       {label && (
         <label htmlFor={id} style={{
           fontSize: 'var(--field-label-size, 12px)', fontWeight: 600, color: 'var(--text-2)',
-        }}>{label}</label>
+        }}>{label}{child?.props.required && !/\*\s*$/.test(label) && <span aria-hidden="true" style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>}</label>
       )}
       {child ? cloneElement(child, { id, 'aria-describedby': [child.props['aria-describedby'], (hint || error) && helpId].filter(Boolean).join(' ') || undefined, 'aria-invalid': error ? true : child.props['aria-invalid'] }) : children}
       {error ? (

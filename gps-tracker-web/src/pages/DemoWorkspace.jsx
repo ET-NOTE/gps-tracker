@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import DemoMapHome from '../components/demo/DemoMapHome';
+import { demoVehicles } from '../components/demo/demoVehicles';
 import ReferenceFrame from '../components/demo/ReferenceFrame';
 import { demoHref, demoTarget } from '../components/demo/referenceNavigation';
 import { endSampleSession } from '../components/demo/referenceSession';
@@ -11,6 +12,9 @@ import '../components/demo/reference.css';
 
 const paths = ['/demo', '/demo/corporate', '/demo/rentcar', '/demo/cargo'];
 const mapLinks = {corporate:'/demo/corporate?view=trips', rentcar:'/demo/rentcar?view=rent-reservations', cargo:'/demo/cargo?view=cargo-dispatch'};
+
+// The route replay opens a vehicle of the service the visitor came from (the demo has one set of sample routes per service).
+const mapDevice = service => (demoVehicles.find(v => v.service === (service === 'rental' ? 'rentcar' : service)) || demoVehicles[0]).id;
 
 export default function DemoWorkspace() {
   useDemoTheme();
@@ -33,7 +37,7 @@ export default function DemoWorkspace() {
     change(loginNext ? '/login?next=' + encodeURIComponent(loginNext) : '/login', true);
   }
   function openDevice(id) { change('/demo?device=' + encodeURIComponent(id), Boolean(device)); }
-  if (!device) return <ReferenceFrame target={target} onRoute={next => change(demoHref(next))} onExit={exit} onMap={() => openDevice('seoul-01')}/>;
+  if (!device) return <ReferenceFrame target={target} onRoute={next => change(demoHref(next))} onExit={exit} onMap={service => openDevice(mapDevice(service))}/>;
   return <div className="demo-shell fleet-demo-history">
     <header><button onClick={() => change('/demo')}>‹ 지도 홈</button><h1>차량 경로 재생</h1><button onClick={exit}>체험 종료</button></header>
     <main className="demo-main"><div className="demo-content"><DemoMapHome device={device} onDevice={openDevice} openBusiness={service => change(mapLinks[service])}/></div></main>

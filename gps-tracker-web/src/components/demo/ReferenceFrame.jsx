@@ -46,7 +46,7 @@ export default function ReferenceFrame({target, onRoute, onExit, onMap}) {
         if (next.route !== actions.target.route || next.service !== actions.target.service) actions.onRoute(next);
       } else if (message.type === 'store' && message.state && typeof message.state === 'object') {
         setStorageWarning(!writeSampleSession(message.state));
-      } else if (message.type === 'map') actions.onMap();
+      } else if (message.type === 'map') actions.onMap(message.service);
       else if (message.type === 'exit') actions.onExit();
     }
     window.addEventListener('message', receive);

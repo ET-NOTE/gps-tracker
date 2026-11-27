@@ -1137,7 +1137,8 @@ fn make_fuel_price_fn(
                 .unwrap_or(dflt)
         };
         match fuel_type {
-            "gasoline" => env("FUEL_PRICE_GASOLINE_KRW", g),
+            // Hybrids burn gasoline; hydrogen has no per-litre price here, so it counts as 0 like ev.
+            "gasoline" | "hybrid" => env("FUEL_PRICE_GASOLINE_KRW", g),
             "diesel" => env("FUEL_PRICE_DIESEL_KRW", d),
             "lpg" => env("FUEL_PRICE_LPG_KRW", l),
             _ => 0,

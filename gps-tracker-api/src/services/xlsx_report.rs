@@ -63,7 +63,7 @@ pub struct ReportContext<'a> {
     pub purpose_filter: Option<Vec<String>>,
     pub corp: &'a CorpInfoLite,
     pub per_device: Vec<(&'a DeviceLite, Vec<TripLite>)>,
-    /// fuel_type ('gasoline'|'diesel'|'lpg'|'ev') → 원/L. env override + 오피넷 캐시.
+    /// fuel_type ('gasoline'|'diesel'|'lpg'|'ev'|'hybrid'|'hydrogen') → 원/L. env override + 오피넷 캐시.
     pub fuel_price: Box<dyn Fn(&str) -> i64 + Send + Sync + 'a>,
 }
 
@@ -1087,6 +1087,8 @@ fn fuel_type_ko(t: Option<&str>) -> String {
         Some("diesel") => "경유",
         Some("lpg") => "LPG",
         Some("ev") => "전기",
+        Some("hybrid") => "하이브리드",
+        Some("hydrogen") => "수소",
         _ => "",
     }
     .into()

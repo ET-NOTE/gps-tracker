@@ -1482,13 +1482,13 @@ function ReservationDialog({ init, presetDate, presetVehicleId, devices, staff, 
 // /devices/:id/fuel-info endpoint 만 제공. 유가 상수는 클라이언트 (환경 관계 없이).
 // (2026-07-28) Stage-4D: 오피넷 서버 캐시 fetch. useFuelPrices 훅 실패 or 로딩 중이면 이 default.
 const DEFAULT_FUEL_PRICE_KRW = {
-  gasoline: 1700, diesel: 1600, lpg: 1000, ev: 0,
+  gasoline: 1700, diesel: 1600, lpg: 1000, ev: 0, hybrid: 1700, hydrogen: 0,
 };
 // mutable — useFuelPrices 훅이 채워넣음. estimateFuelCost 는 이걸 참조.
 // eslint-disable-next-line prefer-const
 let FUEL_PRICE_KRW = { ...DEFAULT_FUEL_PRICE_KRW };
 const FUEL_LABEL = {
-  gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기',
+  gasoline: '휘발유', diesel: '경유', lpg: 'LPG', ev: '전기', hybrid: '하이브리드', hydrogen: '수소',
 };
 
 function ymKST(d = new Date()) {
@@ -1520,7 +1520,7 @@ function MonthlyReportTab({ devices }) {
     api.getFuelPrices().then(p => {
       setFuelPrices(p);
       FUEL_PRICE_KRW = {
-        gasoline: p.gasoline, diesel: p.diesel, lpg: p.lpg, ev: 0,
+        gasoline: p.gasoline, diesel: p.diesel, lpg: p.lpg, ev: 0, hybrid: p.gasoline, hydrogen: 0,
       };
       setTick(t => t + 1);   // 재계산 트리거
     }).catch(() => {});

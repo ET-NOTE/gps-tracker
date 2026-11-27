@@ -173,7 +173,7 @@ impl VehicleInput {
                     .is_some_and(|s| ["sedan", "van", "truck", "special", "ev"].contains(&s)),
                 "fuel_type" => v
                     .as_str()
-                    .is_some_and(|s| ["gasoline", "diesel", "lpg", "ev"].contains(&s)),
+                    .is_some_and(|s| ["gasoline", "diesel", "lpg", "ev", "hybrid", "hydrogen"].contains(&s)),
                 "car_image_url" => v.as_str().is_some_and(|s| {
                     s.len() <= 512 && s.starts_with("/uploads/car-images/") && !s.contains("..")
                 }),

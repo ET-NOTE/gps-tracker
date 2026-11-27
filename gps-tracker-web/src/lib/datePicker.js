@@ -10,6 +10,14 @@ export function installDatePicker(doc = document) {
   win.__serialDatePicker = true;
 
   const SEL = 'input[type="date"],input[type="datetime-local"]';
+  // Browser text follows the OS locale (11/21/2026 04:00 PM); Korean users expect 2026. 11. 21. 오후 4:00.
+  const korean = el => { if (!el.lang) el.lang = 'ko-KR'; };
+  doc.querySelectorAll(SEL).forEach(korean);
+  new win.MutationObserver(list => list.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches && n.matches(SEL)) korean(n);
+    if (n.querySelectorAll) n.querySelectorAll(SEL).forEach(korean);
+  }))).observe(doc.body, { childList: true, subtree: true });
   const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
   const pad = n => String(n).padStart(2, '0');
   const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -29,7 +37,7 @@ input[type=date]:disabled,input[type=datetime-local]:disabled{cursor:not-allowed
 .sdp-shade{position:fixed;inset:0;z-index:2147482999;background:rgba(15,23,42,.38)}
 .sdp button{font:inherit;color:inherit;margin:0}
 .sdp button:focus-visible{outline:2px solid var(--sdp-primary,#3676e5);outline-offset:1px}
-.sdp-body{display:flex;gap:14px}
+.sdp-body{display:flex;flex-direction:column;gap:10px}
 .sdp-head{display:flex;align-items:center;gap:2px;margin-bottom:6px}
 .sdp-title{flex:1;display:flex;align-items:center;gap:6px;border:0;background:none;font-weight:700!important;font-size:15px!important;padding:6px 8px;border-radius:8px;cursor:pointer}
 .sdp-title:hover,.sdp-nav:hover,.sdp-day:hover:not(:disabled),.sdp-t:hover,.sdp-month:hover{background:var(--sdp-soft,#edf3ff)}
@@ -51,15 +59,22 @@ input[type=date]:disabled,input[type=datetime-local]:disabled{cursor:not-allowed
 .sdp-month{height:52px;border:0;border-radius:10px;background:var(--sdp-bg2,#f8f9fb);font-size:14px!important;cursor:pointer}
 .sdp-month.cur{box-shadow:inset 0 0 0 1.5px var(--sdp-primary,#3676e5)}
 .sdp-month.sel{background:var(--sdp-primary,#3676e5);color:#fff!important;font-weight:700}
-.sdp-time{display:flex;flex-direction:column;min-width:118px;padding-left:14px;border-left:1px solid var(--sdp-line,#e7eaf0)}
+.sdp-time{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 0 0;border-top:1px solid var(--sdp-line,#e7eaf0)}
+.sdp-tlabel{font-size:12px;font-weight:600;color:var(--sdp-muted,#77808e);margin-right:6px}
+.sdp-colon{font-size:16px;font-weight:700}
+.sdp-step{display:flex;align-items:center;border:1px solid var(--sdp-line,#e7eaf0);border-radius:10px;overflow:hidden}
+.sdp-step button{width:30px;height:34px;border:0;background:var(--sdp-bg2,#f8f9fb);cursor:pointer;font-size:16px}
+.sdp-step b{min-width:44px;text-align:center;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
 .sdp-picked{min-height:44px;padding:4px 2px 8px;font-size:12px;color:var(--sdp-muted,#77808e)}
 .sdp-picked b{display:block;margin-top:2px;font-size:15px;font-weight:700;color:var(--sdp-text,#353b45);font-variant-numeric:tabular-nums}
-.sdp-cols{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sdp-cols{display:flex;flex-direction:column;gap:10px}
+.sdp-tg{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.sdp-tcol{min-width:0}
 .sdp-colhead{font-size:11px;font-weight:600;text-align:center;color:var(--sdp-muted,#77808e);padding-bottom:4px}
 .sdp-col{display:flex;flex-direction:column;gap:2px;height:212px;overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}
 .sdp-t{flex:none;height:32px;border:0;border-radius:8px;background:none;font-size:13px!important;cursor:pointer;font-variant-numeric:tabular-nums}
 .sdp-t.sel{background:var(--sdp-primary,#3676e5);color:#fff!important;font-weight:700}
-.sdp-foot{display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--sdp-line,#e7eaf0)}
+.sdp-foot{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:10px;border-top:1px solid var(--sdp-line,#e7eaf0)}
 .sdp-foot .sp{flex:1}
 .sdp-btn{height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--sdp-line,#e7eaf0);background:var(--sdp-bg,#fff);font-size:13px!important;font-weight:600!important;cursor:pointer;white-space:nowrap}
 .sdp-btn:disabled{opacity:.4;cursor:not-allowed}
@@ -248,15 +263,10 @@ input[type=date]:disabled,input[type=datetime-local]:disabled{cursor:not-allowed
 
     let time = '';
     if (st.kind === 'datetime-local') {
-      const mins = [];
-      for (let x = 0; x < 60; x += st.step) mins.push(x);
-      if (!mins.includes(st.mi)) mins.push(st.mi), mins.sort((a, b) => a - b);
-      const col = (act, list, sel, name) => `<div><div class="sdp-colhead">${name}</div><div class="sdp-col" role="listbox" aria-label="${name}">`
-        + list.map(v => `<button type="button" class="sdp-t${v === sel ? ' sel' : ''}" data-act="${act}" data-v="${v}" role="option" aria-selected="${v === sel}">${pad(v)}</button>`).join('') + '</div></div>';
-      time = `<div class="sdp-time"><div class="sdp-picked">선택한 일시<b>${st.date ? label(st.date) : '날짜를 선택하세요'} ${pad(st.h)}:${pad(st.mi)}</b></div>`
-        + `<div class="sdp-cols">${col('hour', Array.from({ length: 24 }, (_, i) => i), st.h, '시')}${col('minute', mins, st.mi, '분')}</div></div>`;
+      // Compact time row under the calendar: ‹ 14 › : ‹ 00 › (one line, no side-by-side lists).
+      const stepper = (name, value, label) => `<div class="sdp-step" role="group" aria-label="${label}"><button type="button" data-act="${name}-dec" aria-label="${label} 줄이기">‹</button><b aria-live="polite">${pad(value)}</b><button type="button" data-act="${name}-inc" aria-label="${label} 늘리기">›</button></div>`;
+      time = `<div class="sdp-time"><span class="sdp-tlabel">시간</span>${stepper('hour', st.h, '시')}<span class="sdp-colon">:</span>${stepper('minute', st.mi, '분')}</div>`;
     }
-
     const todayOff = (st.lo && today < st.lo) || (st.hi && today > st.hi);
     const clear = st.required ? '' : '<button type="button" class="sdp-btn link" data-act="clear">지우기</button>';
     const foot = st.kind === 'date'
@@ -265,7 +275,7 @@ input[type=date]:disabled,input[type=datetime-local]:disabled{cursor:not-allowed
         + '<button type="button" class="sdp-btn" data-act="cancel">취소</button><button type="button" class="sdp-btn primary" data-act="apply">적용</button>';
 
     const scroll = Array.from(pop.querySelectorAll('.sdp-col')).map(c => c.scrollTop);
-    pop.innerHTML = `<div class="sdp-body"><div>${cal}</div>${time}</div><div class="sdp-foot">${foot}</div>`;
+    pop.innerHTML = `<div class="sdp-body"><div class="sdp-cal">${cal}</div>${time}</div><div class="sdp-foot">${foot}</div>`;
     pop.querySelectorAll('.sdp-col').forEach((c, i) => {
       const sel = c.querySelector('.sel');
       if (first && sel) c.scrollTop = sel.offsetTop - c.offsetTop - c.clientHeight / 2 + sel.offsetHeight / 2;
@@ -295,8 +305,10 @@ input[type=date]:disabled,input[type=datetime-local]:disabled{cursor:not-allowed
       const d = fromIso(st.date);
       st.view = { y: d.getFullYear(), m: d.getMonth() };
     }
-    else if (act === 'hour') st.h = +b.dataset.v;
-    else if (act === 'minute') st.mi = +b.dataset.v;
+    else if (act === 'hour-dec') st.h = (st.h + 23) % 24;
+    else if (act === 'hour-inc') st.h = (st.h + 1) % 24;
+    else if (act === 'minute-dec') st.mi = (st.mi + 60 - st.step) % 60;
+    else if (act === 'minute-inc') st.mi = (st.mi + st.step) % 60;
     else if (act === 'today') return commit(iso(new Date()));
     else if (act === 'now') {
       const n = new Date();

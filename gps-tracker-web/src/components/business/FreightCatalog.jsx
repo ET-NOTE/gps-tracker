@@ -74,16 +74,22 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
   const headings=columns.map(([h])=>h);
   const driverWork=useMemo(()=>{
     if(kind!=='drivers')return null;
-    const plates=new Map(),activeShipments=new Map();
+    const plates=new Map(),activeShipments=new Map(),running=new Map(),nextFree=new Map(),now=Date.now();
     for(const vehicle of data.vehicles)if(vehicle.driverId){
       if(!plates.has(vehicle.driverId))plates.set(vehicle.driverId,[]);
       plates.get(vehicle.driverId).push(vehicle.plate);
     }
     for(const shipment of data.shipments)if(shipment.driverId&&!['cancelled','delivered'].includes(shipment.status)){
       activeShipments.set(shipment.driverId,(activeShipments.get(shipment.driverId)||0)+1);
+      // Driving now: loading or on the road. Next free time: the latest unfinished end.
+      if(['loading','in_transit'].includes(shipment.status))running.set(shipment.driverId,true);
+      const end=Date.parse(shipment.end);if(Number.isFinite(end)&&end>now&&end>(nextFree.get(shipment.driverId)||0))nextFree.set(shipment.driverId,end);
     }
-    return {plates,activeShipments};
+    return {plates,activeShipments,running,nextFree};
   },[kind,data.vehicles,data.shipments]);
+  // Off duty, driving now, or waiting; the licence check is a separate column.
+  const driverStateBadge=r=>{const off=r.active===false||r.availability!=='available';if(off)return badge('휴무 · 배차 제외',false);if(driverWork.running.get(r.id))return badge('운송 중',true);return badge('대기',true);};
+  const driverNext=r=>{const off=r.active===false||r.availability!=='available';if(off)return '—';const at=driverWork.nextFree.get(r.id);return at?new Date(at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' 이후':'지금 가능';};
   const plateCell=(label,sub,id)=><><button type="button" className="fr-link" onClick={()=>toDetail(id)}>{label}</button>{sub&&<small>{sub}</small>}</>;
   const pair=(first,second)=><>{first}<small>{second}</small></>;
   const carrier=row=>row.carrierId?nameOf(data,'carriers',row.carrierId):'자사 운영';
@@ -93,10 +99,11 @@ export default function FreightCatalog({kind,data,save,devices=[],onPage,onOpenR
     vehicles:{headers:['차량','형태 / 적재능력','기본 기사 / 소속','지점','운영 상태','단말 수신'],cells:r=>[
       plateCell(r.plate,r.model,r.id),pair(r.type,kg(r)),pair(r.driverId?nameOf(data,'drivers',r.driverId):'미지정',carrier(r)),
       nameOf(data,'branches',r.branchId),badge(readinessLabels[r.readiness],r.readiness==='ready'),columns[6][1](r)]},
-    drivers:{headers:['기사','소속 / 지점','기본 차량','배차 상태','면허 확인','진행 중 운송'],cells:r=>[
+    drivers:{headers:['기사','소속 / 지점','기본 차량','현재 상태','다음 배차 가능','면허 확인','진행 중 운송'],cells:r=>[
       plateCell(r.name,r.phone,r.id),pair(carrier(r),nameOf(data,'branches',r.branchId)),
       driverWork.plates.get(r.id)?.join(', ')||'미지정',
-      badge(r.active===false?'사용 중지':availabilityLabels[r.availability],r.active!==false&&r.availability==='available'),
+      driverStateBadge(r),
+      driverNext(r),
       r.licenseChecked?'확인 완료':'미확인',(driverWork.activeShipments.get(r.id)||0)+'건']},
     services:{headers:['차량','구분','작업 일정','비용','상태','메모'],cells:r=>[
       plateCell(vehicleName(data,r.vehicleId),null,r.id),r.type,pair(timeLabel(r.start),timeLabel(r.end)),costLabel(r.cost),badge(columns[5][1](r),r.status==='done'),r.note||'—']},

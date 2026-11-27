@@ -53,7 +53,8 @@ export function bootDocument(html, target, state) {
   if (!html.includes(bootstrapMarker)) throw new Error('체험 화면을 불러오지 못했습니다.');
   const saved = sampleFields(state);
   if (saved[fleetKey]) saved[fleetKey] = updateDefaultSampleCopy(saved[fleetKey]);
-  const data = JSON.stringify({...target, state: saved}).replaceAll('<', '\\u003c');
+  // Sample pages sit under /demo/, so relative asset paths need the app's base to resolve.
+  const data = JSON.stringify({...target, state: saved, assetBase: import.meta.env?.BASE_URL || '/'}).replaceAll('<', '\\u003c');
   return html.replace(bootstrapMarker, () => '<script>window.SERIAL_DEMO_BOOT=' + data + ';</script>');
 }
 

@@ -1,7 +1,7 @@
 export default function RentalDispatchTrend({days}) {
   const highest = Math.max(1, ...days.map(day => day.count));
-  const magnitude = 10 ** Math.floor(Math.log10(highest / 4));
-  const step = [1, 2, 5, 10].find(unit => unit * magnitude >= highest / 4) * magnitude;
+  // Counts are whole numbers: ticks are 0, 1, 2 ... never 0.5.
+  const step = Math.max(1, Math.ceil(highest / 4));
   const intervals = Math.ceil(highest / step);
   const top = intervals * step;
   const ticks = Array.from({length: intervals + 1}, (_, index) => index * step);

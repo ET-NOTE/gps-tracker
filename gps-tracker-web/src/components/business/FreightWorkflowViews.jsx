@@ -34,7 +34,7 @@ export function WorkflowTable({page,data,rows,open,form,mockup=false}){
 
 export function DispatchView({data,orders:shown,requests,form,open,orderId,setOrderId,onAllRequests}){
   const desk=!useCorporatePhone()&&hideOutsideMockup;
-  const [owner,setOwner]=useState(''),[possible,setPossible]=useState(false);
+  const [owner,setOwner]=useState(''),[possible,setPossible]=useState(true); // available vehicles first by default
   const order=shown.find(o=>o.id===orderId)||shown[0];
   const candidates=order?data.vehicles.map(v=>candidate(data,order,v)).filter(c=>(!owner||(owner==='own')===!c.vehicle.carrierId)&&(!possible||!c.reason)).sort((a,b)=>Number(!!a.reason)-Number(!!b.reason)):[];
   return <>

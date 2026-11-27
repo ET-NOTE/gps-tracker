@@ -59,7 +59,15 @@ export default function RentalBoard({ devices, now, onNew, onEdit }) {
     </>}
   </div>;
 }
+// First day is pickup, last day return, days between are 'in use'; overdue and returned keep their status words.
+function phaseLabel(contract, day, status) {
+  if (status === 'overdue' || status === 'returned') return labels[status];
+  const time = iso => new Date(iso).toLocaleTimeString('ko-KR', {timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false});
+  if (businessDate(contract.starts_at) === day) return `${time(contract.starts_at)} 인수`;
+  if (businessDate(contract.ends_at) === day) return `${time(contract.ends_at)} 반납`;
+  return status === 'draft' ? '예약' : '대여 중';
+}
 function ContractButton({ contract, day, now, onClick }) {
   const status = rentalStatus(contract, now), late = status === 'overdue' && day >= businessDate(contract.ends_at);
-  return <button className={`business-schedule-contract ${status}${late ? ' late' : ''}`} onClick={onClick} title={`${contract.renter_name} · ${kstDateTime(contract.starts_at)} ~ ${kstDateTime(contract.ends_at)}`}><strong>{contract.renter_name || '임차인 미등록'}</strong><span>{labels[status] || status}</span><small>{businessDate(contract.starts_at).slice(5)} → {businessDate(contract.ends_at).slice(5)}</small></button>;
+  return <button className={`business-schedule-contract ${status}${late ? ' late' : ''}`} onClick={onClick} title={`${contract.renter_name} · ${kstDateTime(contract.starts_at)} ~ ${kstDateTime(contract.ends_at)}`}><strong>{contract.renter_name || '임차인 미등록'}</strong><span>{phaseLabel(contract, day, status)}</span><small>{businessDate(contract.starts_at).slice(5)} → {businessDate(contract.ends_at).slice(5)}</small></button>;
 }

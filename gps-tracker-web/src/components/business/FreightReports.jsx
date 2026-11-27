@@ -81,7 +81,7 @@ function ReportsView({page,data,save,onPage,open}){
         <ChartPanel title="화주별 운송 실적"><ReportBars values={r.groups.map(g=>({label:g.name,value:g.count}))} unit="건"/></ChartPanel>
         <ChartPanel title="진행 상태"><ReportBars values={Object.entries(shipStates).filter(([key])=>key!=='cancelled').map(([key,label])=>({label,value:r.shipments.filter(s=>s.status===key).length}))} unit="건"/></ChartPanel>
       </div>}
-      {util&&<ChartPanel title="차량별 배차일 비율" subtitle={r.dayCount+'일 조회'}><ReportBars values={r.utilization.map(v=>({label:v.plate,value:v.ratio}))} unit="%" height={220}/></ChartPanel>}
+      {util&&<ChartPanel title="차량별 배차일 비율" subtitle={r.dayCount+'일 조회'}><ReportBars values={r.utilization.map(v=>({label:v.plate,value:v.ratio}))} unit="%" height={220} scaleMax={100}/></ChartPanel>}
       {report&&<section className="ops-table-panel" aria-label="운송별 실적"><FreightTable columns={['운송 / 화주','차량 / 기사','경로 / 일정','상태']} rows={r.shipments.map(s=>{
         const original=sourceShips.get(s.id);return {id:s.id,onOpen:()=>open('shipments',s.id),cells:[facts(shipLink(s),s.shipper),facts(vehicleName(data,original.vehicleId),nameOf(data,'drivers',original.driverId)),
           facts(routeName(data,firstOrder(data,original)),timeLabel(original.start)),<Status value={s.status} labels={shipStates}/>]};

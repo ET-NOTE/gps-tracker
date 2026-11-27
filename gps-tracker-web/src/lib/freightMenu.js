@@ -7,7 +7,7 @@ export const freightMenu = [
   ['fleet','차량·기사 관리','car',[['cargo-vehicles','차량 목록'],['cargo-drivers','기사 목록'],['cargo-maintenance','정비·보험'],['cargo-devices','차량·단말기 연결']]],
   ['partners','거래처 관리','users',[['cargo-shippers','화주 목록'],['cargo-carriers','협력 운송사'],['cargo-locations','상·하차지']]],
   ['finance','운임·정산','coin',[['cargo-rates','운임표·계약 요율'],['cargo-billing','화주 청구·수납'],['cargo-payables','운송비 정산·지급'],['cargo-charges','추가 비용']]],
-  ['reports','통계·리포트','bar',[['cargo-reports','주문·배차 실적'],['cargo-profit','운송 손익'],['cargo-utilization','차량 가동·공차']]],
+  ['reports','통계·리포트','bar',[['cargo-reports','주문·배차 실적'],['cargo-profit','운송 손익'],['cargo-utilization','차량 가동 현황']]],
   ['team','사용자 관리','users',[['users','사용자 목록'],['organization','조직·지점 관리'],['permissions','권한 그룹']]],
   ['settings','관리 설정','settings',[['cargo-policies','배차·운송 정책'],['cargo-codes','기준정보'],['cargo-integrations','알림·연동'],['company','회사 정보']]]
 ].map(([id,label,icon,pages])=>({id,label,icon,pages}));
@@ -39,5 +39,5 @@ export const freightPageHeadings = {
   'cargo-live': {title: '실시간 관제', description: '위치·이동·수신 정보와 운송 진행 상태를 함께 확인합니다.'},
   'cargo-reports': {title: '주문·배차 실적', description: '화주와 운송 상태별 실적을 확인합니다.'},
   'cargo-profit': {title: '운송 손익', description: '청구·지급 운임과 추가 비용을 비교합니다.'},
-  'cargo-utilization': {title: '차량 가동·공차', description: '배차 일정과 차량 관리비를 기준으로 운영 현황을 확인합니다.'},
+  'cargo-utilization': {title: '차량 가동 현황', description: '배차 일정과 차량 관리비를 기준으로 운영 현황을 확인합니다.'},
 };
